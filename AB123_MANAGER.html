@@ -4975,6 +4975,120 @@ input.vnd-dot-input{
 }
 </style>
 
+
+<style id="ab123-sidebar-scroll-v2">
+/* ===== AN BÙI: LOGO + TÊN CÙNG HÀNG, MENU CUỘN ĐỘC LẬP ===== */
+
+/* Sidebar giữ nguyên vị trí; chỉ danh sách nút bên trong được cuộn */
+.sidebar{
+  display:flex!important;
+  flex-direction:column!important;
+  overflow:hidden!important;
+}
+
+/* Logo và chữ AN BÙI nằm cùng hàng */
+.sidebar .brand{
+  flex:0 0 auto!important;
+  display:grid!important;
+  grid-template-columns:46px minmax(0,1fr)!important;
+  grid-template-rows:auto auto!important;
+  column-gap:10px!important;
+  row-gap:0!important;
+  align-items:center!important;
+  padding:7px 8px 10px!important;
+  margin-bottom:7px!important;
+}
+.sidebar .brand .app-brand-logo{
+  grid-column:1!important;
+  grid-row:1 / span 2!important;
+  width:46px!important;
+  height:46px!important;
+  margin:0!important;
+  padding:2px!important;
+  object-fit:contain!important;
+  align-self:center!important;
+}
+.sidebar .brand #brandName{
+  grid-column:2!important;
+  grid-row:1!important;
+  display:block!important;
+  margin:0!important;
+  line-height:1.15!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+.sidebar .brand small{
+  grid-column:2!important;
+  grid-row:2!important;
+  display:block!important;
+  margin:2px 0 0!important;
+  line-height:1.2!important;
+}
+
+/* Chỉ phần nút chức năng cuộn lên/xuống */
+.sidebar .nav{
+  flex:1 1 auto!important;
+  min-height:0!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  -webkit-overflow-scrolling:touch!important;
+  overscroll-behavior:contain!important;
+  scrollbar-width:thin;
+  padding-right:3px!important;
+  padding-bottom:max(16px,env(safe-area-inset-bottom))!important;
+}
+.sidebar .nav::-webkit-scrollbar{width:5px}
+.sidebar .nav::-webkit-scrollbar-thumb{
+  background:rgba(255,255,255,.28);
+  border-radius:10px;
+}
+.sidebar .nav::-webkit-scrollbar-track{background:transparent}
+
+/* Tablet ngang: giữ đầu logo cố định, menu dưới cuộn riêng */
+@media (max-width:1200px) and (orientation:landscape){
+  .sidebar{
+    height:100vh!important;
+    height:100dvh!important;
+  }
+  .sidebar .brand{
+    grid-template-columns:40px minmax(0,1fr)!important;
+    column-gap:8px!important;
+  }
+  .sidebar .brand .app-brand-logo{
+    width:40px!important;
+    height:40px!important;
+  }
+  .sidebar .nav{
+    height:auto!important;
+    max-height:none!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+  }
+}
+
+/* Tablet/điện thoại dọc: menu drawer cũng cuộn riêng */
+@media (max-width:900px) and (orientation:portrait){
+  .sidebar{
+    height:100dvh!important;
+    padding-bottom:0!important;
+  }
+  .sidebar .brand{
+    grid-template-columns:44px minmax(0,1fr)!important;
+    padding-top:max(7px,env(safe-area-inset-top))!important;
+  }
+  .sidebar .brand .app-brand-logo{
+    width:44px!important;
+    height:44px!important;
+  }
+  .sidebar .nav{
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    padding-bottom:max(20px,env(safe-area-inset-bottom))!important;
+  }
+}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -15069,7 +15183,7 @@ async function saveStockinStable(doPrint=false){
 <script id="pwa-register">
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   window.addEventListener('load', function(){
-    navigator.serviceWorker.register('./sw.js?v=ab123-icon-1').catch(function(err){ console.warn('Service worker:', err); });
+    navigator.serviceWorker.register('./sw.js?v=ab123-sidebar-2').catch(function(err){ console.warn('Service worker:', err); });
   });
 }
 
