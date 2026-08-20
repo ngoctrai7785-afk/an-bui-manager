@@ -1,0 +1,15 @@
+AB123 - AN BÙI
+================
+Bộ này đã gắn icon An Bùi Shop.
+
+Đưa lên GitHub Pages:
+1) Upload toàn bộ các file trong thư mục này lên cùng một repository.
+2) Dùng index.html làm trang chính.
+3) Bật GitHub Pages.
+4) Mở link HTTPS trên điện thoại.
+5) Chrome Android: menu ⋮ > Thêm vào màn hình chính / Cài đặt ứng dụng.
+   Safari iPhone: Chia sẻ > Thêm vào Màn hình chính.
+
+Lưu ý:
+- Không đổi tên icon-192.png, icon-512.png, manifest.webmanifest, sw.js.
+- APP ID, đồng bộ và logic nghiệp vụ của AB123 được giữ nguyên.
