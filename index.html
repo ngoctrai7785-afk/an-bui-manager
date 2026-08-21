@@ -14,7 +14,7 @@
 <link rel="icon" type="image/png" sizes="64x64" href="./favicon-64.png">
 
 <meta charset="utf-8">
-<meta name="app-version" content="113">
+<meta name="app-version" content="114">
 <title>AN BÙI - Quản lý nội bộ</title>
 <style>
 :root{
@@ -5822,6 +5822,194 @@ input.vnd-dot-input{
 }
 </style>
 
+
+<style id="v114-report-tabs-unified-filter">
+/* ===== V114: BÁO CÁO DẠNG TAB + 1 Ô LỌC CHUNG ===== */
+.report-tabs{
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+  margin-bottom:10px;
+}
+.report-tab-btn{
+  border:1px solid #cddce1;
+  background:#fff;
+  color:#31525d;
+  border-radius:9px;
+  padding:8px 13px;
+  min-height:36px;
+  font-weight:800;
+  cursor:pointer;
+}
+.report-tab-btn.active{
+  background:var(--primary);
+  border-color:var(--primary);
+  color:#fff;
+  box-shadow:0 2px 7px rgba(0,0,0,.12);
+}
+.report-range-bar.v114{
+  display:grid;
+  grid-template-columns:150px 150px minmax(260px,1fr) auto;
+  gap:9px;
+  align-items:end;
+  margin-bottom:10px;
+}
+.report-range-bar.v114 > div{
+  min-width:0;
+}
+.report-range-bar.v114 input{
+  width:100%;
+}
+.report-range-note.v114{
+  align-self:center;
+  white-space:nowrap;
+  margin:0;
+  padding:0 2px;
+}
+.report-unified-filter{
+  position:relative;
+}
+.report-unified-filter-wrap{
+  display:flex;
+  position:relative;
+}
+.report-unified-filter-wrap input{
+  border-radius:8px 0 0 8px!important;
+}
+.report-unified-filter-drop{
+  width:38px;
+  min-width:38px;
+  border:1px solid #cbd7dc;
+  border-left:0;
+  background:#f5f8f9;
+  border-radius:0 8px 8px 0;
+  cursor:pointer;
+  font-weight:900;
+}
+.report-unified-filter-list{
+  display:none;
+  position:absolute;
+  z-index:70;
+  left:0;
+  right:0;
+  top:calc(100% + 4px);
+  max-height:320px;
+  overflow:auto;
+  background:#fff;
+  border:1px solid #cfdde2;
+  border-radius:9px;
+  box-shadow:0 10px 28px rgba(0,0,0,.14);
+}
+.report-unified-filter-list.show{display:block}
+.report-unified-filter-item{
+  padding:8px 10px;
+  cursor:pointer;
+  border-bottom:1px solid #edf2f4;
+}
+.report-unified-filter-item:last-child{border-bottom:0}
+.report-unified-filter-item:hover,
+.report-unified-filter-item.active{
+  background:#edf7f9;
+}
+.report-unified-filter-item .kind{
+  display:inline-block;
+  min-width:48px;
+  margin-right:6px;
+  color:#6c7d84;
+  font-size:10.5px;
+  font-weight:800;
+}
+.report-unified-filter-item .label{
+  font-weight:800;
+  color:#274650;
+}
+.report-unified-filter-item .meta{
+  margin-top:2px;
+  color:#7b898f;
+  font-size:10.5px;
+}
+.report-panel{display:none}
+.report-panel.active{display:block}
+
+#reportCards.report-kpi-compact{
+  display:grid!important;
+  grid-template-columns:repeat(5,minmax(120px,1fr))!important;
+  gap:8px!important;
+  margin-bottom:10px;
+}
+#reportCards.report-kpi-compact .card.kpi{
+  min-height:72px!important;
+  padding:9px 10px!important;
+  margin:0!important;
+  border-radius:10px!important;
+}
+#reportCards.report-kpi-compact .card.kpi .label{
+  font-size:11px!important;
+  margin-bottom:5px!important;
+}
+#reportCards.report-kpi-compact .card.kpi .value{
+  font-size:17px!important;
+  line-height:1.2!important;
+}
+#reportCards.report-kpi-compact .expense-kpi-card{
+  text-align:left!important;
+  width:100%!important;
+}
+#reportOverviewPanel .vat-report-card{
+  margin-top:0!important;
+}
+#reportProductPanel .card,
+#reportSupplierPanel .card{
+  margin:0!important;
+}
+#reportProductPanel h3,
+#reportSupplierPanel h3{
+  margin-top:0;
+}
+.report-filter-current{
+  display:inline-flex;
+  align-items:center;
+  margin-bottom:8px;
+  padding:5px 8px;
+  border-radius:999px;
+  background:#edf6f8;
+  color:#46636d;
+  font-size:11px;
+  font-weight:800;
+}
+
+@media(max-width:980px){
+  .report-range-bar.v114{
+    grid-template-columns:1fr 1fr;
+  }
+  .report-unified-filter{
+    grid-column:1/-1;
+  }
+  .report-range-note.v114{
+    grid-column:1/-1;
+  }
+  #reportCards.report-kpi-compact{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+}
+@media(max-width:560px){
+  .report-tabs{
+    display:grid;
+    grid-template-columns:1fr;
+  }
+  .report-range-bar.v114{
+    grid-template-columns:1fr;
+  }
+  .report-unified-filter,
+  .report-range-note.v114{
+    grid-column:auto;
+  }
+  #reportCards.report-kpi-compact{
+    grid-template-columns:1fr 1fr!important;
+  }
+}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -6369,8 +6557,14 @@ input.vnd-dot-input{
     </div>
   </section>
 
-  <section class="page" id="reports">
-    <div class="report-range-bar">
+    <section class="page" id="reports">
+    <div class="report-tabs">
+      <button id="reportTabOverview" class="report-tab-btn active" type="button" onclick="setReportTab('overview')">Tổng quan</button>
+      <button id="reportTabProduct" class="report-tab-btn" type="button" onclick="setReportTab('product')">Doanh thu theo hàng</button>
+      <button id="reportTabSupplier" class="report-tab-btn" type="button" onclick="setReportTab('supplier')">Nhập hàng theo NCC</button>
+    </div>
+
+    <div class="report-range-bar v114">
       <div>
         <label>Từ ngày</label>
         <input id="reportFromDate" type="date" onchange="renderReports()">
@@ -6379,45 +6573,53 @@ input.vnd-dot-input{
         <label>Đến ngày</label>
         <input id="reportToDate" type="date" onchange="renderReports()">
       </div>
-      <div class="report-range-note" id="reportRangeNote"></div>
-    </div>
 
-    <div class="grid cards" id="reportCards"></div>
-    <div class="card vat-report-card">
-      <div class="settings-card-head">
-        <div>
-          <h3 style="margin:0">VAT</h3>
-          
+      <div class="report-unified-filter">
+        <label>Lọc báo cáo</label>
+        <div class="report-unified-filter-wrap">
+          <input id="reportUnifiedFilterInput"
+                 autocomplete="off"
+                 value="Tất cả"
+                 placeholder="Tất cả / Nhóm / Hàng..."
+                 oninput="reportUnifiedFilterTyping()"
+                 onfocus="this.select();renderReportUnifiedFilterList(true)"
+                 onkeydown="reportUnifiedFilterKey(event)"
+                 onblur="reportUnifiedFilterBlur()">
+          <button type="button"
+                  class="report-unified-filter-drop"
+                  onmousedown="event.preventDefault()"
+                  onclick="toggleReportUnifiedFilterList()">▼</button>
+          <div id="reportUnifiedFilterList" class="report-unified-filter-list"></div>
         </div>
       </div>
-      <div class="vat-report-grid" id="vatReportCards"></div>
-      <div class="vat-report-table" id="vatReportTable"></div>
+
+      <div class="report-range-note v114" id="reportRangeNote"></div>
     </div>
 
+    <div id="reportOverviewPanel" class="report-panel active">
+      <div class="grid cards report-kpi-compact" id="reportCards"></div>
 
-    <div class="grid two">
-      <div class="card">
-        <div class="report-card-top">
-          <h3>Doanh thu theo hàng</h3>
-          <div class="report-product-picker" id="reportProductPicker">
-            <input id="reportProductSearch"
-                   autocomplete="off"
-                   placeholder="Tìm sản phẩm..."
-                   oninput="filterReportProducts()"
-                   onkeydown="reportProductKey(event)"
-                   onblur="reportProductBlur()" onfocus="this.select()" onclick="this.select()">
-            <button type="button"
-                    class="report-product-drop"
-                    onmousedown="event.preventDefault()"
-                    onclick="toggleReportProductList()">▼</button>
-            <div id="reportProductList" class="report-product-list"></div>
-          </div>
+      <div class="card vat-report-card">
+        <div class="settings-card-head">
+          <div><h3 style="margin:0">VAT</h3></div>
         </div>
+        <div class="vat-report-grid" id="vatReportCards"></div>
+        <div class="vat-report-table" id="vatReportTable"></div>
+      </div>
+    </div>
+
+    <div id="reportProductPanel" class="report-panel">
+      <div class="card">
+        <h3>Doanh thu theo hàng</h3>
+        <div id="reportProductFilterStatus" class="report-filter-current">Tất cả</div>
         <div id="productRevenue"></div>
       </div>
+    </div>
 
+    <div id="reportSupplierPanel" class="report-panel">
       <div class="card">
         <h3>Nhập hàng theo NCC</h3>
+        <div id="reportSupplierFilterStatus" class="report-filter-current">Tất cả</div>
         <div id="supplierPurchases"></div>
       </div>
     </div>
@@ -10606,6 +10808,217 @@ function renderDebts(){
     $('supplierDebtTable').innerHTML='';
   }
 }
+
+/* ===== V114: TAB BÁO CÁO + LỌC TẤT CẢ / NHÓM / HÀNG BẰNG 1 Ô ===== */
+let reportActiveTab='overview';
+let reportUnifiedFilter={type:'all',value:''};
+let reportUnifiedFilterIndex=-1;
+
+function setReportTab(tab){
+  reportActiveTab=['overview','product','supplier'].includes(tab)?tab:'overview';
+  applyReportTabUI();
+}
+
+function applyReportTabUI(){
+  const map={
+    overview:'reportOverviewPanel',
+    product:'reportProductPanel',
+    supplier:'reportSupplierPanel'
+  };
+
+  Object.entries(map).forEach(([key,id])=>{
+    $(id)?.classList.toggle('active',key===reportActiveTab);
+    $('reportTab'+key.charAt(0).toUpperCase()+key.slice(1))?.classList.toggle('active',key===reportActiveTab);
+  });
+}
+
+function reportUnifiedFilterLabel(filter=reportUnifiedFilter){
+  if(filter?.type==='group')return 'Nhóm • '+String(filter.value||'');
+  if(filter?.type==='product'){
+    const p=(db.products||[]).find(x=>x.id===filter.value);
+    return p?'Hàng • '+p.name:'Hàng';
+  }
+  return 'Tất cả';
+}
+
+function reportUnifiedFilterChoices(query=''){
+  const q=norm(String(query||'').trim());
+  const choices=[{type:'all',value:'',label:'Tất cả',kind:'Tất cả',meta:''}];
+
+  const groups=[...new Set((db.products||[]).map(p=>String(p.group||'').trim()).filter(Boolean))]
+    .sort((a,b)=>a.localeCompare(b,'vi'));
+
+  groups.forEach(g=>{
+    const label='Nhóm • '+g;
+    if(!q || norm(label).includes(q) || norm(g).includes(q)){
+      choices.push({type:'group',value:g,label,kind:'Nhóm',meta:''});
+    }
+  });
+
+  const products=(db.products||[])
+    .filter(p=>{
+      if(!q)return true;
+      return norm((p.id||'')+' '+(p.name||'')+' '+(p.group||'')).includes(q);
+    })
+    .slice(0,q?120:60);
+
+  products.forEach(p=>{
+    choices.push({
+      type:'product',
+      value:p.id,
+      label:'Hàng • '+p.name,
+      kind:'Hàng',
+      meta:(p.id||'')+(p.group?' • '+p.group:'')
+    });
+  });
+
+  return choices;
+}
+
+function renderReportUnifiedFilterList(forceAll=false){
+  const box=$('reportUnifiedFilterList');
+  const input=$('reportUnifiedFilterInput');
+  if(!box || !input)return;
+
+  const text=forceAll?'':input.value;
+  const choices=reportUnifiedFilterChoices(text);
+  reportUnifiedFilterIndex=-1;
+
+  box.innerHTML=choices.map((x,i)=>`
+    <div class="report-unified-filter-item"
+         data-index="${i}"
+         onmousedown="event.preventDefault();chooseReportUnifiedFilter('${x.type}','${esc(x.value)}')">
+      <div><span class="kind">${esc(x.kind)}</span><span class="label">${esc(x.label)}</span></div>
+      ${x.meta?`<div class="meta">${esc(x.meta)}</div>`:''}
+    </div>
+  `).join('');
+
+  box.classList.add('show');
+}
+
+function toggleReportUnifiedFilterList(){
+  const box=$('reportUnifiedFilterList');
+  if(!box)return;
+  if(box.classList.contains('show'))box.classList.remove('show');
+  else renderReportUnifiedFilterList(true);
+}
+
+function chooseReportUnifiedFilter(type,value){
+  if(type==='group'){
+    reportUnifiedFilter={type:'group',value};
+  }else if(type==='product'){
+    reportUnifiedFilter={type:'product',value};
+  }else{
+    reportUnifiedFilter={type:'all',value:''};
+  }
+
+  if($('reportUnifiedFilterInput')){
+    $('reportUnifiedFilterInput').value=reportUnifiedFilterLabel();
+  }
+  $('reportUnifiedFilterList')?.classList.remove('show');
+  reportUnifiedFilterIndex=-1;
+  renderReports();
+}
+
+function reportUnifiedFilterTyping(){
+  const input=$('reportUnifiedFilterInput');
+  if(!input)return;
+
+  if(!String(input.value||'').trim()){
+    reportUnifiedFilter={type:'all',value:''};
+    renderReports();
+  }
+  renderReportUnifiedFilterList(false);
+}
+
+function reportUnifiedFilterKey(e){
+  const box=$('reportUnifiedFilterList');
+  if(!box)return;
+
+  if(e.key==='ArrowDown'){
+    e.preventDefault();
+    if(!box.classList.contains('show'))renderReportUnifiedFilterList(false);
+    const items=[...box.querySelectorAll('.report-unified-filter-item')];
+    if(!items.length)return;
+    reportUnifiedFilterIndex=Math.min(reportUnifiedFilterIndex+1,items.length-1);
+    items.forEach((x,i)=>x.classList.toggle('active',i===reportUnifiedFilterIndex));
+    items[reportUnifiedFilterIndex]?.scrollIntoView({block:'nearest'});
+    return;
+  }
+
+  if(e.key==='ArrowUp'){
+    e.preventDefault();
+    const items=[...box.querySelectorAll('.report-unified-filter-item')];
+    if(!items.length)return;
+    reportUnifiedFilterIndex=Math.max(reportUnifiedFilterIndex-1,0);
+    items.forEach((x,i)=>x.classList.toggle('active',i===reportUnifiedFilterIndex));
+    items[reportUnifiedFilterIndex]?.scrollIntoView({block:'nearest'});
+    return;
+  }
+
+  if(e.key==='Enter'){
+    e.preventDefault();
+    const choices=reportUnifiedFilterChoices($('reportUnifiedFilterInput')?.value||'');
+    if(reportUnifiedFilterIndex>=0 && choices[reportUnifiedFilterIndex]){
+      const x=choices[reportUnifiedFilterIndex];
+      chooseReportUnifiedFilter(x.type,x.value);
+      return;
+    }
+
+    const typed=norm($('reportUnifiedFilterInput')?.value||'');
+    const exact=reportUnifiedFilterChoices('').find(x=>norm(x.label)===typed);
+    if(exact)chooseReportUnifiedFilter(exact.type,exact.value);
+    return;
+  }
+
+  if(e.key==='Escape')box.classList.remove('show');
+}
+
+function reportUnifiedFilterBlur(){
+  setTimeout(()=>{
+    $('reportUnifiedFilterList')?.classList.remove('show');
+    if($('reportUnifiedFilterInput')){
+      $('reportUnifiedFilterInput').value=reportUnifiedFilterLabel();
+    }
+  },120);
+}
+
+function reportFilterMatchesProduct(product){
+  if(!product)return false;
+  if(reportUnifiedFilter.type==='group'){
+    return String(product.group||'')===String(reportUnifiedFilter.value||'');
+  }
+  if(reportUnifiedFilter.type==='product'){
+    return String(product.id||'')===String(reportUnifiedFilter.value||'');
+  }
+  return true;
+}
+
+function reportInvoiceFilteredItems(invoice){
+  return (invoice?.items||[]).filter(i=>{
+    const p=(db.products||[]).find(x=>x.id===i.productId);
+    return reportFilterMatchesProduct(p);
+  });
+}
+
+function reportStockoutRevenueForFilter(invoice){
+  if(reportUnifiedFilter.type==='all')return Number(invoice?.total||0);
+  return reportInvoiceFilteredItems(invoice).reduce((s,i)=>{
+    const q=Number(i.qty)||0;
+    const net=Number(i.net!==undefined?i.net:i.price)||0;
+    return s+q*net;
+  },0);
+}
+
+function reportStockinValueForFilter(invoice){
+  if(reportUnifiedFilter.type==='all')return Number(invoice?.total||0);
+  return reportInvoiceFilteredItems(invoice).reduce((s,i)=>{
+    const q=Number(i.qty)||0;
+    const net=Number(i.net!==undefined?i.net:calcNet(i))||0;
+    return s+q*net;
+  },0);
+}
+
 function reportDateParts(s){
   const m=String(s||'').match(/(\d{2})\/(\d{2})\/(\d{4})/);
   if(!m)return null;
@@ -10742,32 +11155,39 @@ function renderReports(){
   if(!$('reportCards'))return;
 
   ensureReportDateDefaults();
+  applyReportTabUI();
+
+  if($('reportUnifiedFilterInput') && document.activeElement!==$('reportUnifiedFilterInput')){
+    $('reportUnifiedFilterInput').value=reportUnifiedFilterLabel();
+  }
 
   const stockouts=(db.stockout||[]).filter(reportInDateRange);
   const stockins=(db.stockin||[]).filter(reportInDateRange);
+  const filterIsAll=reportUnifiedFilter.type==='all';
 
-  let rev=stockouts.reduce((s,o)=>s+Number(o.total||0),0);
+  let rev=stockouts.reduce((s,o)=>s+reportStockoutRevenueForFilter(o),0);
 
-  let cost=stockouts.reduce((s,o)=>s+(o.items||[]).reduce((a,i)=>{
+  let cost=stockouts.reduce((s,o)=>s+reportInvoiceFilteredItems(o).reduce((a,i)=>{
     const p=(db.products||[]).find(x=>x.id===i.productId);
     return a+(Number(i.qty)||0)*(Number(p?.cost)||0);
   },0),0);
 
-    const expenseTotal=expenseTotalInRange();
-  const netProfit=rev-cost-expenseTotal;
-  const inventoryValue=(db.products||[]).reduce((s,p)=>s+(Number(p.stock)||0)*(Number(p.cost)||0),0);
+  const expenseTotal=expenseTotalInRange();
+  const profit=filterIsAll ? (rev-cost-expenseTotal) : (rev-cost);
+
+  const inventoryValue=(db.products||[])
+    .filter(reportFilterMatchesProduct)
+    .reduce((s,p)=>s+(Number(p.stock)||0)*(Number(p.cost)||0),0);
 
   $('reportCards').innerHTML=[
-    `<div class="card kpi"><div class="label">Doanh thu</div><div class="value">${money(rev)}</div><div class="hint">Theo thời gian đã chọn</div></div>`,
-    `<div class="card kpi"><div class="label">Giá vốn</div><div class="value">${money(cost)}</div><div class="hint">Theo giá vốn hiện tại</div></div>`,
-    `<button type="button" class="card kpi expense-kpi-card" onclick="openExpenseDetail()"><div class="label">Chi phí tổng</div><div class="value">${money(expenseTotal)}</div><div class="hint">Bấm để xem chi tiết</div></button>`,
-    `<div class="card kpi net-profit-card"><div class="label">Lợi nhuận thực</div><div class="value">${money(netProfit)}</div><div class="hint">Doanh thu − Giá vốn − Chi phí</div></div>`,
-    `<div class="card kpi"><div class="label">Giá trị tồn</div><div class="value">${money(inventoryValue)}</div><div class="hint">Kho hiện tại</div></div>`
+    `<div class="card kpi"><div class="label">Doanh thu</div><div class="value">${money(rev)}</div></div>`,
+    `<div class="card kpi"><div class="label">Giá vốn</div><div class="value">${money(cost)}</div></div>`,
+    `<button type="button" class="card kpi expense-kpi-card" onclick="openExpenseDetail()"><div class="label">Chi phí tổng</div><div class="value">${money(expenseTotal)}</div></button>`,
+    `<div class="card kpi net-profit-card"><div class="label">${filterIsAll?'Lợi nhuận thực':'Lợi nhuận gộp'}</div><div class="value">${money(profit)}</div></div>`,
+    `<div class="card kpi"><div class="label">Giá trị tồn</div><div class="value">${money(inventoryValue)}</div></div>`
   ].join('');
 
-  const q=norm($('reportProductSearch')?.value||'');
-
-  let arr=(db.products||[]).map(p=>{
+  let arr=(db.products||[]).filter(reportFilterMatchesProduct).map(p=>{
     let qty=0,revenue=0;
     stockouts.forEach(o=>(o.items||[]).forEach(i=>{
       if(i.productId!==p.id)return;
@@ -10777,7 +11197,6 @@ function renderReports(){
     return {p,qty,revenue};
   })
   .filter(x=>x.qty>0)
-  .filter(x=>!q || norm((x.p.id||'')+' '+(x.p.name||'')+' '+(x.p.group||'')).includes(q))
   .sort((a,b)=>b.revenue-a.revenue);
 
   $('productRevenue').innerHTML=arr.map(x=>`
@@ -10789,8 +11208,12 @@ function renderReports(){
 
   let sup=(db.suppliers||[]).map(s=>({
     s,
-    total:stockins.filter(o=>o.supplierId===s.id).reduce((a,o)=>a+Number(o.total||0),0)
-  })).filter(x=>x.total>0);
+    total:stockins
+      .filter(o=>o.supplierId===s.id)
+      .reduce((a,o)=>a+reportStockinValueForFilter(o),0)
+  }))
+  .filter(x=>x.total>0)
+  .sort((a,b)=>b.total-a.total);
 
   $('supplierPurchases').innerHTML=sup.map(x=>`
     <div class="report-product-row">
@@ -10799,12 +11222,17 @@ function renderReports(){
     </div>
   `).join('')||'<div class="small">Không có dữ liệu trong thời gian đã chọn.</div>';
 
+  const currentFilterLabel=reportUnifiedFilterLabel();
+  if($('reportProductFilterStatus'))$('reportProductFilterStatus').textContent=currentFilterLabel;
+  if($('reportSupplierFilterStatus'))$('reportSupplierFilterStatus').textContent=currentFilterLabel;
+
   if($('reportRangeNote')){
     const f=$('reportFromDate').value;
     const t=$('reportToDate').value;
     const fmt=v=>v?v.split('-').reverse().join('/'):'';
-    $('reportRangeNote').textContent='Báo cáo từ '+fmt(f)+' đến '+fmt(t);
+    $('reportRangeNote').textContent=fmt(f)+' → '+fmt(t);
   }
+
   renderVatReport(stockins,stockouts);
 }
 
@@ -16008,12 +16436,13 @@ function renderVatReport(stockins,stockouts){
   let inVat=0,inNon=0,outVat=0,outNon=0,outLegacy=0;
 
   (stockins||[]).forEach(o=>{
-    if(o.vatType==='vat')inVat+=Number(o.total)||0;
-    else if(o.vatType==='nonvat')inNon+=Number(o.total)||0;
+    const amount=reportStockinValueForFilter(o);
+    if(o.vatType==='vat')inVat+=amount;
+    else if(o.vatType==='nonvat')inNon+=amount;
   });
 
   (stockouts||[]).forEach(o=>{
-    (o.items||[]).forEach(i=>{
+    reportInvoiceFilteredItems(o).forEach(i=>{
       const net=Number(i.net!==undefined?i.net:i.price)||0;
       const q=Number(i.qty)||0;
       if(i.vatQty!==undefined || i.nonVatQty!==undefined || i.legacyQty!==undefined){
@@ -16027,11 +16456,14 @@ function renderVatReport(stockins,stockouts){
   });
 
   let vatQty=0,nonQty=0,legacyQty=0;
-  const rows=(db.products||[]).map(p=>{
-    const b=vatStockSummary(p.id);
-    vatQty+=b.vat;nonQty+=b.nonVat;legacyQty+=b.legacy;
-    return {p,b};
-  }).filter(x=>x.b.total>0 || x.b.vat>0 || x.b.nonVat>0 || x.b.legacy>0);
+  const rows=(db.products||[])
+    .filter(reportFilterMatchesProduct)
+    .map(p=>{
+      const b=vatStockSummary(p.id);
+      vatQty+=b.vat;nonQty+=b.nonVat;legacyQty+=b.legacy;
+      return {p,b};
+    })
+    .filter(x=>x.b.total>0 || x.b.vat>0 || x.b.nonVat>0 || x.b.legacy>0);
 
   box.innerHTML=[
     ['Nhập có HĐ VAT',money(inVat)],
@@ -17509,7 +17941,7 @@ async function saveStockinStable(doPrint=false){
 <script id="pwa-register">
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   window.addEventListener('load', function(){
-    navigator.serviceWorker.register('./sw.js?v=ab123-v113-clean-ui-debt-columns').catch(function(err){ console.warn('Service worker:', err); });
+    navigator.serviceWorker.register('./sw.js?v=ab123-v114-report-tabs-filter').catch(function(err){ console.warn('Service worker:', err); });
   });
 }
 
