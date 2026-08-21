@@ -14,7 +14,7 @@
 <link rel="icon" type="image/png" sizes="64x64" href="./favicon-64.png">
 
 <meta charset="utf-8">
-<meta name="app-version" content="97">
+<meta name="app-version" content="98">
 <title>AN BÙI - Quản lý nội bộ</title>
 <style>
 :root{
@@ -5189,6 +5189,17 @@ input.vnd-dot-input{
 }
 </style>
 
+
+<style id="v98-stock-operation-lock">
+.stock-operation-lock-banner{display:none;margin:0 0 10px;padding:10px 12px;border-radius:10px;border:1px solid #d9e2e8;font-size:13px;line-height:1.45;font-weight:600}
+.stock-operation-lock-banner.show{display:block}
+.stock-operation-lock-banner.mine{background:#eef9f2;border-color:#b8e0c4;color:#176533}
+.stock-operation-lock-banner.other{background:#fff4e8;border-color:#f2c28d;color:#8a4a00}
+.stock-operation-lock-banner.error{background:#fff0f0;border-color:#efb0b0;color:#9a2424}
+.stock-operation-remote-lock{position:relative}
+.stock-operation-remote-lock::after{content:"Đang có thiết bị khác thao tác Nhập/Xuất kho";display:block;margin-top:8px;padding:7px 10px;border-radius:8px;background:#fff4e8;border:1px dashed #e9ad69;color:#8a4a00;font-size:12px;font-weight:700;text-align:center}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -5346,6 +5357,7 @@ input.vnd-dot-input{
                 <input id="siSupplier"
                        autocomplete="off"
                        placeholder="Gõ tên hoặc SĐT NCC..."
+                       onfocus="beginStockOperationFromUI('stockin',this)"
                        oninput="filterSupplierPicker()"
                        onkeydown="supplierPickerKey(event)"
                        onblur="supplierPickerBlur()">
@@ -5432,7 +5444,7 @@ input.vnd-dot-input{
       <div class="info-grid">
         <div class="info-box">
           <h4>Thông tin khách hàng</h4>
-          <div class="formline"><label>Tên khách:</label><input id="soCustomer" list="customerList" autocomplete="off" oninput="stockoutCustomerTyping()" onchange="selectCustomer()" onfocus="this.select()" onclick="this.select()" placeholder="Chọn khách cũ hoặc gõ tên khách mới"><datalist id="customerList"></datalist></div>
+          <div class="formline"><label>Tên khách:</label><input id="soCustomer" list="customerList" autocomplete="off" oninput="stockoutCustomerTyping()" onchange="selectCustomer()" onfocus="beginStockOperationFromUI('stockout',this)" onclick="this.select()" placeholder="Chọn khách cũ hoặc gõ tên khách mới"><datalist id="customerList"></datalist></div>
           <div class="formline"><label>Địa chỉ:</label><input id="soCustomerAddress" oninput="stockoutCustomerContactChanged()" placeholder="Khách mới: nhập địa chỉ"></div>
           <div class="formline"><label>Điện thoại:</label><input id="soCustomerPhone" inputmode="tel" oninput="stockoutCustomerContactChanged()" placeholder="Khách mới: nhập SĐT"></div>
           <div id="soCustomerAlert"></div>
@@ -6082,6 +6094,37 @@ let afterManagerUnlock=null;
 let warrantyDraftItems=[],warrantyPickerIndex=-1,warrantySelectedProductId='';
 let employeeSelfSessionId='';
 
+/* ===== V98: trạng thái khóa thao tác kho nhiều thiết bị ===== */
+const STOCK_LOCK_OWNER_STORAGE='manager_stock_lock_owner_'+APP_ID.toLowerCase();
+let stockOperationOwnerToken='';
+let stockOperationOwned=false;
+let stockOperationMode='';
+let stockOperationAcquirePromise=null;
+let stockOperationHeartbeatTimer=null;
+let stockOperationStatusTimer=null;
+let stockOperationLastBlockedMode='';
+let stockOperationLastConflict=false;
+
+function stockOperationGetOwnerToken(){
+  if(stockOperationOwnerToken)return stockOperationOwnerToken;
+  try{
+    let v=localStorage.getItem(STOCK_LOCK_OWNER_STORAGE)||'';
+    if(!v){
+      if(globalThis.crypto?.randomUUID)v='DEV-'+crypto.randomUUID().replace(/-/g,'');
+      else v='DEV-'+Date.now()+'-'+Math.random().toString(36).slice(2,14);
+      localStorage.setItem(STOCK_LOCK_OWNER_STORAGE,v);
+    }
+    stockOperationOwnerToken=v;
+  }catch(e){
+    stockOperationOwnerToken='DEV-'+Date.now()+'-'+Math.random().toString(36).slice(2,14);
+  }
+  return stockOperationOwnerToken;
+}
+function stockOperationDeviceLabel(){const t=stockOperationGetOwnerToken();return 'Thiết bị '+String(t).slice(-4).toUpperCase()}
+function stockOperationLabel(mode){return mode==='stockin'?'Nhập kho':'Xuất kho'}
+function stockOperationManagedOnline(){return !!APP_CONFIG.syncEnabled}
+
+
 const $=id=>document.getElementById(id);
 const money=n=>new Intl.NumberFormat('vi-VN').format(Math.round(Number(n)||0))+' đ';
 const nowText=()=>{let d=new Date();return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')};
@@ -6282,6 +6325,210 @@ async function remoteSaveState(value){
   return await syncRpc('manager_app_save_state',{p_app_id:APP_ID,p_pin:syncPin,p_data:value});
 }
 
+
+/* ===== V98: KHÓA NHẬP/XUẤT KHO GIỮA NHIỀU MÁY ===== */
+function stockOperationBanner(mode){
+  const page=$(mode); if(!page)return null;
+  const id=mode==='stockin'?'stockinOperationLockBanner':'stockoutOperationLockBanner';
+  let box=$(id);
+  if(!box){
+    box=document.createElement('div'); box.id=id; box.className='stock-operation-lock-banner';
+    const paper=page.querySelector('.paper'); if(paper)page.insertBefore(box,paper); else page.prepend(box);
+  }
+  return box;
+}
+function stockOperationShowBanner(mode,type,text){
+  const box=stockOperationBanner(mode); if(!box)return;
+  if(!text){box.className='stock-operation-lock-banner';box.textContent='';return;}
+  box.className='stock-operation-lock-banner show '+type; box.textContent=text;
+}
+function stockOperationSetBlockedUI(mode,blocked){
+  const page=$(mode); if(!page)return;
+  const viewingHistory=mode==='stockin'?!!stockinViewingHistory:!!(stockoutViewingHistory && !stockoutEditingHistory);
+  if(viewingHistory && blocked)return;
+  const paper=page.querySelector('.paper'); if(!paper)return;
+  paper.classList.toggle('stock-operation-remote-lock',!!blocked);
+  if(blocked){
+    paper.querySelectorAll('input,textarea,select,button').forEach(el=>{
+      const txt=String(el.textContent||'').trim();
+      if(txt==='Phiếu mới' || el.disabled)return;
+      el.dataset.stockOperationDisabled='1'; el.disabled=true;
+    });
+  }else{
+    paper.querySelectorAll('[data-stock-operation-disabled="1"]').forEach(el=>{el.disabled=false;delete el.dataset.stockOperationDisabled;});
+    if(mode==='stockout')setStockoutCustomerEditState(!selectedCustomerId);
+    if(mode==='stockin'){
+      if($('siSupplierAddress'))$('siSupplierAddress').readOnly=true;
+      if($('siSupplierPhone'))$('siSupplierPhone').readOnly=true;
+    }
+    if(typeof applyPermissions==='function')applyPermissions();
+  }
+}
+async function stockOperationStatus(){
+  if(!stockOperationManagedOnline())return {ok:true,locked:false,owned:false};
+  if(!syncPin)throw new Error('Chưa kết nối dữ liệu online');
+  return await syncRpc('manager_app_stock_lock_status',{p_app_id:APP_ID,p_pin:syncPin,p_owner:stockOperationGetOwnerToken()});
+}
+async function refreshStockOperationGate(mode,{announce=false}={}){
+  if(!['stockin','stockout'].includes(mode))return true;
+  if(!stockOperationManagedOnline()){
+    stockOperationSetBlockedUI(mode,false);stockOperationShowBanner(mode,'','');return true;
+  }
+  if(stockOperationOwned){
+    stockOperationSetBlockedUI(mode,false);
+    stockOperationShowBanner(mode,'mine','✓ Thiết bị này đang thao tác '+stockOperationLabel(stockOperationMode)+'. Các máy khác tạm chờ.');
+    return true;
+  }
+  try{
+    const st=await stockOperationStatus();
+    if(st?.locked && !st?.owned){
+      const otherMode=stockOperationLabel(st.operation||'stockout');
+      stockOperationSetBlockedUI(mode,true);
+      stockOperationShowBanner(mode,'other','⏳ Đang có thiết bị khác thao tác '+otherMode+'. Tạm thời chưa thể Nhập/Xuất kho trên máy này.');
+      if(announce && stockOperationLastBlockedMode!==String(st.operation||'')){
+        alert('Đang có thiết bị khác thao tác '+otherMode+'.\n\nMáy này tạm thời không thể tạo Phiếu nhập/Phiếu xuất. Khi thiết bị kia Lưu phiếu hoặc bấm Phiếu mới, hệ thống sẽ tự mở lại.');
+      }
+      stockOperationLastBlockedMode=String(st.operation||'');
+      return false;
+    }
+    stockOperationLastBlockedMode=''; stockOperationSetBlockedUI(mode,false); stockOperationShowBanner(mode,'',''); return true;
+  }catch(err){
+    console.warn('Không kiểm tra được khóa thao tác kho:',err);
+    stockOperationSetBlockedUI(mode,true);
+    stockOperationShowBanner(mode,'error','⚠ Chưa kiểm tra được trạng thái nhiều thiết bị. Tạm khóa Nhập/Xuất để tránh trùng phiếu hoặc sai tồn kho.');
+    if(announce)alert('Chưa kiểm tra được trạng thái Nhập/Xuất trên máy khác.\n\nĐể tránh trùng phiếu và sai tồn kho, hệ thống tạm chưa cho thao tác kho. Kiểm tra Internet rồi thử lại.');
+    return false;
+  }
+}
+function stopStockOperationHeartbeat(){if(stockOperationHeartbeatTimer){clearInterval(stockOperationHeartbeatTimer);stockOperationHeartbeatTimer=null}}
+function startStockOperationHeartbeat(){
+  stopStockOperationHeartbeat();
+  stockOperationHeartbeatTimer=setInterval(async()=>{
+    if(!stockOperationOwned || !stockOperationManagedOnline() || !syncPin)return;
+    try{
+      const hb=await syncRpc('manager_app_stock_lock_heartbeat',{p_app_id:APP_ID,p_pin:syncPin,p_owner:stockOperationGetOwnerToken()});
+      if(!hb?.ok || !hb?.owned){
+        stockOperationOwned=false;stockOperationMode='';stopStockOperationHeartbeat();
+        const active=document.querySelector('.page.active')?.id||'';
+        if(active==='stockin'||active==='stockout')await refreshStockOperationGate(active,{announce:true});
+      }
+    }catch(err){console.warn('Heartbeat khóa kho lỗi:',err)}
+  },30000);
+}
+async function ensureStockOperationLock(mode,{silent=false}={}){
+  if(!['stockin','stockout'].includes(mode))return true;
+  if(!stockOperationManagedOnline())return true;
+  if(!syncPin){
+    stockOperationSetBlockedUI(mode,true);stockOperationShowBanner(mode,'error','⚠ Chưa kết nối Online nên tạm chưa thể Nhập/Xuất kho.');
+    if(!silent)alert('App chưa kết nối dữ liệu Online. Tạm thời chưa thể Nhập/Xuất để tránh trùng dữ liệu giữa các máy.');
+    return false;
+  }
+  if(stockOperationOwned && stockOperationMode===mode)return true;
+  if(stockOperationAcquirePromise)return await stockOperationAcquirePromise;
+  stockOperationAcquirePromise=(async()=>{
+    try{
+      const res=await syncRpc('manager_app_stock_lock_acquire',{p_app_id:APP_ID,p_pin:syncPin,p_owner:stockOperationGetOwnerToken(),p_operation:mode,p_device_label:stockOperationDeviceLabel()});
+      if(res?.ok && res?.owned){
+        stockOperationOwned=true;stockOperationMode=mode;stockOperationLastBlockedMode='';
+        stockOperationSetBlockedUI('stockin',false);stockOperationSetBlockedUI('stockout',false);
+        stockOperationShowBanner(mode,'mine','✓ Thiết bị này đang thao tác '+stockOperationLabel(mode)+'. Các máy khác tạm chờ.');
+        startStockOperationHeartbeat();return true;
+      }
+      stockOperationOwned=false;stockOperationMode='';
+      const otherMode=stockOperationLabel(res?.operation||'stockout');
+      stockOperationSetBlockedUI(mode,true);stockOperationShowBanner(mode,'other','⏳ Đang có thiết bị khác thao tác '+otherMode+'. Vui lòng chờ thiết bị đó hoàn tất.');
+      if(!silent)alert('Đang có thiết bị khác thao tác '+otherMode+'.\n\nMáy này chưa thể tạo Phiếu nhập/Phiếu xuất. Hệ thống sẽ tự mở lại khi thiết bị kia hoàn tất.');
+      return false;
+    }catch(err){
+      console.error('Không lấy được khóa thao tác kho:',err);
+      stockOperationOwned=false;stockOperationMode='';stockOperationSetBlockedUI(mode,true);
+      stockOperationShowBanner(mode,'error','⚠ Không kết nối được khóa nhiều thiết bị. Tạm khóa Nhập/Xuất để bảo vệ dữ liệu.');
+      if(!silent)alert('Không kết nối được hệ thống khóa Nhập/Xuất.\n\nĐể tránh trùng phiếu hoặc sai tồn kho, hệ thống tạm chưa cho thao tác kho.');
+      return false;
+    }finally{stockOperationAcquirePromise=null}
+  })();
+  return await stockOperationAcquirePromise;
+}
+async function beginStockOperationFromUI(mode,el=null){
+  if(el){el.dataset.stockOperationPending='1';el.readOnly=true;}
+  const ok=await ensureStockOperationLock(mode);
+  if(el){delete el.dataset.stockOperationPending;if(ok){el.disabled=false;el.readOnly=false;setTimeout(()=>{try{el.focus();el.select()}catch(e){}},0)}}
+  if(ok)await stockOperationRefreshBase(mode,{quiet:true});
+  return ok;
+}
+async function releaseStockOperationLock(mode,{silent=true}={}){
+  if(!stockOperationOwned || (mode && stockOperationMode && stockOperationMode!==mode))return true;
+  const releasingMode=stockOperationMode||mode||'';
+  stockOperationOwned=false;stockOperationMode='';stopStockOperationHeartbeat();
+  if(!stockOperationManagedOnline() || !syncPin){stockOperationSetBlockedUI('stockin',false);stockOperationSetBlockedUI('stockout',false);return true;}
+  try{await syncRpc('manager_app_stock_lock_release',{p_app_id:APP_ID,p_pin:syncPin,p_owner:stockOperationGetOwnerToken()})}
+  catch(err){console.warn('Chưa mở khóa kho ngay được; khóa sẽ tự hết hạn:',err);if(!silent)toast('Khóa kho sẽ tự mở sau ít phút')}
+  stockOperationShowBanner(releasingMode,'','');stockOperationSetBlockedUI('stockin',false);stockOperationSetBlockedUI('stockout',false);return true;
+}
+function startStockOperationStatusPolling(){
+  if(stockOperationStatusTimer)clearInterval(stockOperationStatusTimer);
+  stockOperationStatusTimer=setInterval(()=>{
+    if(document.hidden || stockOperationOwned)return;
+    const active=document.querySelector('.page.active')?.id||'';
+    if(active==='stockin'||active==='stockout')refreshStockOperationGate(active,{announce:false});
+  },3000);
+}
+async function stockOperationRefreshBase(mode,{quiet=false}={}){
+  if(!stockOperationManagedOnline())return true;
+  if(!syncPin)return false;
+  try{
+    const remote=await remoteGetState();const remoteData=remote?.data||{};
+    if(remoteData && Object.keys(remoteData).length){
+      db=remoteData;syncRevision=Number(remote?.revision||0);normalizeDB();ensureSecuritySettings();
+      syncApplyingRemote=true;try{await idbWrite(db)}finally{syncApplyingRemote=false}
+      refreshLists();
+      if(mode==='stockin' && !stockinViewingHistory){
+        const id=String($('siNo')?.textContent||'').trim();if(id && (db.stockin||[]).some(x=>String(x.id)===id))$('siNo').textContent=code('PN');recalcSI();
+      }
+      if(mode==='stockout' && !stockoutViewingHistory){
+        const id=String($('soNo')?.textContent||'').trim();if(id && (db.stockout||[]).some(x=>String(x.id)===id))$('soNo').textContent=code('PXH');recalcSO();renderCustomerWarranty();
+      }
+    }
+    syncStatus('☁ Online','online');return true;
+  }catch(err){
+    console.error('Không cập nhật được dữ liệu mới nhất trước khi thao tác kho:',err);
+    if(!quiet)alert('Chưa lấy được dữ liệu mới nhất từ hệ thống.\n\nTạm chưa thể lưu Nhập/Xuất để tránh ghi đè dữ liệu máy khác.');
+    return false;
+  }
+}
+async function saveStockOperationAtomic(expectedRevision){
+  stockOperationLastConflict=false;
+  const wasBusy=syncBusy;
+  syncBusy=true;
+  const snapshot=JSON.parse(JSON.stringify(db));
+  try{
+    await idbWrite(snapshot);try{localStorage.removeItem(KEY)}catch(e){}
+    if(!stockOperationManagedOnline())return {ok:true,conflict:false};
+    if(!syncPin)return {ok:false,conflict:false,error:new Error('Chưa kết nối Online')};
+    syncStatus('↻ Đang lưu an toàn','syncing');
+    const res=await syncRpc('manager_app_save_state_if_revision',{p_app_id:APP_ID,p_pin:syncPin,p_expected_revision:Number(expectedRevision||0),p_data:snapshot});
+    if(res?.ok){syncRevision=Number(res.revision||syncRevision);syncStatus('☁ Online','online');return {ok:true,conflict:false}}
+    if(res?.conflict){
+      stockOperationLastConflict=true;const remote=await remoteGetState();
+      return {ok:false,conflict:true,latest:remote?.data||null,revision:Number(remote?.revision||res?.revision||0)};
+    }
+    return {ok:false,conflict:false};
+  }catch(err){
+    console.error('Lưu kho an toàn thất bại:',err);syncStatus('⚠ Chưa đồng bộ','offline');return {ok:false,conflict:false,error:err};
+  }finally{
+    syncBusy=wasBusy;
+  }
+}
+async function recoverStockOperationSaveFailure(result,beforeJson){
+  if(result?.conflict && result?.latest && typeof result.latest==='object'){
+    db=result.latest;syncRevision=Number(result.revision||syncRevision);normalizeDB();ensureSecuritySettings();try{await idbWrite(db)}catch(e){}renderAll();
+    alert('Dữ liệu vừa thay đổi trên một thiết bị khác.\n\nHệ thống đã tải dữ liệu mới nhất và KHÔNG ghi đè. Vui lòng kiểm tra lại phiếu rồi bấm Lưu lại.');return;
+  }
+  try{db=JSON.parse(beforeJson);normalizeDB();ensureSecuritySettings();await idbWrite(db)}catch(e){}renderAll();
+  alert('Phiếu chưa được lưu lên hệ thống Online. Dữ liệu kho đã được hoàn tác để tránh sai tồn.');
+}
+
+
 async function syncBootstrap(){
   syncPin=requestSyncPin();
   if(!syncPin){
@@ -6342,7 +6589,8 @@ async function syncPoll(){
 function startSyncPolling(){
   if(syncPollTimer)clearInterval(syncPollTimer);
   syncPollTimer=setInterval(syncPoll,2500);
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncPoll();});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden){syncPoll();const active=document.querySelector('.page.active')?.id||'';if(active==='stockin'||active==='stockout')refreshStockOperationGate(active,{announce:false});}});
+  startStockOperationStatusPolling();
 }
 
 async function openSyncSetup(){
@@ -7906,8 +8154,12 @@ function go(id){
   applyPermissions();
   refreshStockoutHistoryNav();
   refreshStockinHistoryNav();
-  if(id==='stockout')initStockoutHistoryNav();
+  if(id==='stockout'){
+    initStockoutHistoryNav();
+    setTimeout(()=>refreshStockOperationGate('stockout',{announce:true}),0);
+  }
   if(id==='stockin'){
+    setTimeout(()=>refreshStockOperationGate('stockin',{announce:true}),0);
     if(!isManager){
       if(staffModuleEnabled('stockin'))newStockin();
     }else{
@@ -12013,7 +12265,8 @@ function renderSupplierPicker(forceAll=false){
   box.classList.add('show');
 }
 
-function toggleSupplierPicker(){
+async function toggleSupplierPicker(){
+  if(!(await ensureStockOperationLock('stockin')))return;
   const box=$('supplierPickerList');
   if(!box)return;
   if(box.classList.contains('show')){
@@ -12024,6 +12277,7 @@ function toggleSupplierPicker(){
 }
 
 function filterSupplierPicker(){
+  if(stockOperationManagedOnline() && !stockOperationOwned)return;
   selectedSupplierId='';
   $('siSupplierAddress').value='';
   $('siSupplierPhone').value='';
@@ -12231,8 +12485,9 @@ async function confirmCreateSupplierFromStockin(){
 let pendingStockinProductRow=-1;
 let pendingStockinProductName='';
 
-function openQuickSupplierFromStockin(prefill=''){
+async function openQuickSupplierFromStockin(prefill=''){
   if(!isManager)return requireManager(()=>openQuickSupplierFromStockin(prefill),'Tạo Nhà cung cấp cần quyền Quản lý.');
+  if(!(await ensureStockOperationLock('stockin')))return;
   const typed=String(prefill||$('siSupplier')?.value||'').trim();
   $('supplierPickerList')?.classList.remove('show');
   showModal(`
@@ -12449,6 +12704,7 @@ function setStockoutCustomerEditState(isNew){
   });
 }
 function stockoutCustomerTyping(){
+  if(stockOperationManagedOnline() && !stockOperationOwned)return;
   const raw=$('soCustomer')?.value||'';
   const exact=stockoutCustomerExact(raw);
   if(exact){
@@ -12541,7 +12797,7 @@ async function ensureStockoutCustomerBeforeSave(){
   db.customers.push(customer);
   selectedCustomerId=customer.id;
 
-  const ok=await saveDB();
+  const ok=stockOperationOwned ? true : await saveDB();
   if(ok!==true){
     db.customers=db.customers.filter(c=>c.id!==customer.id);
     selectedCustomerId='';
@@ -12580,6 +12836,7 @@ function rememberInvoiceContent(mode){
 }
 
 function newStockin(){
+  if(stockOperationOwned && stockOperationMode==='stockin')releaseStockOperationLock('stockin',{silent:true});
   selectedSupplierId='';
   siRows=[];
   stockinViewingHistory=false;
@@ -12617,6 +12874,7 @@ function newStockin(){
   updateStockinHistoryControls();
 }
 function newStockout(){
+  if(stockOperationOwned && stockOperationMode==='stockout')releaseStockOperationLock('stockout',{silent:true});
   selectedCustomerId='';
   selectedWarrantyIds=[];
   soRows=[];
@@ -13614,17 +13872,24 @@ function printInvoicePreview(){
 
 async function saveStockout(doPrint=false){
   const editing=stockoutViewingHistory && stockoutEditingHistory;
-  const currentId=$('soNo')?.textContent?.trim()||'';
-  const originalIndex=editing?(db.stockout||[]).findIndex(o=>o.id===currentId):-1;
-  const original=originalIndex>=0?db.stockout[originalIndex]:null;
 
   if(stockoutViewingHistory && !editing){
     return alert('Phiếu đã khóa. Bấm Sửa nếu muốn thay đổi nội dung phiếu.');
   }
+
+  if(!(await ensureStockOperationLock('stockout')))return false;
+  if(!(await stockOperationRefreshBase('stockout')))return false;
+
+  const currentId=$('soNo')?.textContent?.trim()||'';
+  const originalIndex=editing?(db.stockout||[]).findIndex(o=>o.id===currentId):-1;
+  const original=originalIndex>=0?db.stockout[originalIndex]:null;
+
   if(editing && !original){
     return alert('Không tìm thấy phiếu gốc để cập nhật.');
   }
   if(!await ensureStockoutCustomerBeforeSave())return false;
+
+  const expectedStockRevision=Number(syncRevision||0);
 
   let validRows=compactRows(soRows);
   let warrantyRows=editing
@@ -13780,10 +14045,9 @@ async function saveStockout(doPrint=false){
     });
   }
 
-  const saved=await saveDB();
-  if(!saved){
-    db=JSON.parse(beforeSave);
-    renderAll();
+  const stockSaveResult=await saveStockOperationAtomic(expectedStockRevision);
+  if(!stockSaveResult?.ok){
+    await recoverStockOperationSaveFailure(stockSaveResult,beforeSave);
     return false;
   }
 
@@ -15436,6 +15700,9 @@ async function saveStockinStable(doPrint=false){
       return false;
     }
 
+    if(!(await ensureStockOperationLock('stockin')))return false;
+    if(!(await stockOperationRefreshBase('stockin')))return false;
+
     if(saveBtn)saveBtn.disabled=true;
     if(printBtn)printBtn.disabled=true;
     if($('siSaveStatus')){
@@ -15526,7 +15793,8 @@ async function saveStockinStable(doPrint=false){
       ...stockinVatSnapshot(total)
     };
 
-    /* 4. Chụp dữ liệu để có thể hoàn tác */
+    /* 4. Chụp dữ liệu để có thể hoàn tác + khóa phiên bản Online. */
+    const expectedStockRevision=Number(syncRevision||0);
     const before=JSON.stringify(db);
 
     applyStaffSalesToProducts(validRows);
@@ -15551,11 +15819,10 @@ async function saveStockinStable(doPrint=false){
 
     db.stockin.push(savedInvoice);
 
-    /* 6. LƯU THỰC SỰ. Chỉ khi saveDB trả true mới báo thành công */
-    const ok=await saveDB();
-    if(ok!==true){
-      db=JSON.parse(before);
-      alert('Phiếu nhập chưa lưu được. Dữ liệu đã được hoàn tác.');
+    /* 6. LƯU AN TOÀN THEO REVISION. Không cho máy này ghi đè dữ liệu máy khác. */
+    const stockSaveResult=await saveStockOperationAtomic(expectedStockRevision);
+    if(!stockSaveResult?.ok){
+      await recoverStockOperationSaveFailure(stockSaveResult,before);
       return false;
     }
 
@@ -15628,7 +15895,7 @@ async function saveStockinStable(doPrint=false){
 <script id="pwa-register">
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   window.addEventListener('load', function(){
-    navigator.serviceWorker.register('./sw.js?v=ab123-sidebar-2').catch(function(err){ console.warn('Service worker:', err); });
+    navigator.serviceWorker.register('./sw.js?v=ab123-v98-stock-lock').catch(function(err){ console.warn('Service worker:', err); });
   });
 }
 
