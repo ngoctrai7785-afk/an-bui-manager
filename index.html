@@ -14,7 +14,7 @@
 <link rel="icon" type="image/png" sizes="64x64" href="./favicon-64.png">
 
 <meta charset="utf-8">
-<meta name="app-version" content="109">
+<meta name="app-version" content="110">
 <title>AN BÙI - Quản lý nội bộ</title>
 <style>
 :root{
@@ -5527,6 +5527,126 @@ input.vnd-dot-input{
 }
 </style>
 
+
+<style id="v110-debt-period-sold-column">
+/* ===== V110: ĐÃ XUẤT + CÔNG NỢ THEO KỲ ===== */
+#warehouseTable th[data-sold-col],
+#warehouseTable td.warehouse-sold-qty{
+  width:86px!important;
+  min-width:86px!important;
+  max-width:86px!important;
+  text-align:center!important;
+  white-space:nowrap!important;
+  font-variant-numeric:tabular-nums;
+}
+#warehouseTable th[data-sold-col]{background:#f5f8fa!important}
+
+#customerDebtCard{grid-column:1/-1}
+.customer-debt-period-toolbar{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:end;
+  gap:8px;
+  margin:10px 0 8px;
+  padding:10px;
+  border:1px solid #dbe5e9;
+  border-radius:10px;
+  background:#f8fbfc;
+}
+.customer-debt-period-toolbar label{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  min-width:145px;
+  font-size:11.5px;
+  color:#647881;
+}
+.customer-debt-period-toolbar input{
+  height:36px;
+  min-width:145px;
+}
+.customer-debt-period-presets{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+.customer-debt-period-presets .btn{
+  min-height:36px;
+  padding:7px 10px;
+}
+.customer-debt-period-note{
+  margin:6px 0 10px;
+  font-size:11.5px;
+  color:#667a82;
+}
+.customer-debt-period-note b{color:#29434e}
+#customerDebtTable table{min-width:820px}
+#customerDebtTable th,
+#customerDebtTable td{vertical-align:middle}
+.customer-debt-name{
+  border:0;
+  background:none;
+  padding:0;
+  color:#155f73;
+  font:inherit;
+  font-weight:800;
+  cursor:pointer;
+  text-align:left;
+}
+.customer-debt-name:hover{text-decoration:underline}
+.customer-debt-phone{
+  display:block;
+  margin-top:2px;
+  font-size:10.5px;
+  color:#7a8a91;
+}
+.customer-debt-zero{color:#718087;font-weight:700}
+.customer-debt-positive{color:#b4472f;font-weight:800}
+
+.customer-debt-detail-modal{min-width:min(900px,92vw)}
+.customer-debt-detail-summary{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:8px;
+  margin:10px 0;
+}
+.customer-debt-detail-summary > div{
+  border:1px solid #dfe7eb;
+  border-radius:9px;
+  background:#f8fbfc;
+  padding:9px 10px;
+}
+.customer-debt-detail-summary span{
+  display:block;
+  font-size:11px;
+  color:#6e7f87;
+  margin-bottom:3px;
+}
+.customer-debt-detail-summary b{font-size:14px}
+.customer-debt-detail-auto{
+  margin:8px 0;
+  padding:8px 10px;
+  border-radius:8px;
+  background:#fff8e7;
+  border:1px solid #ecd79c;
+  color:#72580d;
+  font-size:11.5px;
+}
+.customer-debt-detail-table .table-wrap{
+  max-height:50vh;
+}
+.customer-debt-detail-table table{
+  min-width:760px;
+}
+@media(max-width:760px){
+  .customer-debt-detail-summary{grid-template-columns:1fr 1fr}
+  .customer-debt-period-toolbar{align-items:stretch}
+  .customer-debt-period-toolbar label,
+  .customer-debt-period-toolbar input{min-width:0;width:100%}
+  .customer-debt-period-presets{width:100%}
+}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -5895,6 +6015,23 @@ input.vnd-dot-input{
           </div>
         </div>
         <div class="hint manager-hidden" data-manager-only="1" style="margin:5px 0 9px">Cài số phiếu xuất gần nhất hiển thị ở Tổng quan Nhân viên.</div>
+
+        <div class="customer-debt-period-toolbar">
+          <label>Từ ngày
+            <input id="customerDebtFrom" type="date" onchange="renderDebts()">
+          </label>
+          <label>Đến ngày
+            <input id="customerDebtTo" type="date" onchange="renderDebts()">
+          </label>
+          <div class="customer-debt-period-presets">
+            <button class="btn" type="button" onclick="setCustomerDebtPeriod('today')">Hôm nay</button>
+            <button class="btn" type="button" onclick="setCustomerDebtPeriod('month')">Tháng này</button>
+            <button class="btn" type="button" onclick="setCustomerDebtPeriod('prevmonth')">Tháng trước</button>
+            <button class="btn" type="button" onclick="setCustomerDebtPeriod('year')">Năm nay</button>
+          </div>
+        </div>
+        <div id="customerDebtPeriodText" class="customer-debt-period-note"></div>
+        <div class="customer-debt-period-note">Bấm vào <b>tên khách hàng</b> để xem sổ chi tiết. Trả hàng/BH không có cột riêng; hệ thống tự trừ vào Nợ cuối kỳ.</div>
         <div id="customerDebtTable"></div>
       </div>
       <div id="supplierDebtCard" class="card"><h3>Công nợ nhà cung cấp</h3><div id="supplierDebtTable"></div></div>
@@ -9438,6 +9575,14 @@ function warehouseProductBlur(){
   setTimeout(()=>$('warehouseProductList')?.classList.remove('show'),120);
 }
 
+
+function productTotalExportedQty(productId){
+  return (db.stockout||[]).reduce((sum,o=>
+    sum+(o.items||[]).reduce((s,r)=>
+      s+(r.productId===productId?(Number(r.qty)||0):0),0)
+  ),0);
+}
+
 function renderWarehouse(){
   if(!$('warehouseTable'))return;
 
@@ -9503,6 +9648,7 @@ function renderWarehouse(){
       <td class="center">${esc(p.unit||'')}</td>
       <td class="right"><b>${money(p.salePrice!==undefined?p.salePrice:(p.price||0))}</b></td>
       <td class="center"><span class="stock-qty ${qtyClass}">${Number(p.stock||0)}</span></td>
+      <td class="warehouse-sold-qty"><b>${new Intl.NumberFormat('vi-VN').format(productTotalExportedQty(p.id))}</b></td>
       <td class="center">${Number(p.min||0)}</td>
       <td class="center">${statusHtml}</td>
       <td class="center"><div class="warehouse-row-actions">${editBtn}<button class="btn" onclick="openProductMovement('${p.id}')">Lịch sử</button></div></td>
@@ -9510,9 +9656,12 @@ function renderWarehouse(){
   });
 
   $('warehouseTable').innerHTML=table(
-    ['Mã','Tên hàng','Nhóm','ĐVT','Giá bán','Tồn hiện tại','Tồn tối thiểu','Trạng thái','Chức năng'],
+    ['Mã','Tên hàng','Nhóm','ĐVT','Giá bán','Tồn hiện tại','Đã xuất','Tồn tối thiểu','Trạng thái','Chức năng'],
     rows
   );
+
+  const soldTh=$('warehouseTable')?.querySelector('thead th:nth-child(7)');
+  if(soldTh)soldTh.dataset.soldCol='1';
   applyWarehouseVatColumns(list);
 }
 function productMovementRows(productId){
@@ -9735,13 +9884,297 @@ function renderWarranty(){
     })
   );
 }
+
+/* ===== V110: CÔNG NỢ KHÁCH HÀNG THEO KỲ ===== */
+function debtInputDate(d){
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function debtDateFromInput(v,endOfDay=false){
+  const m=String(v||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(!m)return 0;
+  return new Date(
+    Number(m[1]),Number(m[2])-1,Number(m[3]),
+    endOfDay?23:0,endOfDay?59:0,endOfDay?59:0,endOfDay?999:0
+  ).getTime();
+}
+
+function debtDisplayDate(v){
+  const m=String(v||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m?`${m[3]}/${m[2]}/${m[1]}`:'';
+}
+
+function ensureCustomerDebtPeriodDefaults(){
+  const from=$('customerDebtFrom');
+  const to=$('customerDebtTo');
+  if(!from || !to)return;
+
+  if(!from.value || !to.value){
+    const now=new Date();
+    const first=new Date(now.getFullYear(),now.getMonth(),1);
+    if(!from.value)from.value=debtInputDate(first);
+    if(!to.value)to.value=debtInputDate(now);
+  }
+}
+
+function setCustomerDebtPeriod(preset){
+  const from=$('customerDebtFrom');
+  const to=$('customerDebtTo');
+  if(!from || !to)return;
+
+  const now=new Date();
+  let a=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  let b=new Date(a);
+
+  if(preset==='month'){
+    a=new Date(now.getFullYear(),now.getMonth(),1);
+  }else if(preset==='prevmonth'){
+    a=new Date(now.getFullYear(),now.getMonth()-1,1);
+    b=new Date(now.getFullYear(),now.getMonth(),0);
+  }else if(preset==='year'){
+    a=new Date(now.getFullYear(),0,1);
+  }
+
+  from.value=debtInputDate(a);
+  to.value=debtInputDate(b);
+  renderDebts();
+}
+
+function customerDebtPeriodBounds(){
+  ensureCustomerDebtPeriodDefaults();
+  const from=$('customerDebtFrom');
+  const to=$('customerDebtTo');
+  let fromValue=from?.value||'';
+  let toValue=to?.value||'';
+  let start=debtDateFromInput(fromValue,false);
+  let end=debtDateFromInput(toValue,true);
+
+  if(start && end && start>end){
+    const oldFrom=fromValue;
+    fromValue=toValue;
+    toValue=oldFrom;
+    if(from)from.value=fromValue;
+    if(to)to.value=toValue;
+    start=debtDateFromInput(fromValue,false);
+    end=debtDateFromInput(toValue,true);
+  }
+
+  return {start,end,fromValue,toValue};
+}
+
+function customerDebtPaymentTime(p){
+  return Number(p?.ts||0) || stockoutDateTimeValue(p?.dateText||'');
+}
+
+function customerDebtOpeningRaw(customerId,startTs){
+  const c=(db.customers||[]).find(x=>x.id===customerId);
+  let raw=Number(c?.oldDebt||0);
+
+  (db.stockout||[]).forEach(o=>{
+    if(o.customerId!==customerId)return;
+    const t=stockoutDateTimeValue(o.dateText);
+    if(t && t<startTs)raw+=Number(o.debt||0);
+  });
+
+  (db.customerPayments||[]).forEach(p=>{
+    if(p.customerId!==customerId)return;
+    const t=customerDebtPaymentTime(p);
+    if(t && t<startTs)raw-=Number(p.amount||0);
+  });
+
+  return raw;
+}
+
+function customerDebtPeriodSummary(customerId,bounds=customerDebtPeriodBounds()){
+  const start=Number(bounds.start||0);
+  const end=Number(bounds.end||Number.MAX_SAFE_INTEGER);
+  const openingRaw=customerDebtOpeningRaw(customerId,start);
+
+  let incurred=0;
+  let paid=0;
+  let autoReduction=0;
+
+  (db.stockout||[]).forEach(o=>{
+    if(o.customerId!==customerId)return;
+    const t=stockoutDateTimeValue(o.dateText);
+    if(!t || t<start || t>end)return;
+
+    const delta=Number(o.debt||0);
+    if(delta>0)incurred+=delta;
+    else if(delta<0)paid+=Math.abs(delta);
+  });
+
+  (db.customerPayments||[]).forEach(p=>{
+    if(p.customerId!==customerId)return;
+    const t=customerDebtPaymentTime(p);
+    if(!t || t<start || t>end)return;
+
+    const amount=Math.max(0,Number(p.amount||0));
+    if(p.transactionType==='warranty_return')autoReduction+=amount;
+    else paid+=amount;
+  });
+
+  const endingRaw=openingRaw+incurred-paid-autoReduction;
+
+  return {
+    openingRaw,
+    opening:Math.max(0,openingRaw),
+    incurred,
+    paid,
+    autoReduction,
+    endingRaw,
+    ending:Math.max(0,endingRaw)
+  };
+}
+
+function customerDebtPeriodTransactions(customerId,bounds=customerDebtPeriodBounds()){
+  const rows=[];
+
+  (db.stockout||[]).forEach(o=>{
+    if(o.customerId!==customerId)return;
+    const t=stockoutDateTimeValue(o.dateText);
+    if(!t || t<bounds.start || t>bounds.end)return;
+    const delta=Number(o.debt||0);
+
+    if(delta>0){
+      rows.push({
+        t,
+        dateText:o.dateText||'',
+        ref:o.id||'',
+        content:o.content||'Phiếu xuất hàng',
+        debit:delta,
+        credit:0,
+        auto:false
+      });
+    }else if(delta<0){
+      rows.push({
+        t,
+        dateText:o.dateText||'',
+        ref:o.id||'',
+        content:'Khách thanh toán thêm tại Phiếu xuất',
+        debit:0,
+        credit:Math.abs(delta),
+        auto:false
+      });
+    }
+  });
+
+  (db.customerPayments||[]).forEach(p=>{
+    if(p.customerId!==customerId)return;
+    const t=customerDebtPaymentTime(p);
+    if(!t || t<bounds.start || t>bounds.end)return;
+
+    const isReturn=p.transactionType==='warranty_return';
+    rows.push({
+      t,
+      dateText:p.dateText||'',
+      ref:p.id||'',
+      content:isReturn
+        ? (p.content||'Giảm công nợ tự động do trả hàng/BH')
+        : 'Khách hàng thanh toán',
+      debit:0,
+      credit:Math.max(0,Number(p.amount||0)),
+      auto:isReturn
+    });
+  });
+
+  return rows.sort((a,b)=>a.t-b.t || String(a.ref).localeCompare(String(b.ref)));
+}
+
+function openCustomerDebtDetail(customerId){
+  const c=(db.customers||[]).find(x=>x.id===customerId);
+  if(!c)return;
+
+  const bounds=customerDebtPeriodBounds();
+  const s=customerDebtPeriodSummary(customerId,bounds);
+  const tx=customerDebtPeriodTransactions(customerId,bounds);
+
+  let runningRaw=s.openingRaw;
+  const rows=tx.map(x=>{
+    runningRaw+=Number(x.debit||0)-Number(x.credit||0);
+    return `<tr>
+      <td>${esc(x.dateText||'')}</td>
+      <td><b>${esc(x.ref||'')}</b></td>
+      <td>${esc(x.content||'')}${x.auto?'<div class="small">Tự động trừ công nợ từ nghiệp vụ trả hàng/BH</div>':''}</td>
+      <td class="right">${x.debit?`<b>${money(x.debit)}</b>`:''}</td>
+      <td class="right">${x.credit?`<b>${money(x.credit)}</b>`:''}</td>
+      <td class="right"><b>${money(Math.max(0,runningRaw))}</b></td>
+    </tr>`;
+  });
+
+  showModal(`<div class="customer-debt-detail-modal">
+    <h3 style="margin:0">Sổ công nợ • ${esc(c.name||'')}</h3>
+    <div class="small" style="margin-top:4px">
+      ${esc(c.phone||'')} • Kỳ ${debtDisplayDate(bounds.fromValue)} → ${debtDisplayDate(bounds.toValue)}
+    </div>
+
+    <div class="customer-debt-detail-summary">
+      <div><span>Nợ đầu kỳ</span><b>${money(s.opening)}</b></div>
+      <div><span>Phát sinh trong kỳ</span><b>${money(s.incurred)}</b></div>
+      <div><span>Đã thanh toán</span><b>${money(s.paid)}</b></div>
+      <div><span>Nợ cuối kỳ</span><b>${money(s.ending)}</b></div>
+    </div>
+
+    ${s.autoReduction>0
+      ? `<div class="customer-debt-detail-auto">Nợ cuối kỳ đã tự trừ <b>${money(s.autoReduction)}</b> từ nghiệp vụ trả hàng/BH. Khoản này không tạo cột riêng trên bảng tổng hợp.</div>`
+      : ''}
+
+    <div class="customer-debt-detail-table">
+      ${table(
+        ['Ngày giờ','Chứng từ','Nội dung','Phát sinh nợ','Thanh toán / Giảm nợ','Dư nợ'],
+        rows
+      )}
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Đóng</button>
+    </div>
+  </div>`);
+}
+
 function renderDebts(){
   ensureExpenseData();
+  ensurePaymentData();
+
   if($('recentOutLimit'))$('recentOutLimit').value=String(db.settings?.recentOutLimit||20);
-  $('customerDebtTable').innerHTML=table(['Khách hàng','Còn nợ'],db.customers.filter(c=>customerDebt(c.id)>0).map(c=>`<tr><td>${c.name}</td><td class="right"><b>${money(customerDebt(c.id))}</b></td></tr>`));
+
+  ensureCustomerDebtPeriodDefaults();
+  const bounds=customerDebtPeriodBounds();
+
+  const customerRows=(db.customers||[])
+    .map(c=>({c,s:customerDebtPeriodSummary(c.id,bounds)}))
+    .sort((a,b)=>b.s.ending-a.s.ending || String(a.c.name||'').localeCompare(String(b.c.name||''),'vi'))
+    .map(({c,s})=>`<tr>
+      <td>
+        <button class="customer-debt-name" onclick="openCustomerDebtDetail('${esc(c.id)}')">${esc(c.name||'')}</button>
+        <span class="customer-debt-phone">${esc(c.phone||'')}</span>
+      </td>
+      <td class="right"><b>${money(s.opening)}</b></td>
+      <td class="right"><b>${money(s.incurred)}</b></td>
+      <td class="right"><b>${money(s.paid)}</b></td>
+      <td class="right"><span class="${s.ending>0?'customer-debt-positive':'customer-debt-zero'}">${money(s.ending)}</span></td>
+    </tr>`);
+
+  $('customerDebtTable').innerHTML=table(
+    ['Khách hàng','Nợ đầu kỳ','Phát sinh trong kỳ','Đã thanh toán','Nợ cuối kỳ'],
+    customerRows
+  );
+
+  if($('customerDebtPeriodText')){
+    const autoTotal=(db.customers||[]).reduce((sum,c)=>sum+customerDebtPeriodSummary(c.id,bounds).autoReduction,0);
+    $('customerDebtPeriodText').innerHTML=
+      `Kỳ <b>${debtDisplayDate(bounds.fromValue)}</b> → <b>${debtDisplayDate(bounds.toValue)}</b> • `+
+      `Hiển thị <b>${(db.customers||[]).length}</b> khách hàng, kể cả công nợ bằng 0.`+
+      (autoTotal>0?` • Nợ cuối kỳ đã tự trừ <b>${money(autoTotal)}</b> từ trả hàng/BH.`:'');
+  }
 
   if(isManager){
-    $('supplierDebtTable').innerHTML=table(['Nhà cung cấp','Còn nợ'],db.suppliers.filter(s=>supplierDebt(s.id)>0).map(s=>`<tr><td>${s.name}</td><td class="right"><b>${money(supplierDebt(s.id))}</b></td></tr>`));
+    $('supplierDebtTable').innerHTML=table(
+      ['Nhà cung cấp','Còn nợ'],
+      db.suppliers.filter(s=>supplierDebt(s.id)>0).map(s=>
+        `<tr><td>${esc(s.name)}</td><td class="right"><b>${money(supplierDebt(s.id))}</b></td></tr>`
+      )
+    );
   }else{
     $('supplierDebtTable').innerHTML='';
   }
@@ -16641,7 +17074,7 @@ async function saveStockinStable(doPrint=false){
 <script id="pwa-register">
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   window.addEventListener('load', function(){
-    navigator.serviceWorker.register('./sw.js?v=ab123-v109-final-audit').catch(function(err){ console.warn('Service worker:', err); });
+    navigator.serviceWorker.register('./sw.js?v=ab123-v110-debt-period-sold').catch(function(err){ console.warn('Service worker:', err); });
   });
 }
 
