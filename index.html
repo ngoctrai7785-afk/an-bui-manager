@@ -14,7 +14,7 @@
 <link rel="icon" type="image/png" sizes="64x64" href="./favicon-64.png">
 
 <meta charset="utf-8">
-<meta name="app-version" content="111">
+<meta name="app-version" content="112">
 <title>AN BÙI - Quản lý nội bộ</title>
 <style>
 :root{
@@ -5647,6 +5647,122 @@ input.vnd-dot-input{
 }
 </style>
 
+
+<style id="v112-debt-overdue-customer-filter">
+/* ===== V112: CÔNG NỢ THẲNG CỘT + TÌM KHÁCH + CẢNH BÁO QUÁ HẠN ===== */
+.customer-debt-period-toolbar.v112{
+  display:grid;
+  grid-template-columns:minmax(220px,1fr) 165px 165px;
+  gap:10px;
+  align-items:end;
+}
+.customer-debt-period-toolbar.v112 label{min-width:0!important}
+.customer-debt-period-toolbar.v112 input{
+  width:100%;
+  min-width:0!important;
+  height:36px;
+}
+.customer-debt-search-label{min-width:220px!important}
+
+.customer-debt-period-table{
+  width:100%!important;
+  min-width:900px!important;
+  table-layout:fixed!important;
+  border-collapse:collapse!important;
+}
+.customer-debt-period-table th,
+.customer-debt-period-table td{box-sizing:border-box!important}
+.customer-debt-period-table th:nth-child(1),
+.customer-debt-period-table td:nth-child(1){width:25%;text-align:left}
+.customer-debt-period-table th:nth-child(2),
+.customer-debt-period-table td:nth-child(2){width:14%;text-align:right}
+.customer-debt-period-table th:nth-child(3),
+.customer-debt-period-table td:nth-child(3){width:15%;text-align:right}
+.customer-debt-period-table th:nth-child(4),
+.customer-debt-period-table td:nth-child(4){width:15%;text-align:right}
+.customer-debt-period-table th:nth-child(5),
+.customer-debt-period-table td:nth-child(5){width:15%;text-align:right}
+.customer-debt-period-table th:nth-child(6),
+.customer-debt-period-table td:nth-child(6){width:16%;text-align:center}
+.customer-debt-period-table th{white-space:normal!important;vertical-align:middle!important}
+
+.customer-debt-overdue-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:26px;
+  padding:4px 8px;
+  border-radius:999px;
+  background:#ffe7e4;
+  border:1px solid #efaaa2;
+  color:#c31f15;
+  font-weight:900;
+  white-space:nowrap;
+}
+.customer-debt-overdue-amount{
+  display:block;
+  margin-top:3px;
+  font-size:10.5px;
+  color:#bc2c21;
+  font-weight:700;
+}
+.customer-debt-not-configured{
+  color:#8a9499;
+  font-size:11px;
+  white-space:nowrap;
+}
+.customer-debt-term{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  flex-wrap:wrap;
+}
+.customer-debt-term-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:25px;
+  padding:3px 7px;
+  border-radius:7px;
+  background:#eef6f8;
+  border:1px solid #d0e1e6;
+  color:#315864;
+  font-weight:800;
+  white-space:nowrap;
+}
+.customer-debt-term-badge.off{
+  background:#f6f7f8;
+  color:#8a969b;
+}
+.customer-debt-term-btn{
+  padding:5px 7px!important;
+  min-height:28px!important;
+  font-size:11px!important;
+}
+.customer-debt-detail-overdue{
+  margin:8px 0;
+  padding:8px 10px;
+  border-radius:8px;
+  background:#ffeceb;
+  border:1px solid #efb3ad;
+  color:#af241a;
+  font-size:12px;
+  font-weight:800;
+}
+.customer-debt-detail-term{
+  margin-top:4px;
+  font-size:11px;
+  color:#687b83;
+}
+@media(max-width:760px){
+  .customer-debt-period-toolbar.v112{grid-template-columns:1fr 1fr}
+  .customer-debt-search-label{
+    grid-column:1/-1;
+    min-width:0!important;
+  }
+}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -6016,22 +6132,23 @@ input.vnd-dot-input{
         </div>
         <div class="hint manager-hidden" data-manager-only="1" style="margin:5px 0 9px">Cài số phiếu xuất gần nhất hiển thị ở Tổng quan Nhân viên.</div>
 
-        <div class="customer-debt-period-toolbar">
+        <div class="customer-debt-period-toolbar v112">
+          <label class="customer-debt-search-label">Tìm khách hàng
+            <input id="customerDebtSearch" type="search"
+                   placeholder="Nhập tên / SĐT / địa chỉ..."
+                   oninput="renderDebts()"
+                   onfocus="this.select()"
+                   onclick="this.select()">
+          </label>
           <label>Từ ngày
             <input id="customerDebtFrom" type="date" onchange="renderDebts()">
           </label>
           <label>Đến ngày
             <input id="customerDebtTo" type="date" onchange="renderDebts()">
           </label>
-          <div class="customer-debt-period-presets">
-            <button class="btn" type="button" onclick="setCustomerDebtPeriod('today')">Hôm nay</button>
-            <button class="btn" type="button" onclick="setCustomerDebtPeriod('month')">Tháng này</button>
-            <button class="btn" type="button" onclick="setCustomerDebtPeriod('prevmonth')">Tháng trước</button>
-            <button class="btn" type="button" onclick="setCustomerDebtPeriod('year')">Năm nay</button>
-          </div>
         </div>
         <div id="customerDebtPeriodText" class="customer-debt-period-note"></div>
-        <div class="customer-debt-period-note">Bấm vào <b>tên khách hàng</b> để xem sổ chi tiết. Trả hàng/BH không có cột riêng; hệ thống tự trừ vào Nợ cuối kỳ.</div>
+        <div class="customer-debt-period-note">Bấm <b>tên khách hàng</b> để xem sổ chi tiết. Cảnh báo quá hạn lấy theo số ngày đã cài riêng cho từng khách trong <b>Khách hàng → Hạn công nợ</b>. Trả hàng/BH tự trừ vào Nợ cuối kỳ.</div>
         <div id="customerDebtTable"></div>
       </div>
       <div id="supplierDebtCard" class="card"><h3>Công nợ nhà cung cấp</h3><div id="supplierDebtTable"></div></div>
@@ -9830,9 +9947,200 @@ function openProductMovement(productId){
   renderWarehouseMovementFiltered();
 }
 
+
+/* ===== V112: HẠN CÔNG NỢ THEO TỪNG KHÁCH + FIFO CÔNG NỢ QUÁ HẠN ===== */
+function customerDebtTermDays(customer){
+  const n=Math.floor(Number(customer?.debtTermDays)||0);
+  return n>0?n:0;
+}
+
+function customerDebtAsOf(bounds=customerDebtPeriodBounds()){
+  const end=Number(bounds?.end||Date.now());
+  return Math.min(end,Date.now());
+}
+
+function customerOutstandingDebtLots(customerId,asOf=Date.now()){
+  const customer=(db.customers||[]).find(c=>c.id===customerId);
+  const lots=[];
+  const events=[];
+
+  /* Nợ cũ không có ngày phát sinh lịch sử:
+     vẫn tham gia số dư/FIFO nhưng không dùng để tính số ngày quá hạn. */
+  const oldDebt=Math.max(0,Number(customer?.oldDebt||0));
+  if(oldDebt>0){
+    lots.push({amount:oldDebt,t:0,ref:'Nợ cũ',trackOverdue:false});
+  }
+
+  (db.stockout||[]).forEach(o=>{
+    if(o.customerId!==customerId)return;
+    const t=stockoutDateTimeValue(o.dateText);
+    if(!t || t>asOf)return;
+    const delta=Number(o.debt||0);
+    if(delta>0){
+      events.push({t,type:'debit',amount:delta,ref:o.id||'',dateText:o.dateText||''});
+    }else if(delta<0){
+      events.push({t,type:'credit',amount:Math.abs(delta),ref:o.id||'',dateText:o.dateText||''});
+    }
+  });
+
+  (db.customerPayments||[]).forEach(p=>{
+    if(p.customerId!==customerId)return;
+    const t=customerDebtPaymentTime(p);
+    if(!t || t>asOf)return;
+    const amount=Math.max(0,Number(p.amount||0));
+    if(amount>0)events.push({t,type:'credit',amount,ref:p.id||'',dateText:p.dateText||''});
+  });
+
+  events.sort((a,b)=>a.t-b.t || (a.type==='credit'?1:-1));
+
+  const applyCredit=(amount)=>{
+    let remain=Math.max(0,Number(amount)||0);
+    for(const lot of lots){
+      if(remain<=0)break;
+      const used=Math.min(remain,Math.max(0,Number(lot.amount)||0));
+      lot.amount=Math.max(0,Number(lot.amount||0)-used);
+      remain-=used;
+    }
+  };
+
+  events.forEach(e=>{
+    if(e.type==='debit'){
+      lots.push({
+        amount:e.amount,
+        t:e.t,
+        ref:e.ref,
+        dateText:e.dateText,
+        trackOverdue:true
+      });
+    }else{
+      applyCredit(e.amount);
+    }
+  });
+
+  return lots.filter(l=>Number(l.amount||0)>0.000001);
+}
+
+function customerDebtOverdueStatus(customerId,bounds=customerDebtPeriodBounds()){
+  const customer=(db.customers||[]).find(c=>c.id===customerId);
+  const termDays=customerDebtTermDays(customer);
+  const asOf=customerDebtAsOf(bounds);
+  const currentDebt=Math.max(0,customerDebt(customerId));
+
+  if(!termDays || currentDebt<=0){
+    return {
+      configured:termDays>0,
+      termDays,
+      overdue:false,
+      overdueDays:0,
+      overdueAmount:0,
+      asOf
+    };
+  }
+
+  const dayMs=24*60*60*1000;
+  const lots=customerOutstandingDebtLots(customerId,asOf);
+
+  let overdueDays=0;
+  let overdueAmount=0;
+
+  lots.forEach(lot=>{
+    if(!lot.trackOverdue || !lot.t)return;
+    const dueAt=Number(lot.t)+termDays*dayMs;
+    if(asOf>dueAt){
+      const days=Math.max(1,Math.ceil((asOf-dueAt)/dayMs));
+      overdueDays=Math.max(overdueDays,days);
+      overdueAmount+=Math.max(0,Number(lot.amount)||0);
+    }
+  });
+
+  return {
+    configured:true,
+    termDays,
+    overdue:overdueDays>0 && overdueAmount>0,
+    overdueDays,
+    overdueAmount,
+    asOf
+  };
+}
+
+function openCustomerDebtTerm(customerId){
+  if(!isManager){
+    return requireManager(()=>openCustomerDebtTerm(customerId),'Cài hạn công nợ cần quyền Quản lý.');
+  }
+  const c=(db.customers||[]).find(x=>x.id===customerId);
+  if(!c)return alert('Không tìm thấy khách hàng.');
+
+  showModal(`
+    <h3>Cài hạn công nợ • ${esc(c.name||'')}</h3>
+    <div class="form-grid">
+      <div class="full">
+        <label>Số ngày được nợ</label>
+        <input id="mCustomerDebtTerm" type="number" min="0" max="3650"
+               value="${customerDebtTermDays(c)||''}"
+               placeholder="Ví dụ: 3, 7, 15, 30">
+        <div class="small" style="margin-top:5px">
+          Để trống hoặc nhập 0 = không cảnh báo quá hạn. Mỗi khách có thể cài số ngày khác nhau.
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Hủy</button>
+      <button class="btn primary" onclick="saveCustomerDebtTerm('${esc(c.id)}')">Lưu hạn công nợ</button>
+    </div>
+  `);
+  setTimeout(()=>$('mCustomerDebtTerm')?.focus(),50);
+}
+
+async function saveCustomerDebtTerm(customerId){
+  if(!isManager){
+    return requireManager(()=>saveCustomerDebtTerm(customerId),'Cài hạn công nợ cần quyền Quản lý.');
+  }
+
+  const c=(db.customers||[]).find(x=>x.id===customerId);
+  if(!c)return alert('Không tìm thấy khách hàng.');
+
+  const raw=String($('mCustomerDebtTerm')?.value||'').trim();
+  const days=raw===''?0:Math.max(0,Math.floor(Number(raw)||0));
+  if(days>3650)return alert('Số ngày quá lớn. Vui lòng nhập tối đa 3650 ngày.');
+
+  c.debtTermDays=days;
+
+  if(await saveDB()){
+    closeModal();
+    renderCustomers();
+    renderDebts();
+    toast(days>0?'Đã cài hạn công nợ '+days+' ngày':'Đã tắt cảnh báo quá hạn cho khách này');
+  }
+}
+
 function renderCustomers(){
   let q=norm($('custSearch')?.value||'');
-  $('customersTable').innerHTML=table(['Mã','Khách hàng','SĐT','Địa chỉ','Loại','Nợ cũ','Tổng còn nợ'],db.customers.filter(c=>norm(c.name+' '+c.phone).includes(q)).map(c=>`<tr><td>${c.id}</td><td><b>${c.name}</b></td><td>${c.phone}</td><td>${c.address}</td><td>${c.type}</td><td class="right">${money(c.oldDebt)}</td><td class="right">${money(customerDebt(c.id))}</td></tr>`));
+
+  const rows=(db.customers||[])
+    .filter(c=>norm((c.name||'')+' '+(c.phone||'')).includes(q))
+    .map(c=>{
+      const term=customerDebtTermDays(c);
+      const termHtml=`<div class="customer-debt-term">
+        <span class="customer-debt-term-badge ${term?'':'off'}">${term?term+' ngày':'Chưa cài'}</span>
+        ${isManager?`<button class="btn customer-debt-term-btn" onclick="openCustomerDebtTerm('${esc(c.id)}')">⚙ Cài hạn</button>`:''}
+      </div>`;
+
+      return `<tr>
+        <td>${esc(c.id||'')}</td>
+        <td><b>${esc(c.name||'')}</b></td>
+        <td>${esc(c.phone||'')}</td>
+        <td>${esc(c.address||'')}</td>
+        <td>${esc(c.type||'')}</td>
+        <td class="right">${money(c.oldDebt)}</td>
+        <td class="right">${money(customerDebt(c.id))}</td>
+        <td>${termHtml}</td>
+      </tr>`;
+    });
+
+  $('customersTable').innerHTML=table(
+    ['Mã','Khách hàng','SĐT','Địa chỉ','Loại','Nợ cũ','Tổng còn nợ','Hạn công nợ'],
+    rows
+  );
 }
 function renderSuppliers(){
   let q=norm($('supSearch')?.value||'');
@@ -10115,6 +10423,13 @@ function openCustomerDebtDetail(customerId){
       <div><span>Nợ cuối kỳ</span><b>${money(s.ending)}</b></div>
     </div>
 
+    ${(()=>{
+      const od=customerDebtOverdueStatus(customerId,bounds);
+      if(od.overdue)return `<div class="customer-debt-detail-overdue">⚠ Quá hạn ${od.overdueDays} ngày • Số nợ đang quá hạn ${money(od.overdueAmount)}</div>`;
+      if(od.configured)return `<div class="customer-debt-detail-term">Hạn công nợ đã cài: ${od.termDays} ngày • Hiện chưa quá hạn.</div>`;
+      return '<div class="customer-debt-detail-term">Khách này chưa cài hạn công nợ nên chưa phát cảnh báo quá hạn.</div>';
+    })()}
+
     ${s.autoReduction>0
       ? `<div class="customer-debt-detail-auto">Nợ cuối kỳ đã tự trừ <b>${money(s.autoReduction)}</b> từ nghiệp vụ trả hàng/BH. Khoản này không tạo cột riêng trên bảng tổng hợp.</div>`
       : ''}
@@ -10140,31 +10455,64 @@ function renderDebts(){
 
   ensureCustomerDebtPeriodDefaults();
   const bounds=customerDebtPeriodBounds();
+  const q=norm($('customerDebtSearch')?.value||'');
 
-  const customerRows=(db.customers||[])
-    .map(c=>({c,s:customerDebtPeriodSummary(c.id,bounds)}))
-    .sort((a,b)=>b.s.ending-a.s.ending || String(a.c.name||'').localeCompare(String(b.c.name||''),'vi'))
-    .map(({c,s})=>`<tr>
-      <td>
-        <button class="customer-debt-name" onclick="openCustomerDebtDetail('${esc(c.id)}')">${esc(c.name||'')}</button>
-        <span class="customer-debt-phone">${esc(c.phone||'')}</span>
-      </td>
-      <td class="right"><b>${money(s.opening)}</b></td>
-      <td class="right"><b>${money(s.incurred)}</b></td>
-      <td class="right"><b>${money(s.paid)}</b></td>
-      <td class="right"><span class="${s.ending>0?'customer-debt-positive':'customer-debt-zero'}">${money(s.ending)}</span></td>
-    </tr>`);
+  const filtered=(db.customers||[]).filter(c=>
+    !q || norm((c.name||'')+' '+(c.phone||'')+' '+(c.address||'')).includes(q)
+  );
+
+  const customerRows=filtered
+    .map(c=>({
+      c,
+      s:customerDebtPeriodSummary(c.id,bounds),
+      overdue:customerDebtOverdueStatus(c.id,bounds)
+    }))
+    .sort((a,b)=>{
+      if(a.overdue.overdue!==b.overdue.overdue)return a.overdue.overdue?-1:1;
+      if(a.overdue.overdueDays!==b.overdue.overdueDays)return b.overdue.overdueDays-a.overdue.overdueDays;
+      if(a.s.ending!==b.s.ending)return b.s.ending-a.s.ending;
+      return String(a.c.name||'').localeCompare(String(b.c.name||''),'vi');
+    })
+    .map(({c,s,overdue})=>{
+      let overdueHtml='—';
+      if(s.ending>0){
+        if(overdue.overdue){
+          overdueHtml=`<span class="customer-debt-overdue-badge">Quá hạn ${overdue.overdueDays} ngày</span>
+                       <span class="customer-debt-overdue-amount">${money(overdue.overdueAmount)}</span>`;
+        }else if(!overdue.configured){
+          overdueHtml='<span class="customer-debt-not-configured">Chưa cài hạn</span>';
+        }
+      }
+
+      return `<tr>
+        <td>
+          <button class="customer-debt-name" onclick="openCustomerDebtDetail('${esc(c.id)}')">${esc(c.name||'')}</button>
+          <span class="customer-debt-phone">${esc(c.phone||'')}</span>
+        </td>
+        <td><b>${money(s.opening)}</b></td>
+        <td><b>${money(s.incurred)}</b></td>
+        <td><b>${money(s.paid)}</b></td>
+        <td><span class="${s.ending>0?'customer-debt-positive':'customer-debt-zero'}">${money(s.ending)}</span></td>
+        <td>${overdueHtml}</td>
+      </tr>`;
+    });
 
   $('customerDebtTable').innerHTML=table(
-    ['Khách hàng','Nợ đầu kỳ','Phát sinh trong kỳ','Đã thanh toán','Nợ cuối kỳ'],
+    ['Khách hàng','Nợ đầu kỳ','Phát sinh trong kỳ','Đã thanh toán','Nợ cuối kỳ','Cảnh báo quá hạn'],
     customerRows
   );
 
+  const debtTable=$('customerDebtTable')?.querySelector('table');
+  if(debtTable)debtTable.classList.add('customer-debt-period-table');
+
   if($('customerDebtPeriodText')){
-    const autoTotal=(db.customers||[]).reduce((sum,c)=>sum+customerDebtPeriodSummary(c.id,bounds).autoReduction,0);
+    const autoTotal=filtered.reduce((sum,c)=>sum+customerDebtPeriodSummary(c.id,bounds).autoReduction,0);
+    const overdueCount=filtered.filter(c=>customerDebtOverdueStatus(c.id,bounds).overdue).length;
+
     $('customerDebtPeriodText').innerHTML=
       `Kỳ <b>${debtDisplayDate(bounds.fromValue)}</b> → <b>${debtDisplayDate(bounds.toValue)}</b> • `+
-      `Hiển thị <b>${(db.customers||[]).length}</b> khách hàng, kể cả công nợ bằng 0.`+
+      `Hiển thị <b>${filtered.length}</b>/${(db.customers||[]).length} khách hàng, kể cả công nợ bằng 0.`+
+      (overdueCount?` • <span style="color:#c31f15"><b>${overdueCount}</b> khách đang quá hạn.</span>`:'')+
       (autoTotal>0?` • Nợ cuối kỳ đã tự trừ <b>${money(autoTotal)}</b> từ trả hàng/BH.`:'');
   }
 
@@ -12717,6 +13065,12 @@ function openCustomer(){
         <input id="mcdebt" type="number">
       </div>
 
+      ${isManager?`<div>
+        <label>Hạn công nợ (ngày)</label>
+        <input id="mcDebtTerm" type="number" min="0" max="3650" placeholder="Ví dụ 7">
+        <div class="small">0 / để trống = chưa cảnh báo quá hạn.</div>
+      </div>`:''}
+
       <div class="full">
         <div id="mcDuplicateWarning" class="customer-duplicate-warning"></div>
       </div>
@@ -12803,7 +13157,8 @@ async function saveCustomer(){
     phone:$('mcphone').value.trim(),
     address:$('mcaddress').value.trim(),
     type:$('mctype').value,
-    oldDebt:Number($('mcdebt').value)||0
+    oldDebt:Number($('mcdebt').value)||0,
+    debtTermDays:isManager?Math.max(0,Math.floor(Number($('mcDebtTerm')?.value)||0)):0
   };
 
   if(!c.name || !c.phone)return alert('Nhập tên và SĐT');
@@ -13945,6 +14300,7 @@ async function ensureStockoutCustomerBeforeSave(){
     address,
     type:'Khách lẻ',
     oldDebt:0,
+    debtTermDays:0,
     autoCreated:true,
     createdFrom:'Phiếu xuất',
     createdAt:nowText()
@@ -17074,7 +17430,7 @@ async function saveStockinStable(doPrint=false){
 <script id="pwa-register">
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   window.addEventListener('load', function(){
-    navigator.serviceWorker.register('./sw.js?v=ab123-v111-fix-sum').catch(function(err){ console.warn('Service worker:', err); });
+    navigator.serviceWorker.register('./sw.js?v=ab123-v112-debt-overdue').catch(function(err){ console.warn('Service worker:', err); });
   });
 }
 
