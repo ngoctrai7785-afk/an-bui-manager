@@ -14,7 +14,7 @@
 <link rel="icon" type="image/png" sizes="64x64" href="./favicon-64.png">
 
 <meta charset="utf-8">
-<meta name="app-version" content="98">
+<meta name="app-version" content="99">
 <title>AN BÙI - Quản lý nội bộ</title>
 <style>
 :root{
@@ -5357,7 +5357,6 @@ input.vnd-dot-input{
                 <input id="siSupplier"
                        autocomplete="off"
                        placeholder="Gõ tên hoặc SĐT NCC..."
-                       onfocus="beginStockOperationFromUI('stockin',this)"
                        oninput="filterSupplierPicker()"
                        onkeydown="supplierPickerKey(event)"
                        onblur="supplierPickerBlur()">
@@ -5444,7 +5443,7 @@ input.vnd-dot-input{
       <div class="info-grid">
         <div class="info-box">
           <h4>Thông tin khách hàng</h4>
-          <div class="formline"><label>Tên khách:</label><input id="soCustomer" list="customerList" autocomplete="off" oninput="stockoutCustomerTyping()" onchange="selectCustomer()" onfocus="beginStockOperationFromUI('stockout',this)" onclick="this.select()" placeholder="Chọn khách cũ hoặc gõ tên khách mới"><datalist id="customerList"></datalist></div>
+          <div class="formline"><label>Tên khách:</label><input id="soCustomer" list="customerList" autocomplete="off" oninput="stockoutCustomerTyping()" onchange="selectCustomer()" onclick="this.select()" placeholder="Chọn khách cũ hoặc gõ tên khách mới"><datalist id="customerList"></datalist></div>
           <div class="formline"><label>Địa chỉ:</label><input id="soCustomerAddress" oninput="stockoutCustomerContactChanged()" placeholder="Khách mới: nhập địa chỉ"></div>
           <div class="formline"><label>Điện thoại:</label><input id="soCustomerPhone" inputmode="tel" oninput="stockoutCustomerContactChanged()" placeholder="Khách mới: nhập SĐT"></div>
           <div id="soCustomerAlert"></div>
@@ -6431,7 +6430,7 @@ async function ensureStockOperationLock(mode,{silent=false}={}){
       if(res?.ok && res?.owned){
         stockOperationOwned=true;stockOperationMode=mode;stockOperationLastBlockedMode='';
         stockOperationSetBlockedUI('stockin',false);stockOperationSetBlockedUI('stockout',false);
-        stockOperationShowBanner(mode,'mine','✓ Thiết bị này đang thao tác '+stockOperationLabel(mode)+'. Các máy khác tạm chờ.');
+        stockOperationShowBanner(mode,'mine','✓ Thiết bị này đang thao tác '+stockOperationLabel(mode)+' sau khi nhập số lượng. Các máy khác tạm chờ.');
         startStockOperationHeartbeat();return true;
       }
       stockOperationOwned=false;stockOperationMode='';
@@ -6449,6 +6448,100 @@ async function ensureStockOperationLock(mode,{silent=false}={}){
   })();
   return await stockOperationAcquirePromise;
 }
+
+/* ===== V99: CHỈ KHÓA KHI ĐÃ CHỌN KHÁCH/NCC VÀ BẮT ĐẦU NHẬP SỐ LƯỢNG ===== */
+function stockOperationPartyReadyForQty(mode){
+  if(mode==='stockout'){
+    /* Khách cũ đã chọn, hoặc khách mới đã nhập đủ tên + SĐT. */
+    if(selectedCustomerId && (db.customers||[]).some(c=>String(c.id)===String(selectedCustomerId)))return true;
+    const name=String($('soCustomer')?.value||'').trim();
+    const phone=String($('soCustomerPhone')?.value||'').trim();
+    return !!(name && phone);
+  }
+  if(mode==='stockin'){
+    return !!(selectedSupplierId && (db.suppliers||[]).some(s=>String(s.id)===String(selectedSupplierId)));
+  }
+  return false;
+}
+
+function stockOperationPartyPrompt(mode){
+  if(mode==='stockout'){
+    alert('Chọn khách hàng trước, sau đó nhập SỐ LƯỢNG để bắt đầu khóa thao tác kho.');
+    $('soCustomer')?.focus();
+  }else{
+    alert('Chọn Nhà cung cấp trước, sau đó nhập SỐ LƯỢNG để bắt đầu khóa thao tác kho.');
+    $('siSupplier')?.focus();
+  }
+}
+
+async function changeQtyWithStockLock(mode,rowIndex,el){
+  const rows=mode==='stockin'?siRows:soRows;
+  const row=rows[rowIndex];
+  if(!row || !el)return false;
+
+  /* Khi máy này đã giữ khóa thì nhập SL bình thường, không gọi backend lại. */
+  if(!stockOperationManagedOnline() || (stockOperationOwned && stockOperationMode===mode)){
+    changeField(mode,rowIndex,'qty',el.value);
+    return true;
+  }
+
+  const typed=String(el.value??'');
+  const previous=row.qty===''?'':String(row.qty??'');
+
+  /* Không cho giá trị SL đi vào dữ liệu trước khi khóa được cấp. */
+  el.value=previous;
+
+  if(!stockOperationPartyReadyForQty(mode)){
+    stockOperationPartyPrompt(mode);
+    return false;
+  }
+
+  el.readOnly=true;
+  el.dataset.stockOperationQtyPending='1';
+
+  const ok=await ensureStockOperationLock(mode);
+
+  if(!ok){
+    el.readOnly=false;
+    delete el.dataset.stockOperationQtyPending;
+    el.value=previous;
+    return false;
+  }
+
+  /* Sau khi giành được khóa, lấy dữ liệu online mới nhất trước khi nhận SL vừa nhập. */
+  const refreshed=await stockOperationRefreshBase(mode,{quiet:false});
+  if(!refreshed){
+    await releaseStockOperationLock(mode,{silent:true});
+    el.readOnly=false;
+    delete el.dataset.stockOperationQtyPending;
+    el.value=previous;
+    return false;
+  }
+
+  /* refresh có thể làm DOM đổi; tìm lại đúng ô SL hiện tại. */
+  const freshEl=document.querySelector(`[data-mode="${mode==='stockin'?'si':'so'}"][data-role="qty"][data-row="${rowIndex}"]`) || el;
+  const freshRows=mode==='stockin'?siRows:soRows;
+  const freshRow=freshRows[rowIndex];
+  if(!freshRow){
+    await releaseStockOperationLock(mode,{silent:true});
+    return false;
+  }
+
+  freshEl.readOnly=false;
+  delete freshEl.dataset.stockOperationQtyPending;
+  freshEl.value=typed;
+  changeField(mode,rowIndex,'qty',typed);
+
+  stockOperationShowBanner(
+    mode,
+    'mine',
+    '✓ Đã bắt đầu thao tác '+stockOperationLabel(mode)+' từ lúc nhập số lượng. Các máy khác tạm chờ.'
+  );
+
+  setTimeout(()=>{try{freshEl.focus();freshEl.select()}catch(e){}},0);
+  return true;
+}
+
 async function beginStockOperationFromUI(mode,el=null){
   if(el){el.dataset.stockOperationPending='1';el.readOnly=true;}
   const ok=await ensureStockOperationLock(mode);
@@ -12265,8 +12358,7 @@ function renderSupplierPicker(forceAll=false){
   box.classList.add('show');
 }
 
-async function toggleSupplierPicker(){
-  if(!(await ensureStockOperationLock('stockin')))return;
+function toggleSupplierPicker(){
   const box=$('supplierPickerList');
   if(!box)return;
   if(box.classList.contains('show')){
@@ -12277,7 +12369,6 @@ async function toggleSupplierPicker(){
 }
 
 function filterSupplierPicker(){
-  if(stockOperationManagedOnline() && !stockOperationOwned)return;
   selectedSupplierId='';
   $('siSupplierAddress').value='';
   $('siSupplierPhone').value='';
@@ -12485,9 +12576,8 @@ async function confirmCreateSupplierFromStockin(){
 let pendingStockinProductRow=-1;
 let pendingStockinProductName='';
 
-async function openQuickSupplierFromStockin(prefill=''){
+function openQuickSupplierFromStockin(prefill=''){
   if(!isManager)return requireManager(()=>openQuickSupplierFromStockin(prefill),'Tạo Nhà cung cấp cần quyền Quản lý.');
-  if(!(await ensureStockOperationLock('stockin')))return;
   const typed=String(prefill||$('siSupplier')?.value||'').trim();
   $('supplierPickerList')?.classList.remove('show');
   showModal(`
@@ -12704,7 +12794,6 @@ function setStockoutCustomerEditState(isNew){
   });
 }
 function stockoutCustomerTyping(){
-  if(stockOperationManagedOnline() && !stockOperationOwned)return;
   const raw=$('soCustomer')?.value||'';
   const exact=stockoutCustomerExact(raw);
   if(exact){
@@ -13092,7 +13181,7 @@ function renderSIRows(){
           <div class="suggestions" id="sisg${i}"></div>
         </td>
         <td class="center">${unit}</td>
-        <td><input data-mode="si" data-role="qty" data-row="${i}" type="number" value="${r.qty}" oninput="changeField('si',${i},'qty',this.value)" onkeydown="fieldKey(event,'si',${i},'qty')"></td>
+        <td><input data-mode="si" data-role="qty" data-row="${i}" type="number" value="${r.qty}" oninput="changeQtyWithStockLock('stockin',${i},this)" onkeydown="fieldKey(event,'si',${i},'qty')"></td>
         <td><input class="staff-sale-price" data-mode="si" data-role="salePrice" data-row="${i}" type="number" min="0" value="${salePrice}" oninput="changeStaffStockinSaleField(${i},'salePrice',this.value)" onkeydown="fieldKey(event,'si',${i},'salePrice')"></td>
         <td><input class="staff-sale-meta" data-mode="si" data-role="saleCK" data-row="${i}" type="number" min="0" value="${saleCK}" oninput="changeStaffStockinSaleField(${i},'ck',this.value)" onkeydown="fieldKey(event,'si',${i},'saleCK')"></td>
         <td><input class="staff-sale-meta" data-mode="si" data-role="saleKM" data-row="${i}" type="number" min="0" value="${saleKM}" oninput="changeStaffStockinSaleField(${i},'km',this.value)" onkeydown="fieldKey(event,'si',${i},'saleKM')"></td>
@@ -13107,7 +13196,7 @@ function renderSIRows(){
       <td class="center">${i+1}</td>
       <td class="product-cell"><input data-mode="si" data-role="product" data-row="${i}" value="${esc(r.productText||(p?.name||''))}" placeholder="Gõ tên hàng..." oninput="siRows[${i}].productText=this.value;siRows[${i}].productId='';openSuggestions('si',${i},this)" onkeydown="productKey(event,'si',${i},this)"><div class="suggestions" id="sisg${i}"></div></td>
       <td class="center">${unit}</td>
-      <td><input data-mode="si" data-role="qty" data-row="${i}" type="number" value="${r.qty}" oninput="changeField('si',${i},'qty',this.value)" onkeydown="fieldKey(event,'si',${i},'qty')"></td>
+      <td><input data-mode="si" data-role="qty" data-row="${i}" type="number" value="${r.qty}" oninput="changeQtyWithStockLock('stockin',${i},this)" onkeydown="fieldKey(event,'si',${i},'qty')"></td>
       <td><input data-mode="si" data-role="price" data-row="${i}" type="number" value="${r.price}" oninput="changeField('si',${i},'price',this.value)" onkeydown="fieldKey(event,'si',${i},'price')"></td>
       <td><input class="staff-sale-price" data-mode="si" data-role="salePrice" data-row="${i}" type="number" min="0" value="${salePrice}" oninput="changeStaffStockinSaleField(${i},'salePrice',this.value)" onkeydown="fieldKey(event,'si',${i},'salePrice')"></td>
       <td><input data-mode="si" data-role="ck" data-row="${i}" type="number" value="${r.ck}" oninput="changeField('si',${i},'ck',this.value)" onkeydown="fieldKey(event,'si',${i},'ck')"></td>
@@ -13135,7 +13224,7 @@ function renderSORows(){
         <div class="suggestions" id="sosg${i}"></div>
       </td>
       <td class="center">${unit}</td>
-      <td><input data-mode="so" data-role="qty" data-row="${i}" type="number" value="${r.qty}" oninput="changeField('so',${i},'qty',this.value)" onkeydown="fieldKey(event,'so',${i},'qty')"></td>
+      <td><input data-mode="so" data-role="qty" data-row="${i}" type="number" value="${r.qty}" oninput="changeQtyWithStockLock('stockout',${i},this)" onkeydown="fieldKey(event,'so',${i},'qty')"></td>
       <td><input data-mode="so" data-role="price" data-row="${i}" type="number" value="${r.price}" oninput="changeField('so',${i},'price',this.value)" onkeydown="fieldKey(event,'so',${i},'price')"></td>
       <td><input data-mode="so" data-role="ck" data-row="${i}" type="number" value="${r.ck}" oninput="changeField('so',${i},'ck',this.value)" onkeydown="fieldKey(event,'so',${i},'ck')"></td>
       <td><input data-mode="so" data-role="km" data-row="${i}" type="number" value="${r.km}" oninput="changeField('so',${i},'km',this.value)" onkeydown="fieldKey(event,'so',${i},'km')"></td>
@@ -15895,7 +15984,7 @@ async function saveStockinStable(doPrint=false){
 <script id="pwa-register">
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   window.addEventListener('load', function(){
-    navigator.serviceWorker.register('./sw.js?v=ab123-v98-stock-lock').catch(function(err){ console.warn('Service worker:', err); });
+    navigator.serviceWorker.register('./sw.js?v=ab123-v99-lock-after-qty').catch(function(err){ console.warn('Service worker:', err); });
   });
 }
 
