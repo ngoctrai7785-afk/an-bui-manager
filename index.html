@@ -14,7 +14,7 @@
 <link rel="icon" type="image/png" sizes="64x64" href="./favicon-64.png">
 
 <meta charset="utf-8">
-<meta name="app-version" content="99">
+<meta name="app-version" content="102">
 <title>AN BÙI - Quản lý nội bộ</title>
 <style>
 :root{
@@ -5200,6 +5200,131 @@ input.vnd-dot-input{
 .stock-operation-remote-lock::after{content:"Đang có thiết bị khác thao tác Nhập/Xuất kho";display:block;margin-top:8px;padding:7px 10px;border-radius:8px;background:#fff4e8;border:1px dashed #e9ad69;color:#8a4a00;font-size:12px;font-weight:700;text-align:center}
 </style>
 
+
+<style id="v100-print-designer-fix">
+/* ===== V100: THIẾT KẾ PHIẾU XUẤT ÁP DỤNG ĐÚNG KHI XEM TRƯỚC / IN ===== */
+.invoice-preview-paper.pd-designed{
+  font-size:var(--pd-base-font)!important;
+}
+.invoice-preview-paper.pd-designed .pv-npp,
+.invoice-preview-paper.pd-designed .pv-meta,
+.invoice-preview-paper.pd-designed .pv-title>div,
+.invoice-preview-paper.pd-designed .pv-info,
+.invoice-preview-paper.pd-designed .pv-summary,
+.invoice-preview-paper.pd-designed .pv-bottom-warranty,
+.invoice-preview-paper.pd-designed .pv-final-row,
+.invoice-preview-paper.pd-designed .pv-sign{
+  font-size:var(--pd-base-font)!important;
+}
+.invoice-preview-paper.pd-designed table{
+  font-size:calc(var(--pd-base-font) - 1px)!important;
+}
+.invoice-preview-paper.pd-designed .pv-title h1{
+  font-size:var(--pd-title-font)!important;
+}
+.invoice-preview-paper.pd-designed .pd-block{
+  position:relative!important;
+}
+@media print{
+  body.print-invoice-mode #invoicePreviewPaper.pd-designed .pv-npp,
+  body.print-invoice-mode #invoicePreviewPaper.pd-designed .pv-meta,
+  body.print-invoice-mode #invoicePreviewPaper.pd-designed .pv-title>div,
+  body.print-invoice-mode #invoicePreviewPaper.pd-designed .pv-info,
+  body.print-invoice-mode #invoicePreviewPaper.pd-designed .pv-summary,
+  body.print-invoice-mode #invoicePreviewPaper.pd-designed .pv-bottom-warranty,
+  body.print-invoice-mode #invoicePreviewPaper.pd-designed .pv-final-row{
+    font-size:var(--pd-base-font)!important;
+  }
+  body.print-invoice-mode #invoicePreviewPaper.pd-designed .pv-title h1{
+    font-size:var(--pd-title-font)!important;
+  }
+}
+</style>
+
+
+<style id="v101-stockout-compact-rows">
+/* ===== V101: PHIẾU XUẤT - THU GỌN CHIỀU CAO DÒNG NHẬP LIỆU =====
+   Chỉ tác động giao diện nhập Phiếu xuất, KHÔNG đổi mẫu in A4/Bill. */
+#stockout .invoice-table thead th{
+  padding-top:3px!important;
+  padding-bottom:3px!important;
+  line-height:1.15!important;
+}
+#stockout .invoice-table tbody td{
+  padding-top:1px!important;
+  padding-bottom:1px!important;
+  line-height:1.1!important;
+  height:var(--stockout-row-height,29px)!important;
+}
+#stockout .invoice-table tbody tr{
+  height:var(--stockout-row-height,29px)!important;
+}
+#stockout .invoice-table tbody td input{
+  min-height:var(--stockout-input-height,25px)!important;
+  height:var(--stockout-input-height,25px)!important;
+  padding-top:1px!important;
+  padding-bottom:1px!important;
+  line-height:calc(var(--stockout-input-height,25px) - 2px)!important;
+}
+#stockout .invoice-table tbody td:nth-child(6) input,
+#stockout .invoice-table tbody td:nth-child(7) input{
+  min-height:var(--stockout-input-height,25px)!important;
+  height:var(--stockout-input-height,25px)!important;
+  padding-top:1px!important;
+  padding-bottom:1px!important;
+}
+
+</style>
+
+
+<style id="v102-stockout-row-height-designer">
+/* ===== V102: CHIỀU CAO DÒNG PHIẾU XUẤT TỰ CHỈNH =====
+   Cùng một giá trị được dùng cho màn hình nhập và A4 xem trước/in. */
+:root{
+  --stockout-row-height:29px;
+  --stockout-input-height:25px;
+}
+#stockout .invoice-table tbody td,
+#stockout .invoice-table tbody tr{
+  height:var(--stockout-row-height)!important;
+}
+#stockout .invoice-table tbody td input{
+  min-height:var(--stockout-input-height)!important;
+  height:var(--stockout-input-height)!important;
+  line-height:calc(var(--stockout-input-height) - 2px)!important;
+}
+
+/* Phiếu A4 do Thiết kế phiếu in tạo ra: hàng hóa in đúng chiều cao đã chọn. */
+.invoice-preview-paper.pd-designed .pd-table-block tbody tr,
+.invoice-preview-paper.pd-designed .pd-table-block tbody td{
+  height:var(--pd-row-height,29px)!important;
+  min-height:var(--pd-row-height,29px)!important;
+}
+.invoice-preview-paper.pd-designed .pd-table-block tbody td{
+  padding-top:1px!important;
+  padding-bottom:1px!important;
+  vertical-align:middle!important;
+}
+
+/* Điều khiển trong Cài đặt */
+.pd-row-height-wrap{
+  border:1px solid #cfdde3;
+  background:#f6fbfc;
+  border-radius:9px;
+  padding:9px 10px;
+  margin-top:9px;
+}
+.pd-row-height-controls{
+  display:flex;
+  align-items:end;
+  gap:7px;
+  flex-wrap:wrap;
+}
+.pd-row-height-controls>div{min-width:145px}
+.pd-row-presets{display:flex;gap:5px;flex-wrap:wrap}
+.pd-row-height-note{font-size:11px;color:#5d6b72;margin-top:5px;line-height:1.4}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -5893,7 +6018,7 @@ input.vnd-dot-input{
       <div class="settings-card-head">
         <div>
           <h3 style="margin:0">Thiết kế phiếu in</h3>
-          <div class="hint">Chỉ thay cách trình bày khi xem trước/in. Không thay đổi số liệu, tồn kho, công nợ hay nội dung phiếu đã lưu.</div>
+          <div class="hint">Thiết kế chữ/cột/khối cho bản in. Riêng chiều cao dòng Phiếu xuất áp dụng đồng thời cho màn hình nhập và bản A4 khi in. Không thay đổi số liệu, tồn kho hay công nợ.</div>
         </div>
       </div>
       <div class="print-designer-note">
@@ -5919,6 +6044,20 @@ input.vnd-dot-input{
             <div><label>Cỡ chữ chung (px)</label><input id="pdBaseFont" type="number" min="10" max="18" step="0.5" onchange="pdCollectDraft()"></div>
             <div><label>Cỡ tiêu đề (px)</label><input id="pdTitleFont" type="number" min="16" max="36" step="1" onchange="pdCollectDraft()"></div>
             <div><label>Bước dịch vị trí</label><select id="pdNudgeStep"><option value="2">2 px</option><option value="5" selected>5 px</option><option value="10">10 px</option></select></div>
+          </div>
+          <div id="pdRowHeightWrap" class="pd-row-height-wrap">
+            <div class="pd-row-height-controls">
+              <div>
+                <label>Chiều cao dòng hàng (px)</label>
+                <input id="pdRowHeight" type="number" min="24" max="44" step="1" value="29" oninput="pdRowHeightDraftChanged()">
+              </div>
+              <div class="pd-row-presets">
+                <button class="btn" type="button" onclick="setPrintRowHeightPreset(26)">Gọn 26</button>
+                <button class="btn" type="button" onclick="setPrintRowHeightPreset(30)">Vừa 30</button>
+                <button class="btn" type="button" onclick="setPrintRowHeightPreset(36)">Rộng 36</button>
+              </div>
+            </div>
+            <div class="pd-row-height-note">Phiếu xuất: giá trị này dùng chung cho dòng nhập trên màn hình và dòng hàng khi xem trước/in A4 — chỉnh sao, in ra như vậy.</div>
           </div>
           <div id="printTextFields" class="print-text-grid"></div>
         </div>
@@ -7353,12 +7492,14 @@ function warrantyShortPrintStatus(status){
   return status||'';
 }
 
-function stockoutWarrantyPanelHtml(data){
+function stockoutWarrantyPanelHtml(data,label='BẢO HÀNH'){
   const items=invoiceCustomerWarrantyItems(data);
   if(!items.length)return '';
 
+  const cleanLabel=String(label||'BẢO HÀNH').trim().replace(/[:：]\s*$/,'')||'BẢO HÀNH';
+
   return `<div class="pv-bottom-warranty">
-    <span class="title">BẢO HÀNH:</span>
+    <span class="title">${esc(cleanLabel)}:</span>
     <span class="lines">
       ${items.map(w=>`
         <span class="line">
@@ -7395,15 +7536,15 @@ function stockoutSummaryHtml(data,labels={}){
     <div class="pv-sum"><div><b>${esc(L.remain)}</b></div><div>${money(customerDebtAfter)}</div></div>`;
 }
 
-function stockoutBottomPrintHtml(data,labels={},summaryStyle=''){
-  const warranty=stockoutWarrantyPanelHtml(data);
-  const summary=`<div class="pv-summary"${summaryStyle?` style="${summaryStyle}"`:''}>${stockoutSummaryHtml(data,labels)}</div>`;
+function stockoutBottomPrintHtml(data,labels={},summaryStyle='',signStyle=''){
+  const warranty=stockoutWarrantyPanelHtml(data,labels.warranty||'BẢO HÀNH');
+  const summary=`<div class="pv-summary pd-block" data-pd-block="summary"${summaryStyle?` style="${summaryStyle}"`:''}>${stockoutSummaryHtml(data,labels)}</div>`;
   const signLeft=labels.signLeft||'Người lập phiếu';
   const signRight=labels.signRight||'Khách hàng';
 
   return `${summary}
     ${warranty}
-    <div class="pv-final-row">
+    <div class="pv-final-row pd-block" data-pd-block="sign"${signStyle?` style="${signStyle}"`:''}>
       <div class="pv-sign-col">
         ${esc(signLeft)}
         <div class="pv-space"></div>
@@ -15984,7 +16125,7 @@ async function saveStockinStable(doPrint=false){
 <script id="pwa-register">
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   window.addEventListener('load', function(){
-    navigator.serviceWorker.register('./sw.js?v=ab123-v99-lock-after-qty').catch(function(err){ console.warn('Service worker:', err); });
+    navigator.serviceWorker.register('./sw.js?v=ab123-v102-wysiwyg-rowheight').catch(function(err){ console.warn('Service worker:', err); });
   });
 }
 
@@ -16122,16 +16263,17 @@ function pdDefaultLabels(kind){
   };
   return {
     title:'PHIẾU XUẤT HÀNG',date:'Ngày',number:'Số phiếu',warehouse:'Kho',warehouseValue:'Kho chính',
-    party:'Khách hàng',address:'Địa chỉ',phone:'Điện thoại',content:'Nội dung',warranty:'Trả bảo hành kèm',
+    party:'Khách hàng',address:'Địa chỉ',phone:'Điện thoại',content:'Nội dung',warranty:'BẢO HÀNH',
     sumCurrent:'Tiền hàng phiếu này',sumOld:'Nợ cũ đến ngày',sumTotal:'Tổng công nợ phải thu',sumPaid:'Khách thanh toán',sumRemain:'Khách hàng còn nợ',
     signLeft:'Người lập phiếu',signRight:'Khách hàng'
   };
 }
 function pdDefaultDesign(kind){
   return {
-    version:1,
+    version:2,
     baseFont:13,
     titleFont:23,
+    rowHeight:kind==='stockout'?29:29,
     labels:pdDefaultLabels(kind),
     columns:pdDefaultColumns(kind),
     offsets:{
@@ -16145,7 +16287,15 @@ function pdMergeDesign(kind,saved){
   if(!saved || typeof saved!=='object')return d;
   d.baseFont=Math.max(10,Math.min(18,Number(saved.baseFont)||d.baseFont));
   d.titleFont=Math.max(16,Math.min(36,Number(saved.titleFont)||d.titleFont));
-  if(saved.labels && typeof saved.labels==='object')d.labels={...d.labels,...saved.labels};
+  d.rowHeight=Math.max(24,Math.min(44,Number(saved.rowHeight)||d.rowHeight||29));
+  if(saved.labels && typeof saved.labels==='object'){
+    const labels={...saved.labels};
+    /* V100: chuyển giá trị mặc định cũ sang nhãn BH chuẩn hiện tại, không đụng nhãn người dùng đã tự sửa. */
+    if(kind==='stockout' && String(labels.warranty||'').trim()==='Trả bảo hành kèm'){
+      labels.warranty='BẢO HÀNH';
+    }
+    d.labels={...d.labels,...labels};
+  }
   if(Array.isArray(saved.columns)){
     const defaults=pdDefaultColumns(kind);
     const byKey=Object.fromEntries(defaults.map(c=>[c.key,c]));
@@ -16203,12 +16353,38 @@ function pdBlockDefs(){
     ['infoRight','Nội dung'],['table','Bảng hàng hóa'],['summary','Tổng tiền / Công nợ'],['sign','Chữ ký']
   ];
 }
+
+function pdStockoutRowHeight(design=null){
+  const d=design||pdSavedDesign('stockout');
+  return Math.max(24,Math.min(44,Number(d?.rowHeight)||29));
+}
+function applyStockoutRowHeightSetting(design=null){
+  const h=pdStockoutRowHeight(design);
+  const inputH=Math.max(20,h-4);
+  document.documentElement.style.setProperty('--stockout-row-height',h+'px');
+  document.documentElement.style.setProperty('--stockout-input-height',inputH+'px');
+  return h;
+}
+function pdRowHeightDraftChanged(){
+  const type=$('printDesignType')?.value||'stockout';
+  if(type!=='stockout')return;
+  pdCollectDraft();
+}
+function setPrintRowHeightPreset(h){
+  const el=$('pdRowHeight');
+  if(!el)return;
+  el.value=Math.max(24,Math.min(44,Number(h)||29));
+  pdCollectDraft();
+}
+
 function renderPrintDesignerControls(){
   const type=$('printDesignType')?.value||'stockout';
   ensurePrintDesignerSettings();
   printDesignerDraft=pdClone(pdSavedDesign(type));
   if($('pdBaseFont'))$('pdBaseFont').value=printDesignerDraft.baseFont;
   if($('pdTitleFont'))$('pdTitleFont').value=printDesignerDraft.titleFont;
+  if($('pdRowHeightWrap'))$('pdRowHeightWrap').style.display=type==='stockout'?'block':'none';
+  if($('pdRowHeight'))$('pdRowHeight').value=Math.max(24,Math.min(44,Number(printDesignerDraft.rowHeight)||29));
 
   const textBox=$('printTextFields');
   if(textBox){
@@ -16222,6 +16398,7 @@ function pdCollectDraft(){
   if(!printDesignerDraft)printDesignerDraft=pdClone(pdSavedDesign(type));
   printDesignerDraft.baseFont=Math.max(10,Math.min(18,Number($('pdBaseFont')?.value)||13));
   printDesignerDraft.titleFont=Math.max(16,Math.min(36,Number($('pdTitleFont')?.value)||23));
+  if(type==='stockout')printDesignerDraft.rowHeight=Math.max(24,Math.min(44,Number($('pdRowHeight')?.value)||29));
   document.querySelectorAll('#printTextFields [data-pd-label]').forEach(el=>{printDesignerDraft.labels[el.dataset.pdLabel]=el.value;});
   document.querySelectorAll('#printColumnDesigner .print-column-row').forEach(row=>{
     const key=row.dataset.key;
@@ -16288,6 +16465,7 @@ async function savePrintDesigner(){
   const ok=await saveDB();
   if(!ok){db.settings.printDesigner[type]=old;return;}
   printDesignerDraft=pdClone(db.settings.printDesigner[type]);
+  if(type==='stockout')applyStockoutRowHeightSetting(printDesignerDraft);
   toast('Đã lưu thiết kế '+(type==='stockin'?'Phiếu nhập':'Phiếu xuất'));
 }
 function resetPrintDesigner(){
@@ -16296,6 +16474,7 @@ function resetPrintDesigner(){
   printDesignerDraft=pdDefaultDesign(type);
   if($('pdBaseFont'))$('pdBaseFont').value=printDesignerDraft.baseFont;
   if($('pdTitleFont'))$('pdTitleFont').value=printDesignerDraft.titleFont;
+  if($('pdRowHeight'))$('pdRowHeight').value=Math.max(24,Math.min(44,Number(printDesignerDraft.rowHeight)||29));
   const textBox=$('printTextFields');
   if(textBox)textBox.innerHTML=pdLabelFieldDefs(type).map(([key,name])=>`<div><label>${esc(name)}</label><input data-pd-label="${key}" value="${esc(printDesignerDraft.labels[key]||'')}" oninput="pdCollectDraft()"></div>`).join('');
   renderPrintColumnDesigner();renderPrintBlockDesigner();
@@ -16386,26 +16565,35 @@ buildInvoicePreview=function(data){
     const design=pdActiveDesign('stockout'),L=design.labels||pdDefaultLabels('stockout');
     const customer=(db.customers||[]).find(c=>c.id===data.customerId);
     const rows=data.items||[];
-    const warrantyItems=invoiceWarrantyItems(data);
-    const warrantyText=invoiceWarrantyText(data);
     const oldDebt=historicalOldDebtForInvoice(data),oldDebtDate=historicalOldDebtDateForInvoice(data);
     const paid=Number(data.paid||0),invoiceDebt=Number(data.debt||0);
     const totalReceivable=data.totalReceivable!==undefined?Number(data.totalReceivable)||0:oldDebt+Number(data.total||0);
     const customerDebtAfter=data.remainingCustomerDebt!==undefined?Number(data.remainingCustomerDebt)||0:Math.max(oldDebt+invoiceDebt,0);
-    const warrantyHtml=warrantyText
-    ? `<div class="pv-warranty"><b>Trả bảo hành kèm:</b> ${warrantyText}</div>`
-    : '';
-    const paper=$('invoicePreviewPaper');if(!paper)return _v59OriginalBuildInvoicePreview(data);
+
+    const paper=$('invoicePreviewPaper');
+    if(!paper)return _v59OriginalBuildInvoicePreview(data);
+
     paper.classList.add('pd-designed');
     paper.style.setProperty('--pd-base-font',(Number(design.baseFont)||13)+'px');
     paper.style.setProperty('--pd-title-font',(Number(design.titleFont)||23)+'px');
+    paper.style.setProperty('--pd-row-height',pdStockoutRowHeight(design)+'px');
+
     paper.innerHTML=`
       <div class="pv-head">
-        <div class="pv-npp pd-block" data-pd-block="npp" style="${pdBlockStyle(design,'npp')}"><b>${esc(db.settings.name)}</b><br>${esc(db.settings.address)}<br>ĐT: ${esc(db.settings.phone)}</div>
-        <div class="pv-title pd-block" data-pd-block="title" style="${pdBlockStyle(design,'title')}"><h1>${esc(L.title||'')}</h1><div>${esc(L.date||'Ngày')}: ${esc(data.dateText||'')}</div></div>
-        <div class="pv-meta pd-block" data-pd-block="meta" style="${pdBlockStyle(design,'meta')}">${esc(L.number||'Số phiếu')}: <b>${esc(data.id||'')}</b><br>${esc(L.warehouse||'Kho')}: ${esc(L.warehouseValue||'Kho chính')}</div>
+        <div class="pv-npp pd-block" data-pd-block="npp" style="${pdBlockStyle(design,'npp')}">
+          <b>${esc(db.settings.name)}</b><br>${esc(db.settings.address)}<br>ĐT: ${esc(db.settings.phone)}
+        </div>
+        <div class="pv-title pd-block" data-pd-block="title" style="${pdBlockStyle(design,'title')}">
+          <h1>${esc(L.title||'')}</h1>
+          <div>${esc(L.date||'Ngày')}: ${esc(data.dateText||'')}</div>
+        </div>
+        <div class="pv-meta pd-block" data-pd-block="meta" style="${pdBlockStyle(design,'meta')}">
+          ${esc(L.number||'Số phiếu')}: <b>${esc(data.id||'')}</b><br>
+          ${esc(L.warehouse||'Kho')}: ${esc(L.warehouseValue||'Kho chính')}
+        </div>
       </div>
       <div class="pv-rule"></div>
+
       <div class="pv-info">
         <div class="pd-block" data-pd-block="infoLeft" style="${pdBlockStyle(design,'infoLeft')}">
           <div class="pv-info-line"><b>${esc(L.party||'Khách hàng')}:</b> <span class="pv-party-name">${esc(customer?.name||'')}</span></div>
@@ -16416,17 +16604,29 @@ buildInvoicePreview=function(data){
           <div class="pv-info-line"><b>${esc(L.content||'Nội dung')}:</b> ${esc(data.content||rememberedInvoiceContent('so'))}</div>
         </div>
       </div>
+
       ${pdTableHtml('stockout',rows,design)}
+
       ${stockoutBottomPrintHtml(data,{
         current:L.sumCurrent||'Tiền hàng phiếu này',
         old:L.sumOld||'Nợ cũ đến ngày',
         total:L.sumTotal||'Tổng công nợ phải thu',
         paid:L.sumPaid||'Khách thanh toán',
         remain:L.sumRemain||'Khách hàng còn nợ',
-        signLeft:L.signLeft||'Người lập phiếu'
-      },pdBlockStyle(design,'summary'))}`;
+        warranty:L.warranty||'BẢO HÀNH',
+        signLeft:L.signLeft||'Người lập phiếu',
+        signRight:L.signRight||'Khách hàng'
+      },pdBlockStyle(design,'summary'),pdBlockStyle(design,'sign'))}
+    `;
+
+    /* Giữ ghi chú nguồn VAT nội bộ trên màn hình, tự ẩn khi in. */
+    decorateStockoutVatPreview(data);
+
     $('invoicePreview').classList.add('show');
-  }catch(err){console.error('V59 print designer fallback:',err);_v59OriginalBuildInvoicePreview(data);}
+  }catch(err){
+    console.error('V100 print designer fallback:',err);
+    _v59OriginalBuildInvoicePreview(data);
+  }
 };
 
 buildStockinPreview=function(data){
@@ -16480,10 +16680,14 @@ closeStockinPreview=function(){printDesignerPreviewOverride=null;printDesignerPr
 const _v59OriginalRenderSettings=renderSettings;
 renderSettings=function(){
   _v59OriginalRenderSettings();
-  try{ensurePrintDesignerSettings();renderPrintDesignerControls();}catch(err){console.warn('Không render được Thiết kế phiếu in:',err);}
+  try{
+    ensurePrintDesignerSettings();
+    applyStockoutRowHeightSetting();
+    renderPrintDesignerControls();
+  }catch(err){console.warn('Không render được Thiết kế phiếu in:',err);}
 };
 
-setTimeout(()=>{try{ensurePrintDesignerSettings();renderPrintDesignerControls();}catch(e){}},0);
+setTimeout(()=>{try{ensurePrintDesignerSettings();applyStockoutRowHeightSetting();renderPrintDesignerControls();}catch(e){}},0);
 
 </script>
 
