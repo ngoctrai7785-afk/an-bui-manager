@@ -14,7 +14,7 @@
 <link rel="icon" type="image/png" sizes="64x64" href="./favicon-64.png">
 
 <meta charset="utf-8">
-<meta name="app-version" content="112">
+<meta name="app-version" content="113">
 <title>AN BÙI - Quản lý nội bộ</title>
 <style>
 :root{
@@ -5763,6 +5763,65 @@ input.vnd-dot-input{
 }
 </style>
 
+
+<style id="v113-clean-ui-debt-two-columns">
+/* ===== V113: GIAO DIỆN GỌN + CÔNG NỢ 2 KHỐI SONG SONG ===== */
+#debts .grid.two{
+  display:grid!important;
+  grid-template-columns:minmax(0,2fr) minmax(330px,1fr)!important;
+  gap:14px!important;
+  align-items:start!important;
+}
+#customerDebtCard{
+  grid-column:auto!important;
+  min-width:0!important;
+}
+#supplierDebtCard{
+  grid-column:auto!important;
+  min-width:0!important;
+  align-self:start!important;
+}
+.debt-card-title{
+  margin:0 0 10px!important;
+}
+.supplier-debt-toolbar{
+  margin:0 0 10px;
+}
+.supplier-debt-toolbar input{
+  width:100%;
+  height:36px;
+}
+#supplierDebtTable table{
+  width:100%!important;
+  table-layout:fixed!important;
+}
+#supplierDebtTable th:first-child,
+#supplierDebtTable td:first-child{
+  width:68%!important;
+}
+#supplierDebtTable th:last-child,
+#supplierDebtTable td:last-child{
+  width:32%!important;
+  text-align:right!important;
+}
+#supplierDebtTable .supplier-debt-phone{
+  display:block;
+  margin-top:2px;
+  font-size:10.5px;
+  color:#7a8a91;
+}
+@media(max-width:980px){
+  #debts .grid.two{
+    grid-template-columns:1fr!important;
+  }
+}
+
+/* Bỏ dòng mô tả nhỏ trên thanh tiêu đề theo yêu cầu giao diện gọn. */
+.topbar-title-wrap > div:first-child > small{
+  display:none!important;
+}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -5833,9 +5892,7 @@ input.vnd-dot-input{
       <button id="manageGroupBtn" class="btn" onclick="secureManageProductGroups()">☷ Quản lý nhóm</button>
       <button id="addProductBtn" class="btn primary" onclick="secureOpenAddProduct()">+ Thêm hàng</button>
     </div>
-    <div id="productCostNote" class="hint manager-only-note" style="margin:8px 0 10px">
-      Giá vốn tự động tính theo <b>bình quân gia quyền liên hoàn</b> từ các phiếu nhập. Giá bán có thể sửa trực tiếp.
-    </div>
+    
     <div class="card"><div id="productsTable"></div></div>
   </section>
 
@@ -6048,7 +6105,7 @@ input.vnd-dot-input{
                 VAT
               </label>
             </div>
-            <div class="vat-source-hint missing" id="soVatSourceHint">Chọn 1 nguồn trước khi lưu. App không tự lấy sang nguồn còn lại.</div>
+            <div class="vat-source-hint missing" id="soVatSourceHint"></div>
           </div>
           <div id="soWarrantyDebtSummary" class="warranty-debt-summary none">Chưa chọn khách hàng.</div>
           <textarea id="soContent" oninput="rememberInvoiceContent('so')">Xuất hàng theo đơn đặt hàng.</textarea>
@@ -6056,7 +6113,7 @@ input.vnd-dot-input{
           <div class="print-warranty" id="soWarrantyPrint"></div>
         </div>
       </div>
-      <div class="hint">Nguồn xuất chọn dưới Thông tin khách hàng. Tồn VAT/Không VAT chỉ hiện khi xổ danh sách chọn hàng, không hiển thị trên dòng phiếu.</div>
+      
       <table class="invoice-table">
         <thead><tr>
           <th style="width:32px">STT</th>
@@ -6110,7 +6167,7 @@ input.vnd-dot-input{
         <option value="Đang xử lý">Đang xử lý</option>
         <option value="Đã trả">Đã trả</option><option value="Đã trả lại">Đã trả lại</option>
       </select>
-      <button class="btn primary" onclick="openWarranty()">+ Nhận bảo hành</button><span class="small" style="align-self:center">Có thể nhận nhiều sản phẩm trên 1 phiếu. Chọn đúng hàng trong danh mục; từng sản phẩm xử lý riêng hoặc “Khách trả lại”.</span>
+      <button class="btn primary" onclick="openWarranty()">+ Nhận bảo hành</button>
     </div>
     <div class="card"><div id="warrantyTable"></div></div>
   </section>
@@ -6119,7 +6176,7 @@ input.vnd-dot-input{
     <div class="grid two">
       <div id="customerDebtCard" class="card">
         <div class="customer-debt-head">
-          <h3 style="margin:0">Công nợ khách hàng</h3>
+          <h3 class="debt-card-title">Công nợ khách hàng</h3>
           <div class="recent-limit-setting manager-hidden" data-manager-only="1">
             <span>Phiếu gần đây:</span>
             <select id="recentOutLimit" onchange="saveRecentOutLimit()">
@@ -6130,7 +6187,7 @@ input.vnd-dot-input{
             </select>
           </div>
         </div>
-        <div class="hint manager-hidden" data-manager-only="1" style="margin:5px 0 9px">Cài số phiếu xuất gần nhất hiển thị ở Tổng quan Nhân viên.</div>
+        
 
         <div class="customer-debt-period-toolbar v112">
           <label class="customer-debt-search-label">Tìm khách hàng
@@ -6148,10 +6205,21 @@ input.vnd-dot-input{
           </label>
         </div>
         <div id="customerDebtPeriodText" class="customer-debt-period-note"></div>
-        <div class="customer-debt-period-note">Bấm <b>tên khách hàng</b> để xem sổ chi tiết. Cảnh báo quá hạn lấy theo số ngày đã cài riêng cho từng khách trong <b>Khách hàng → Hạn công nợ</b>. Trả hàng/BH tự trừ vào Nợ cuối kỳ.</div>
+        
         <div id="customerDebtTable"></div>
       </div>
-      <div id="supplierDebtCard" class="card"><h3>Công nợ nhà cung cấp</h3><div id="supplierDebtTable"></div></div>
+      <div id="supplierDebtCard" class="card">
+        <h3 class="debt-card-title">Công nợ nhà cung cấp</h3>
+        <div class="supplier-debt-toolbar">
+          <input id="supplierDebtSearch"
+                 type="search"
+                 placeholder="Tìm nhà cung cấp / SĐT..."
+                 oninput="renderDebts()"
+                 onfocus="this.select()"
+                 onclick="this.select()">
+        </div>
+        <div id="supplierDebtTable"></div>
+      </div>
     </div>
   </section>
 
@@ -6161,7 +6229,7 @@ input.vnd-dot-input{
       <div class="settings-card-head">
         <div>
           <h3 style="margin:0">Thanh toán & đối soát công nợ</h3>
-          <div class="hint">Giao dịch thanh toán được lưu riêng, không sửa Phiếu Xuất/Nhập cũ.</div>
+          
         </div>
       </div>
 
@@ -6188,7 +6256,7 @@ input.vnd-dot-input{
           </div>
           <button class="btn primary" onclick="saveCustomerPayment()">Xác nhận thanh toán</button>
         </div>
-        <div class="payment-history-head"><h3>Lịch sử khách hàng thanh toán</h3><span class="small">Quản lý được sửa/xóa để đối soát.</span></div>
+        <div class="payment-history-head"><h3>Lịch sử khách hàng thanh toán</h3></div>
         <div id="customerPaymentHistory"></div>
       </div>
 
@@ -6209,7 +6277,7 @@ input.vnd-dot-input{
           </div>
           <button class="btn primary" onclick="saveSupplierPayment()">Xác nhận trả nợ</button>
         </div>
-        <div class="payment-history-head"><h3>Lịch sử trả Nhà cung cấp</h3><span class="small">Chỉ Quản lý sử dụng.</span></div>
+        <div class="payment-history-head"><h3>Lịch sử trả Nhà cung cấp</h3></div>
         <div id="supplierPaymentHistory"></div>
       </div>
     </div>
@@ -6219,7 +6287,7 @@ input.vnd-dot-input{
     <div class="employee-page-header">
       <div>
         <h2 style="margin:0">Quản lý nhân viên</h2>
-        <div class="hint">Lương chạy tăng dần theo ngày làm việc dựa trên mức lương/ngày quản lý đã nhập.</div>
+        
       </div>
       <button id="employeeAddBtn" class="btn primary" onclick="openAddEmployee()">+ Thêm nhân viên</button>
     </div>
@@ -6230,7 +6298,7 @@ input.vnd-dot-input{
       <div class="settings-card-head">
         <div>
           <h3 style="margin:0">Danh sách nhân viên</h3>
-          <div class="hint">Nhấn Xem chi tiết ở đúng dòng của mình, nhập PIN để xác nhận đi làm và xem lịch công.</div>
+          
         </div>
       </div>
       <div id="employeeSelfList"></div>
@@ -6240,7 +6308,7 @@ input.vnd-dot-input{
       <div class="settings-card-head">
         <div>
           <h3 style="margin:0">Bảng nhân viên & lương</h3>
-          <div class="hint">Lương tự cộng theo ngày làm thực tế, trừ Chủ nhật và ngày Tạm vắng; thanh toán bao nhiêu trừ bấy nhiêu.</div>
+          
         </div>        <button class="btn primary" onclick="openDailySalarySetup()">💵 Lương</button>
       </div>
 
@@ -6248,7 +6316,7 @@ input.vnd-dot-input{
         <label>Tháng tính lương</label>
         <input id="employeePayrollMonth" type="month" onchange="renderEmployees()">
       </div>
-      <div class="hint" style="margin:6px 0 10px">Bấm nút Lương để nhập mức lương/ngày • Bấm tên nhân viên để mở lịch • Trả lương trực tiếp trên ngày thực tế để dễ đối soát.</div>
+      
 
       <div id="salaryDebtOverview" class="salary-debt-overview"></div>
       <div id="employeeList"></div>
@@ -6260,7 +6328,7 @@ input.vnd-dot-input{
       <div class="settings-card-head">
         <div>
           <h3 style="margin:0">Lịch chi phí</h3>
-          <div class="hint" id="expenseRoleHint">Bấm vào ngày trên lịch để ghi và xem chi phí của ngày đó.</div>
+          
         </div>
         <button class="btn primary" onclick="openAddExpense(currentISODate())">+ Ghi chi phí hôm nay</button>
       </div>
@@ -6288,7 +6356,7 @@ input.vnd-dot-input{
         <div class="settings-card-head">
           <div>
             <h3 style="margin:0;font-size:16px">Danh sách chi phí</h3>
-            <div class="hint">Có thể lọc thêm theo khoảng ngày.</div>
+            
           </div>
         </div>
         <div class="expense-entry-filter">
@@ -6319,7 +6387,7 @@ input.vnd-dot-input{
       <div class="settings-card-head">
         <div>
           <h3 style="margin:0">VAT</h3>
-          <div class="hint">Nhập/Xuất theo khoảng ngày đang chọn; tồn VAT và Không VAT là tồn hiện tại.</div>
+          
         </div>
       </div>
       <div class="vat-report-grid" id="vatReportCards"></div>
@@ -6370,7 +6438,7 @@ input.vnd-dot-input{
       <div class="settings-card-head">
         <div>
           <h3 style="margin:0">Phân quyền</h3>
-          <div class="hint">Quản lý chọn chức năng Nhân viên được sử dụng.</div>
+          
         </div>
       </div>
 
@@ -6417,7 +6485,7 @@ input.vnd-dot-input{
       <div class="settings-card-head">
         <div>
           <h3 style="margin:0">Đổi mã PIN Quản lý</h3>
-          <div class="hint">PIN dùng để mở quyền Quản lý trên thanh trên cùng.</div>
+          
         </div>
       </div>
       <div class="form-grid">
@@ -6443,7 +6511,7 @@ input.vnd-dot-input{
       <div class="settings-card-head">
         <div>
           <h3 style="margin:0">Thiết kế & tạo app quản lý mới</h3>
-          <div class="hint">Tạo một file HTML mới có đầy đủ nền tảng Manager nhưng dữ liệu và bộ nhớ tách riêng. App mới không đọc dữ liệu của Master hoặc Ngọc Trai Manager.</div>
+          
         </div>
       </div>
 
@@ -6477,7 +6545,7 @@ input.vnd-dot-input{
       </div>
 
       <h4 style="margin:14px 0 5px">Chức năng giữ lại trong app mới</h4>
-      <div class="hint">Tổng quan và Cài đặt luôn được giữ. Bỏ dấu ✓ ở chức năng không cần dùng; app mới sẽ ẩn mục đó khỏi menu.</div>
+      
       <div class="app-builder-modules" id="newAppModuleList">
         <label class="app-builder-module"><input type="checkbox" data-new-module="stockout" checked>⬆️ Phiếu xuất</label>
         <label class="app-builder-module"><input type="checkbox" data-new-module="stockin" checked>⬇️ Nhập hàng</label>
@@ -6508,7 +6576,7 @@ input.vnd-dot-input{
       <div class="settings-card-head">
         <div>
           <h3 style="margin:0">Thiết kế phiếu in</h3>
-          <div class="hint">Thiết kế chữ/cột/khối cho bản in. Riêng chiều cao dòng Phiếu xuất áp dụng đồng thời cho màn hình nhập và bản A4 khi in. Không thay đổi số liệu, tồn kho hay công nợ.</div>
+          
         </div>
       </div>
       <div class="print-designer-note">
@@ -6571,7 +6639,7 @@ input.vnd-dot-input{
       <div class="settings-card-head">
         <div>
           <h3 style="margin:0">Chốt & lưu trữ dữ liệu cũ</h3>
-          <div class="hint">Dùng khi app đã vận hành lâu năm. Hệ thống chốt công nợ hiện tại thành công nợ đầu kỳ mới, lưu các phiếu cũ vào Kho lưu trữ rồi làm gọn dữ liệu đang sử dụng.</div>
+          
         </div>
       </div>
 
@@ -6594,7 +6662,7 @@ input.vnd-dot-input{
       <div class="settings-card-head" style="margin-top:12px">
         <div>
           <h3 style="margin:0;font-size:15px">Kho lưu trữ</h3>
-          <div class="hint">Các kỳ đã chốt vẫn giữ để tra cứu khi cần.</div>
+          
         </div>
       </div>
       <div id="archiveHistory"></div>
@@ -6604,7 +6672,7 @@ input.vnd-dot-input{
       <div class="settings-card-head">
         <div>
           <h3 style="margin:0">Sao lưu & khôi phục dữ liệu</h3>
-          <div class="hint">Sao lưu toàn bộ hàng hóa, tồn kho, khách hàng, NCC, phiếu nhập/xuất, bảo hành, chi phí và cài đặt.</div>
+          
         </div>
       </div>
       <div class="backup-actions">
@@ -6621,7 +6689,7 @@ input.vnd-dot-input{
       <div class="settings-card-head">
         <div>
           <h3 style="margin:0;color:#9f2f2f">⚠ Reset toàn bộ dữ liệu</h3>
-          <div class="hint">Dùng khi muốn đưa hệ thống về trạng thái dữ liệu sạch như một app mới. Hệ thống bắt buộc kiểm tra lại PIN Quản lý và tự tải một file sao lưu trước khi xóa.</div>
+          
         </div>
       </div>
       <div class="archive-warning" style="border-color:#e1aaaa;background:#fff3f3;color:#7e2929">
@@ -10517,11 +10585,22 @@ function renderDebts(){
   }
 
   if(isManager){
+    const sq=norm($('supplierDebtSearch')?.value||'');
+    const supplierRows=(db.suppliers||[])
+      .filter(s=>supplierDebt(s.id)>0)
+      .filter(s=>!sq || norm((s.name||'')+' '+(s.phone||'')+' '+(s.address||'')).includes(sq))
+      .sort((a,b)=>supplierDebt(b.id)-supplierDebt(a.id) || String(a.name||'').localeCompare(String(b.name||''),'vi'))
+      .map(s=>`<tr>
+        <td>
+          <b>${esc(s.name||'')}</b>
+          <span class="supplier-debt-phone">${esc(s.phone||'')}</span>
+        </td>
+        <td class="right"><b>${money(supplierDebt(s.id))}</b></td>
+      </tr>`);
+
     $('supplierDebtTable').innerHTML=table(
       ['Nhà cung cấp','Còn nợ'],
-      db.suppliers.filter(s=>supplierDebt(s.id)>0).map(s=>
-        `<tr><td>${esc(s.name)}</td><td class="right"><b>${money(supplierDebt(s.id))}</b></td></tr>`
-      )
+      supplierRows
     );
   }else{
     $('supplierDebtTable').innerHTML='';
@@ -17430,7 +17509,7 @@ async function saveStockinStable(doPrint=false){
 <script id="pwa-register">
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   window.addEventListener('load', function(){
-    navigator.serviceWorker.register('./sw.js?v=ab123-v112-debt-overdue').catch(function(err){ console.warn('Service worker:', err); });
+    navigator.serviceWorker.register('./sw.js?v=ab123-v113-clean-ui-debt-columns').catch(function(err){ console.warn('Service worker:', err); });
   });
 }
 
