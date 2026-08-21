@@ -14,7 +14,7 @@
 <link rel="icon" type="image/png" sizes="64x64" href="./favicon-64.png">
 
 <meta charset="utf-8">
-<meta name="app-version" content="102">
+<meta name="app-version" content="103">
 <title>AN BÙI - Quản lý nội bộ</title>
 <style>
 :root{
@@ -5323,6 +5323,84 @@ input.vnd-dot-input{
 .pd-row-height-controls>div{min-width:145px}
 .pd-row-presets{display:flex;gap:5px;flex-wrap:wrap}
 .pd-row-height-note{font-size:11px;color:#5d6b72;margin-top:5px;line-height:1.4}
+</style>
+
+
+<style id="v103-real-printer-a4-safe">
+/* ===== V103: IN A4 THẬT - KHÔNG TRÀN CỘT ===== */
+@media print{
+  @page{
+    size:A4 portrait;
+    margin:8mm;
+  }
+
+  html,body{
+    width:auto!important;
+    min-width:0!important;
+    max-width:none!important;
+    margin:0!important;
+    padding:0!important;
+    background:#fff!important;
+  }
+
+  body.print-invoice-mode #invoicePreview,
+  body.print-invoice-mode #invoicePreview .invoice-preview-shell{
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    margin:0!important;
+    padding:0!important;
+    overflow:visible!important;
+    box-sizing:border-box!important;
+  }
+
+  body.print-invoice-mode #invoicePreviewPaper{
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    min-height:auto!important;
+    margin:0!important;
+    padding:0!important;
+    box-sizing:border-box!important;
+    overflow:visible!important;
+  }
+
+  body.print-invoice-mode #invoicePreviewPaper .pd-table-block,
+  body.print-invoice-mode #invoicePreviewPaper .pd-table-block table,
+  body.print-invoice-mode #invoicePreviewPaper .pv-summary,
+  body.print-invoice-mode #invoicePreviewPaper .pv-bottom-grid,
+  body.print-invoice-mode #invoicePreviewPaper .pv-final-row{
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    box-sizing:border-box!important;
+  }
+
+  body.print-invoice-mode #invoicePreviewPaper .pd-table-block{
+    overflow:visible!important;
+  }
+
+  body.print-invoice-mode #invoicePreviewPaper .pd-table-block table{
+    table-layout:fixed!important;
+    border-collapse:collapse!important;
+  }
+
+  body.print-invoice-mode #invoicePreviewPaper .pd-table-block th,
+  body.print-invoice-mode #invoicePreviewPaper .pd-table-block td{
+    box-sizing:border-box!important;
+    max-width:0;
+    overflow:hidden!important;
+    text-overflow:clip!important;
+    white-space:normal!important;
+    overflow-wrap:anywhere!important;
+    word-break:normal!important;
+  }
+
+  body.print-invoice-mode #invoicePreviewPaper .pd-table-block td.r{
+    white-space:nowrap!important;
+    overflow-wrap:normal!important;
+  }
+}
 </style>
 
 </head>
@@ -16125,7 +16203,7 @@ async function saveStockinStable(doPrint=false){
 <script id="pwa-register">
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   window.addEventListener('load', function(){
-    navigator.serviceWorker.register('./sw.js?v=ab123-v102-wysiwyg-rowheight').catch(function(err){ console.warn('Service worker:', err); });
+    navigator.serviceWorker.register('./sw.js?v=ab123-v103-real-printer-a4').catch(function(err){ console.warn('Service worker:', err); });
   });
 }
 
@@ -16548,7 +16626,15 @@ function pdTableHtml(kind,rows,design){
     cols=allCols.filter(c=>c.visible!==false);
   }
 
-  const head=cols.map(c=>`<th style="width:${Math.max(5,Math.min(90,Number(c.width)||10))}mm">${esc(c.label||'')}</th>`).join('');
+  /* V103: Chuẩn hóa các cột đang hiện về đúng 100%.
+     Giá trị độ rộng trong Cài đặt vẫn giữ ý nghĩa TỶ LỆ tương đối,
+     nhưng bảng sẽ không thể vượt khỏi vùng in A4 thật. */
+  const widthValues=cols.map(c=>Math.max(5,Math.min(90,Number(c.width)||10)));
+  const totalWidth=Math.max(1,widthValues.reduce((s,v)=>s+v,0));
+  const head=cols.map((c,i)=>{
+    const pct=(widthValues[i]/totalWidth*100);
+    return `<th style="width:${pct.toFixed(4)}%">${esc(c.label||'')}</th>`;
+  }).join('');
   let body=list.map((r,i)=>{const p=(db.products||[]).find(x=>x.id===r.productId);return `<tr>${cols.map(c=>pdCellHtml(c,r,p,i)).join('')}</tr>`}).join('');
   if(!body)body=`<tr><td colspan="${Math.max(1,cols.length)}" class="c">Không có hàng hóa</td></tr>`;
   return `<div class="pd-block pd-table-block" data-pd-block="table" style="${pdBlockStyle(design,'table')}"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
