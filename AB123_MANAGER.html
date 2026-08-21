@@ -14,7 +14,7 @@
 <link rel="icon" type="image/png" sizes="64x64" href="./favicon-64.png">
 
 <meta charset="utf-8">
-<meta name="app-version" content="94">
+<meta name="app-version" content="97">
 <title>AN BÙI - Quản lý nội bộ</title>
 <style>
 :root{
@@ -5089,6 +5089,106 @@ input.vnd-dot-input{
 }
 </style>
 
+
+<style id="v95-warehouse-edit-manager-sale">
+/* ===== V95: SỬA HÀNG HÓA + GIÁ BÁN TRONG PHIẾU NHẬP QUẢN LÝ ===== */
+.warehouse-row-actions{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  flex-wrap:nowrap;
+}
+#warehouseTable .warehouse-row-actions .btn{
+  min-width:48px!important;
+  padding:6px 8px!important;
+}
+#stockin .invoice-table [data-role="salePrice"]{
+  text-align:right!important;
+  font-weight:700;
+}
+</style>
+
+
+<style id="v96-attendance-toggle">
+/* ===== V96 LỊCH CÔNG: BẤM NGÀY ĐỂ CHUYỂN NGHỈ / CÓ ĐI LÀM ===== */
+.lg-off{background:#fff0d8!important;border-color:#efb35f!important}
+.employee-cal-day.absent{
+  background:#fff0d8!important;
+  border-color:#efb35f!important;
+  color:#9a5700!important;
+}
+.employee-cal-day.working{
+  background:#eaf8f0!important;
+  border-color:#9fd2b4!important;
+  color:#176847!important;
+}
+.employee-cal-day.attendance-toggle-day{
+  cursor:pointer;
+  user-select:none;
+  -webkit-tap-highlight-color:transparent;
+}
+.employee-cal-day.attendance-toggle-day:active{
+  transform:scale(.98);
+}
+.employee-cal-detail-btn{
+  position:absolute;
+  top:3px;
+  right:3px;
+  width:24px;
+  height:22px;
+  min-width:0!important;
+  padding:0!important;
+  border:1px solid rgba(70,90,100,.22);
+  border-radius:6px;
+  background:rgba(255,255,255,.78);
+  color:#536771;
+  font-weight:900;
+  line-height:18px;
+  z-index:2;
+}
+.employee-cal-detail-btn:hover{background:#fff}
+.employee-cal-day.absent .employee-cal-detail-btn{color:#8a570f}
+.employee-cal-day.working .employee-cal-detail-btn{color:#176847}
+.employee-calendar-toggle-note{
+  margin:8px 0 4px;
+  padding:7px 9px;
+  border-radius:8px;
+  background:#f7fafb;
+  border:1px solid #dce6ea;
+  font-size:11.5px;
+  color:#526873;
+}
+@media(max-width:767px){
+  .employee-cal-detail-btn{width:20px;height:19px;font-size:10px;top:2px;right:2px}
+}
+</style>
+
+
+<style id="v97-employee-self-attendance">
+/* ===== V97: LỊCH CÔNG GIAO DIỆN NHÂN VIÊN CÓ THỂ THAO TÁC ===== */
+.employee-self-calendar-day.attendance-toggle-day{
+  cursor:pointer!important;
+  user-select:none;
+  -webkit-tap-highlight-color:transparent;
+}
+.employee-self-calendar-day.attendance-toggle-day:active{
+  transform:scale(.98);
+}
+.employee-self-calendar-day.today-attendance{
+  box-shadow:0 0 0 2px rgba(25,118,210,.18) inset;
+}
+.employee-self-attendance-note{
+  margin:8px 0 10px;
+  padding:8px 10px;
+  border:1px solid #dfe7eb;
+  border-radius:9px;
+  background:#f8fbfc;
+  font-size:12px;
+  line-height:1.45;
+}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -5980,6 +6080,7 @@ let reportProductIndex=-1;
 let isManager=false;
 let afterManagerUnlock=null;
 let warrantyDraftItems=[],warrantyPickerIndex=-1,warrantySelectedProductId='';
+let employeeSelfSessionId='';
 
 const $=id=>document.getElementById(id);
 const money=n=>new Intl.NumberFormat('vi-VN').format(Math.round(Number(n)||0))+' đ';
@@ -6610,6 +6711,9 @@ function loadStockinIntoForm(invoice){
     price:r.price??'',
     ck:r.ck??'',
     km:r.km??'',
+    staffSalePrice:r.salePriceAtReceive!==undefined && r.salePriceAtReceive!==null
+      ? Number(r.salePriceAtReceive)||0
+      : Number(db.products.find(p=>p.id===r.productId)?.salePrice||0)||'',
     note:r.note||''
   }));
 
@@ -7457,17 +7561,26 @@ function applyStaffSalesToProducts(rows){
 function stockinSavedItems(rows){
   return (rows||[]).map(r=>{
     const item={...r,net:calcNet(r)};
+    let hasSaleTerms=false;
+
+    /* Giá bán được lưu theo đúng phiếu nhập cho cả Quản lý và Nhân viên. */
+    if(r.staffSalePrice!==undefined && r.staffSalePrice!==''){
+      item.salePriceAtReceive=Number(r.staffSalePrice)||0;
+      hasSaleTerms=true;
+    }
+
+    /* CK/KM ở chế độ Nhân viên là điều kiện bán; ở chế độ Quản lý
+       CK/KM là điều kiện mua nên không được trộn hai loại với nhau. */
     if(!isManager){
-      item.salePriceAtReceive=r.staffSalePrice!==''?Number(r.staffSalePrice)||0:null;
       item.saleCKAtReceive=r.staffCK!==''?Number(r.staffCK)||0:null;
       item.saleKMAtReceive=r.staffKM!==''?Number(r.staffKM)||0:null;
-      item.saleTermsSavedAt=nowText();
+      hasSaleTerms=true;
     }
+
+    if(hasSaleTerms)item.saleTermsSavedAt=nowText();
     return item;
   });
 }
-
-/* ===== V76 PHÂN QUYỀN NHẬP HÀNG KHÔNG HIỆN GIÁ ===== */
 function staffCanStockin(){
   return isManager || staffModuleEnabled('stockin');
 }
@@ -8472,6 +8585,9 @@ function renderWarehouse(){
         : '<span class="badge ok">Còn hàng</span>';
 
     const qtyClass=st==='out'?'stock-zero':st==='low'?'stock-low':'stock-ok';
+    const editBtn=isManager
+      ? `<button class="btn" onclick="openEditProduct('${p.id}')">Sửa</button>`
+      : '';
 
     return `<tr>
       <td>${esc(p.id)}</td>
@@ -8482,17 +8598,16 @@ function renderWarehouse(){
       <td class="center"><span class="stock-qty ${qtyClass}">${Number(p.stock||0)}</span></td>
       <td class="center">${Number(p.min||0)}</td>
       <td class="center">${statusHtml}</td>
-      <td class="center"><button class="btn" onclick="openProductMovement('${p.id}')">Lịch sử</button></td>
+      <td class="center"><div class="warehouse-row-actions">${editBtn}<button class="btn" onclick="openProductMovement('${p.id}')">Lịch sử</button></div></td>
     </tr>`;
   });
 
   $('warehouseTable').innerHTML=table(
-    ['Mã','Tên hàng','Nhóm','ĐVT','Giá bán','Tồn hiện tại','Tồn tối thiểu','Trạng thái',''],
+    ['Mã','Tên hàng','Nhóm','ĐVT','Giá bán','Tồn hiện tại','Tồn tối thiểu','Trạng thái','Chức năng'],
     rows
   );
   applyWarehouseVatColumns(list);
 }
-
 function productMovementRows(productId){
   const rows=[];
 
@@ -9630,7 +9745,7 @@ function openEmployeePinLogin(employeeId){
       <button class="btn" onclick="closeModal()">Hủy</button>
       <button class="btn primary" onclick="employeePinLogin('${emp.id}')">Vào lịch công</button>
     </div>`);
-  setTimeout(()=>{const input=$('employeePinLoginInput'); if(input){input.focus(); input.onkeydown=ev=>{if(ev.key==='Enter'){ev.preventDefault();employeePinLogin('${emp.id}')}}}},50);
+  setTimeout(()=>{const input=$('employeePinLoginInput'); if(input){input.focus(); input.onkeydown=ev=>{if(ev.key==='Enter'){ev.preventDefault();employeePinLogin(String(emp.id))}}}},50);
 }
 
 function employeePinLogin(employeeId){
@@ -9642,6 +9757,7 @@ function employeePinLogin(employeeId){
   if(!entered){if(msg)msg.textContent='Vui lòng nhập mã PIN.';input?.focus();return;}
   if(!actual){if(msg)msg.textContent='Nhân viên này chưa được cấp PIN.';return;}
   if(entered!==actual){if(msg)msg.textContent='Mã PIN không đúng.';if(input){input.value='';input.focus()}return;}
+  employeeSelfSessionId=String(emp.id);
   openEmployeeSelfCalendar(String(emp.id));
 }
 
@@ -10288,49 +10404,331 @@ async function employeeResumeWork(employeeId){
   ensureEmployeeData();
   const emp=(db.employees||[]).find(x=>String(x.id)===String(employeeId) && x.active!==false);
   if(!emp)return;
+
+  const empId=String(emp.id);
+  if(!isManager && String(employeeSelfSessionId||'')!==empId){
+    return openEmployeePinLogin(empId);
+  }
+
   const today=currentISODate();
   if(isSundayISO(today))return alert('Hôm nay là Chủ nhật. Tăng ca Chủ nhật do Quản lý ghi nhận riêng.');
-  if(employeeAttendanceStateOnDate(emp.id,today)==='work'){openEmployeeSelfCalendar(emp.id);return;}
-  const backup=JSON.parse(JSON.stringify(db.employeeAttendanceConfirmations||[]));
-  db.employeeAttendanceConfirmations=(db.employeeAttendanceConfirmations||[]).filter(x=>!(x.employeeId===emp.id && x.date===today));
-  db.employeeAttendanceConfirmations.push({id:'CC'+String(Date.now()).slice(-9),employeeId:emp.id,date:today,source:'employee',createdAt:new Date().toISOString()});
-  if(!(await saveDB())){db.employeeAttendanceConfirmations=backup;return;}
-  renderEmployeeSelfCheck();renderEmployees();openEmployeeSelfCalendar(emp.id);toast('Đã chuyển sang trạng thái đi làm');
+
+  if(employeeAttendanceStateOnDate(emp.id,today)==='work'){
+    openEmployeeSelfCalendar(emp.id);
+    return;
+  }
+
+  const backupAbsences=JSON.parse(JSON.stringify(db.employeeAbsences||[]));
+  const backupConfirmations=JSON.parse(JSON.stringify(db.employeeAttendanceConfirmations||[]));
+
+  /* Khi quay lại làm phải xóa cả mốc NGHỈ cùng ngày, nếu không trạng thái có thể vẫn bị giữ ở Nghỉ. */
+  db.employeeAbsences=(db.employeeAbsences||[])
+    .filter(x=>!(String(x.employeeId)===empId && x.date===today));
+  db.employeeAttendanceConfirmations=(db.employeeAttendanceConfirmations||[])
+    .filter(x=>!(String(x.employeeId)===empId && x.date===today));
+
+  db.employeeAttendanceConfirmations.push({
+    id:'CC'+String(Date.now()).slice(-9),
+    employeeId:emp.id,
+    date:today,
+    source:isManager?'manager-resume':'employee-resume',
+    createdAt:new Date().toISOString()
+  });
+
+  if(!(await saveDB())){
+    db.employeeAbsences=backupAbsences;
+    db.employeeAttendanceConfirmations=backupConfirmations;
+    return;
+  }
+
+  renderEmployeeSelfCheck();
+  renderEmployees();
+  renderEmployeeToday();
+  renderReports();
+  openEmployeeSelfCalendar(emp.id);
+  toast('Đã chuyển sang CÓ ĐI LÀM • bắt đầu tính lương lại');
 }
 
 function openEmployeeSelfCalendar(employeeId,monthOverride=''){
   ensureEmployeeData();
+
   const emp=(db.employees||[]).find(x=>String(x.id)===String(employeeId) && x.active!==false);
   if(!emp)return;
-  const month=monthOverride||currentISODate().slice(0,7), totalDays=daysInMonth(month), today=currentISODate();
-  const startDate=employeeStartDate(emp), stats=employeeCalendarStats(emp,month), lifetime=employeeLifetimeBalance(emp);
-  const sundays=employeeSundayCountInMonth(emp.id,month), currentState=employeeAttendanceStateOnDate(emp.id,today);
-  const monthPayments=(db.salaryPayments||[]).filter(p=>p.employeeId===emp.id && employeeMonthKey(p.date)===month).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
-  const paidThisMonth=monthPayments.reduce((s,p)=>s+(Number(p.amount)||0),0);
-  let cells='';
-  for(let day=1;day<=totalDays;day++){
-    const date=`${month}-${String(day).padStart(2,'0')}`,d=new Date(date+'T12:00:00'),sunday=d.getDay()===0,future=date>today,beforeStart=date<startDate;
-    const state=employeeAttendanceStateOnDate(emp.id,date),ot=employeeSundayOvertimeOnDate(emp.id,date);
-    const dayPaid=(db.salaryPayments||[]).filter(p=>p.employeeId===emp.id && p.date===date).reduce((s,p)=>s+(Number(p.amount)||0),0);
-    let cls='employee-cal-day',status='Đi làm';
-    if(beforeStart){cls+=' before-start';status='Chưa vào làm'} else if(future){cls+=' future';status=sunday?'Chủ nhật':'Theo trạng thái hiện tại'} else if(sunday){cls+=' sunday';status=Number(ot?.amount)>0?'Có tăng ca':'Chủ nhật'} else if(state==='off'){cls+=' absent';status='Nghỉ'} else {cls+=' working';status='Đi làm'}
-    if(dayPaid>0)cls+=' has-payment';
-    cells+=`<div class="${cls} employee-self-calendar-day"><span class="employee-cal-weekday">${weekdayLabel(date)}</span><b>${day}</b><small>${esc(status)}</small>${dayPaid>0?`<em>💰 ${money(dayPaid)}</em>`:''}</div>`;
+
+  const empId=String(emp.id);
+
+  /* Giao diện cá nhân chỉ mở sau khi đúng PIN; Quản lý vẫn có thể vào khi cần. */
+  if(!isManager && String(employeeSelfSessionId||'')!==empId){
+    return openEmployeePinLogin(empId);
   }
+
+  const month=monthOverride||currentISODate().slice(0,7);
+  const totalDays=daysInMonth(month);
+  const today=currentISODate();
+
+  const startDate=employeeStartDate(emp);
+  const stats=employeeCalendarStats(emp,month);
+  const lifetime=employeeLifetimeBalance(emp);
+  const sundays=employeeSundayCountInMonth(emp.id,month);
+  const currentState=employeeAttendanceStateOnDate(emp.id,today);
+
+  const monthPayments=(db.salaryPayments||[])
+    .filter(p=>String(p.employeeId)===empId && employeeMonthKey(p.date)===month)
+    .sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+
+  const paidThisMonth=monthPayments.reduce((s,p)=>s+(Number(p.amount)||0),0);
+
+  let cells='';
+
+  for(let day=1;day<=totalDays;day++){
+    const date=`${month}-${String(day).padStart(2,'0')}`;
+    const d=new Date(date+'T12:00:00');
+    const sunday=d.getDay()===0;
+    const future=date>today;
+    const beforeStart=date<startDate;
+
+    const state=employeeAttendanceStateOnDate(emp.id,date);
+    const ot=employeeSundayOvertimeOnDate(emp.id,date);
+    const dayPaid=(db.salaryPayments||[])
+      .filter(p=>String(p.employeeId)===empId && p.date===date)
+      .reduce((s,p)=>s+(Number(p.amount)||0),0);
+
+    let cls='employee-cal-day employee-self-calendar-day';
+    let status='Có đi làm';
+    let action='';
+
+    if(beforeStart){
+      cls+=' before-start';
+      status='Chưa vào làm';
+    }else if(future){
+      cls+=' future';
+      status=sunday?'Chủ nhật':'Chưa đến';
+    }else if(sunday){
+      cls+=' sunday';
+      status=Number(ot?.amount)>0?'Có tăng ca':'Chủ nhật';
+    }else if(state==='off'){
+      cls+=' absent';
+      status='Nghỉ';
+    }else{
+      cls+=' working';
+      status='Có đi làm';
+    }
+
+    /* Quản lý: sửa được ngày đã qua. Nhân viên: chỉ bấm ngày hôm nay sau khi nhập PIN. */
+    const canToggle=!beforeStart && !future && !sunday && (isManager || date===today);
+    if(canToggle){
+      cls+=' attendance-toggle-day';
+      if(date===today)cls+=' today-attendance';
+      action=`toggleEmployeeSelfAttendanceDay('${empId}','${date}','${month}')`;
+    }
+
+    if(dayPaid>0)cls+=' has-payment';
+
+    const clickAttr=action?`onclick="${action}"`:'';
+    const keyAttr=action?`onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();${action}}" tabindex="0" role="button"`:'';
+
+    cells+=`<div class="${cls}" ${clickAttr} ${keyAttr}>
+      <span class="employee-cal-weekday">${weekdayLabel(date)}</span>
+      <b>${day}</b>
+      <small>${esc(status)}</small>
+      ${dayPaid>0?`<em>💰 ${money(dayPaid)}</em>`:''}
+    </div>`;
+  }
+
+  const operationHint=isManager
+    ? 'Quản lý: bấm trực tiếp ô ngày xanh/cam để đổi Có đi làm ↔ Nghỉ. Ngày nghỉ không tính lương.'
+    : 'Nhân viên: bấm trực tiếp ô HÔM NAY. Xanh = Có đi làm; Cam = Nghỉ và không tính lương. Khi quay lại làm, bấm ô hôm nay để chuyển xanh.';
+
   showModal(`
-    <div class="employee-calendar-head"><div><h3 style="margin:0">Lịch công - ${esc(emp.name)}</h3><div class="small">Trạng thái hiện tại: <b>${currentState==='off'?'Đang nghỉ':'Đang làm'}</b></div></div>
-      <div class="employee-calendar-month"><label>Tháng</label><input type="month" value="${month}" onchange="openEmployeeSelfCalendar('${emp.id}',this.value)"></div></div>
-    ${currentState==='off'?`<div class="employee-resume-box"><div><b>Quay lại làm việc</b><div class="small">Chỉ cần bấm Đi làm một lần. Hệ thống tự tính công cho đến khi Quản lý chấm nghỉ lần sau.</div></div><button class="btn primary" onclick="employeeResumeWork('${emp.id}')">Đi làm</button></div>`:''}
-    <div class="employee-calendar-legend"><span><i class="lg-work"></i> Đi làm</span><span><i class="lg-off"></i> Nghỉ</span><span><i class="lg-sun"></i> Chủ nhật</span><span>💰 Đã trả lương</span></div>
+    <div class="employee-calendar-head">
+      <div>
+        <h3 style="margin:0">Lịch công - ${esc(emp.name)}</h3>
+        <div class="small">Trạng thái hiện tại: <b>${currentState==='off'?'Đang nghỉ':'Đang làm'}</b></div>
+      </div>
+      <div class="employee-calendar-month">
+        <label>Tháng</label>
+        <input type="month" value="${month}" onchange="openEmployeeSelfCalendar('${empId}',this.value)">
+      </div>
+    </div>
+
+    <div class="employee-self-attendance-note"><b>Chấm công:</b> ${esc(operationHint)}</div>
+
+    ${currentState==='off'?`
+      <div class="employee-resume-box">
+        <div>
+          <b>Quay lại làm việc</b>
+          <div class="small">Bấm Đi làm hoặc bấm ô hôm nay để chuyển sang màu xanh và tính lương lại.</div>
+        </div>
+        <button class="btn primary" onclick="employeeResumeWork('${empId}')">Đi làm</button>
+      </div>`:''}
+
+    <div class="employee-calendar-legend">
+      <span><i class="lg-work"></i> Có đi làm</span>
+      <span><i class="lg-off"></i> Nghỉ</span>
+      <span><i class="lg-sun"></i> Chủ nhật</span>
+      <span>💰 Đã trả lương</span>
+    </div>
+
     <div class="employee-calendar-grid">${cells}</div>
+
     <div class="employee-self-detail-title">Chi tiết tháng ${salaryMonthLabel(month)}</div>
     <div class="employee-calendar-summary employee-self-detail-summary">
-      <div><span>Ngày đi làm</span><b>${stats.workDays}/26</b></div><div><span>Ngày nghỉ</span><b>${stats.absent}</b></div><div><span>Chủ nhật</span><b>${sundays}</b></div>
-      <div><span>Lương phát sinh tháng</span><b>${money((stats.basePay||0)+(stats.overtime||0))}</b></div><div><span>Tăng ca tháng</span><b>${money(stats.overtime||0)}</b></div><div><span>Đã trả trong tháng</span><b>${money(paidThisMonth)}</b></div>
-      <div><span>Tổng thu nhập từ khi đi làm</span><b>${money(lifetime.totalSalary)}</b></div><div><span>Tổng đã trả</span><b>${money(lifetime.paid)}</b></div><div><span>Còn lại</span><b class="${lifetime.remaining>0?'salary-due':'salary-paid'}">${money(lifetime.remaining)}</b></div>
+      <div><span>Ngày đi làm</span><b>${stats.workDays}/26</b></div>
+      <div><span>Ngày nghỉ</span><b>${stats.absent}</b></div>
+      <div><span>Chủ nhật</span><b>${sundays}</b></div>
+      <div><span>Lương phát sinh tháng</span><b>${money((stats.basePay||0)+(stats.overtime||0))}</b></div>
+      <div><span>Tăng ca tháng</span><b>${money(stats.overtime||0)}</b></div>
+      <div><span>Đã trả trong tháng</span><b>${money(paidThisMonth)}</b></div>
+      <div><span>Tổng thu nhập từ khi đi làm</span><b>${money(lifetime.totalSalary)}</b></div>
+      <div><span>Tổng đã trả</span><b>${money(lifetime.paid)}</b></div>
+      <div><span>Còn lại</span><b class="${lifetime.remaining>0?'salary-due':'salary-paid'}">${money(lifetime.remaining)}</b></div>
     </div>
-    ${monthPayments.length?`<div class="employee-self-payment-detail"><b>Lịch sử trả lương trong tháng</b>${monthPayments.map(p=>`<div><span>${esc(reportDateLabel(p.date))}</span><b>${money(p.amount)}</b></div>`).join('')}</div>`:''}
-    <div class="hint">Chủ nhật không tính vào ngày đi làm hoặc ngày nghỉ.</div><div class="modal-actions"><button class="btn" onclick="closeModal()">Đóng</button></div>`);
+
+    ${monthPayments.length?`
+      <div class="employee-self-payment-detail">
+        <b>Lịch sử trả lương trong tháng</b>
+        ${monthPayments.map(p=>`<div><span>${esc(reportDateLabel(p.date))}</span><b>${money(p.amount)}</b></div>`).join('')}
+      </div>`:''}
+
+    <div class="hint">Chủ nhật không tính vào ngày đi làm hoặc ngày nghỉ.</div>
+    <div class="modal-actions"><button class="btn" onclick="closeModal()">Đóng</button></div>
+  `);
+}
+
+async function toggleEmployeeSelfAttendanceDay(employeeId,date,month){
+  ensureEmployeeData();
+
+  const emp=(db.employees||[]).find(x=>String(x.id)===String(employeeId) && x.active!==false);
+  if(!emp)return;
+
+  const empId=String(emp.id);
+  const today=currentISODate();
+
+  /* Nhân viên phải đăng nhập đúng PIN của chính mình. Quản lý thì được thao tác trực tiếp. */
+  if(!isManager && String(employeeSelfSessionId||'')!==empId){
+    return openEmployeePinLogin(empId);
+  }
+
+  if(date<employeeStartDate(emp))return;
+  if(isSundayISO(date))return alert('Chủ nhật không chấm Có đi làm/Nghỉ ở đây. Tăng ca Chủ nhật do Quản lý ghi nhận riêng.');
+  if(date>today)return;
+
+  /* Nhân viên chỉ tự chấm ngày hôm nay; Quản lý có thể sửa các ngày trước. */
+  if(!isManager && date!==today){
+    return alert('Nhân viên chỉ được chấm công ngày hôm nay.');
+  }
+
+  const current=employeeAttendanceStateOnDate(emp.id,date);
+  const next=current==='off'?'work':'off';
+
+  const backupAbsences=JSON.parse(JSON.stringify(db.employeeAbsences||[]));
+  const backupConfirmations=JSON.parse(JSON.stringify(db.employeeAttendanceConfirmations||[]));
+
+  /* Một ngày chỉ giữ 1 mốc trạng thái để tránh xung đột Nghỉ/Có đi làm. */
+  db.employeeAbsences=(db.employeeAbsences||[])
+    .filter(x=>!(String(x.employeeId)===empId && x.date===date));
+  db.employeeAttendanceConfirmations=(db.employeeAttendanceConfirmations||[])
+    .filter(x=>!(String(x.employeeId)===empId && x.date===date));
+
+  if(next==='off'){
+    db.employeeAbsences.push({
+      id:'V'+String(Date.now()).slice(-9),
+      employeeId:emp.id,
+      date,
+      source:isManager?'manager-self-calendar':'employee-self-calendar',
+      createdAt:new Date().toISOString()
+    });
+  }else{
+    db.employeeAttendanceConfirmations.push({
+      id:'CC'+String(Date.now()).slice(-9),
+      employeeId:emp.id,
+      date,
+      source:isManager?'manager-self-calendar':'employee-self-calendar',
+      createdAt:new Date().toISOString()
+    });
+  }
+
+  const ok=await saveDB();
+  if(!ok){
+    db.employeeAbsences=backupAbsences;
+    db.employeeAttendanceConfirmations=backupConfirmations;
+    return;
+  }
+
+  renderEmployeeSelfCheck();
+  renderEmployees();
+  renderEmployeeToday();
+  renderReports();
+  openEmployeeSelfCalendar(emp.id,month);
+
+  toast(next==='off'
+    ? 'Đã chuyển CAM • NGHỈ • không tính lương từ ngày này'
+    : 'Đã chuyển XANH • CÓ ĐI LÀM • bắt đầu tính lương lại');
+}
+
+async function toggleEmployeeAttendanceDay(employeeId,date,month){
+  if(!isManager){
+    return requireManager(
+      ()=>toggleEmployeeAttendanceDay(employeeId,date,month),
+      'Chấm công cần quyền Quản lý.'
+    );
+  }
+
+  ensureEmployeeData();
+  const e=(db.employees||[]).find(x=>x.id===employeeId);
+  if(!e)return;
+  if(date<employeeStartDate(e))return;
+
+  /* Chủ nhật và ngày tương lai vẫn mở chi tiết như cũ; không tự đổi công. */
+  if(isSundayISO(date) || date>currentISODate()){
+    return openEmployeeDayEditor(employeeId,date,month);
+  }
+
+  const current=employeeAttendanceStateOnDate(employeeId,date);
+  const next=current==='off'?'work':'off';
+
+  const backupAbsences=JSON.parse(JSON.stringify(db.employeeAbsences||[]));
+  const backupConfirmations=JSON.parse(JSON.stringify(db.employeeAttendanceConfirmations||[]));
+
+  /* Mỗi ngày chỉ có 1 mốc trạng thái. Mốc Nghỉ kéo dài đến khi bấm Có đi làm. */
+  db.employeeAbsences=(db.employeeAbsences||[])
+    .filter(a=>!(a.employeeId===employeeId && a.date===date));
+  db.employeeAttendanceConfirmations=(db.employeeAttendanceConfirmations||[])
+    .filter(a=>!(a.employeeId===employeeId && a.date===date));
+
+  if(next==='off'){
+    db.employeeAbsences.push({
+      id:'V'+String(Date.now()).slice(-9),
+      employeeId,
+      date,
+      source:'manager-toggle',
+      createdAt:new Date().toISOString()
+    });
+  }else{
+    db.employeeAttendanceConfirmations.push({
+      id:'CC'+String(Date.now()).slice(-9),
+      employeeId,
+      date,
+      source:'manager-toggle',
+      createdAt:new Date().toISOString()
+    });
+  }
+
+  const ok=await saveDB();
+  if(!ok){
+    db.employeeAbsences=backupAbsences;
+    db.employeeAttendanceConfirmations=backupConfirmations;
+    return;
+  }
+
+  renderEmployees();
+  renderEmployeeToday();
+  renderReports();
+  openEmployeeCalendar(employeeId,month);
+
+  toast(next==='off'
+    ? 'Đã chấm NGHỈ • không tính lương từ ngày này'
+    : 'Đã chấm CÓ ĐI LÀM • bắt đầu tính lương lại');
 }
 
 function openEmployeeCalendar(employeeId,monthOverride=''){
@@ -10366,17 +10764,16 @@ function openEmployeeCalendar(employeeId,monthOverride=''){
     const beforeStart=date<startDate;
 
     const state=employeeAttendanceStateOnDate(e.id,date);
-
     const ot=employeeSundayOvertimeOnDate(e.id,date);
-
     const dayPaid=(db.salaryPayments||[])
       .filter(p=>p.employeeId===e.id && p.date===date)
       .reduce((s,p)=>s+(Number(p.amount)||0),0);
-
     const selfConfirmed=employeeConfirmedToday(e.id,date);
 
     let cls='employee-cal-day';
-    let status='Làm';
+    let status='Có đi làm';
+    let mainAction='';
+    let detail='';
 
     if(beforeStart){
       cls+=' before-start';
@@ -10384,33 +10781,41 @@ function openEmployeeCalendar(employeeId,monthOverride=''){
     }else if(future){
       cls+=' future';
       status=sunday?'Chủ nhật':'Chưa đến';
+      mainAction=`openEmployeeDayEditor('${e.id}','${date}','${month}')`;
     }else if(sunday){
       cls+=' sunday';
       status=ot && Number(ot.amount)>0
         ? `Tăng ca ${money(ot.amount)}`
         : 'Chủ nhật';
+      mainAction=`openEmployeeDayEditor('${e.id}','${date}','${month}')`;
     }else if(state==='off'){
-      cls+=' absent';
+      cls+=' absent attendance-toggle-day';
       status='Nghỉ';
+      mainAction=`toggleEmployeeAttendanceDay('${e.id}','${date}','${month}')`;
+      detail=`<button type="button" class="employee-cal-detail-btn" title="Chi tiết ngày" onclick="event.stopPropagation();openEmployeeDayEditor('${e.id}','${date}','${month}')">⋯</button>`;
     }else{
-      cls+=' working';
-      status='Làm';
+      cls+=' working attendance-toggle-day';
+      status='Có đi làm';
+      mainAction=`toggleEmployeeAttendanceDay('${e.id}','${date}','${month}')`;
+      detail=`<button type="button" class="employee-cal-detail-btn" title="Chi tiết ngày" onclick="event.stopPropagation();openEmployeeDayEditor('${e.id}','${date}','${month}')">⋯</button>`;
     }
 
     if(ot && Number(ot.amount)>0)cls+=' has-overtime';
     if(dayPaid>0)cls+=' has-payment';
     if(selfConfirmed)cls+=' self-confirmed';
 
+    const clickAttr=mainAction?`onclick="${mainAction}"`:'';
+    const keyAttr=mainAction?`onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();${mainAction}}" tabindex="0" role="button"`:'';
+
     cells+=`
-      <button class="${cls}"
-              onclick="openEmployeeDayEditor('${e.id}','${date}','${month}')"
-              ${beforeStart?'disabled':''}>
+      <div class="${cls}" ${clickAttr} ${keyAttr}>
+        ${detail}
         <span class="employee-cal-weekday">${weekdayLabel(date)}</span>
         <b>${day}</b>
         <small>${esc(status)}</small>
         ${selfConfirmed?`<em>✓ Đã xác nhận đi làm</em>`:''}
         ${dayPaid>0?`<em>💰 ${money(dayPaid)}</em>`:''}
-      </button>
+      </div>
     `;
   }
 
@@ -10435,11 +10840,15 @@ function openEmployeeCalendar(employeeId,monthOverride=''){
     </div>
 
     <div class="employee-calendar-legend">
-      <span><i class="lg-work"></i> Làm việc</span>
-      <span><i class="lg-off"></i> Nghỉ</span>
+      <span><i class="lg-work"></i> Có đi làm</span>
+      <span><i class="lg-off"></i> Nghỉ • không tính lương</span>
       <span><i class="lg-sun"></i> Chủ nhật</span>
       <span><i class="lg-ot"></i> CN tăng ca</span>
       <span>💰 Đã trả lương</span>
+    </div>
+
+    <div class="employee-calendar-toggle-note">
+      Bấm trực tiếp ngày làm việc: <b>xanh → cam = Nghỉ</b>; bấm ngày nhân viên đi làm lại: <b>cam → xanh = Có đi làm</b>. Nút <b>⋯</b> vẫn mở chi tiết/trả lương như cũ.
     </div>
 
     <div class="employee-calendar-grid">
@@ -10457,7 +10866,7 @@ function openEmployeeCalendar(employeeId,monthOverride=''){
     </div>
 
     <div class="hint">
-      Bấm vào một ngày để chỉnh Làm/Nghỉ, nhập tăng ca Chủ nhật hoặc ghi nhận trả lương đúng ngày đó.
+      Trạng thái Nghỉ kéo dài cho đến ngày Quản lý bấm Có đi làm lại; các ngày Nghỉ không được tính lương. Chủ nhật vẫn xử lý tăng ca riêng như trước.
     </div>
 
     <div class="modal-actions">
@@ -10465,7 +10874,6 @@ function openEmployeeCalendar(employeeId,monthOverride=''){
     </div>
   `);
 }
-
 function openEmployeeDayEditor(employeeId,date,month){
   if(!isManager){
     return requireManager(
@@ -12297,8 +12705,27 @@ function productKey(e,mode,i,el){
   }
 }
 function focusField(mode,i,role){setTimeout(()=>{let el=document.querySelector(`[data-mode="${mode}"][data-role="${role}"][data-row="${i}"]`);if(el){el.focus();el.select&&el.select()}},0)}
-function horiz(e,mode,i,role){if(!['ArrowLeft','ArrowRight'].includes(e.key))return false;let order=(mode==='si'&&!isManager)?['product','qty','salePrice','saleCK','saleKM','note']:['product','qty','price','ck','km','note'];let idx=order.indexOf(role);if(idx<0)return false;e.preventDefault();let n=idx+(e.key==='ArrowRight'?1:-1);if(n>=0&&n<order.length)focusField(mode,i,order[n]);else if(n>=order.length){let rows=mode==='si'?siRows:soRows;if(i<rows.length-1)focusField(mode,i+1,'product')}else if(n<0&&i>0)focusField(mode,i-1,order[order.length-1]);return true}
-
+function horiz(e,mode,i,role){
+  if(!['ArrowLeft','ArrowRight'].includes(e.key))return false;
+  let order;
+  if(mode==='si'&&!isManager){
+    order=['product','qty','salePrice','saleCK','saleKM','note'];
+  }else if(mode==='si'&&isManager){
+    order=['product','qty','price','salePrice','ck','km','note'];
+  }else{
+    order=['product','qty','price','ck','km','note'];
+  }
+  let idx=order.indexOf(role);
+  if(idx<0)return false;
+  e.preventDefault();
+  let n=idx+(e.key==='ArrowRight'?1:-1);
+  if(n>=0&&n<order.length)focusField(mode,i,order[n]);
+  else if(n>=order.length){
+    let rows=mode==='si'?siRows:soRows;
+    if(i<rows.length-1)focusField(mode,i+1,'product');
+  }else if(n<0&&i>0)focusField(mode,i-1,order[order.length-1]);
+  return true;
+}
 function addSIRow(focus){siRows.push({productId:'',productText:'',qty:'',price:'',ck:'',km:'',note:''});renderSIRows();if(focus)focusField('si',siRows.length-1,'product')}
 function addSORow(focus){soRows.push({productId:'',productText:'',qty:'',price:'',ck:'',km:'',note:''});renderSORows();if(focus)focusField('so',soRows.length-1,'product')}
 
@@ -12336,6 +12763,7 @@ function chooseProduct(mode,i,id){
     }else{
       r.ck=(Number(p.defaultBuyCK)||0)>0?Number(p.defaultBuyCK):'';
       r.km=(Number(p.defaultBuyKM)||0)>0?Number(p.defaultBuyKM):'';
+      r.staffSalePrice=Number(p.salePrice||0)||'';
     }
   }
 
@@ -12353,6 +12781,7 @@ function fieldKey(e,mode,i,role){
   if(e.key!=='Enter')return;
   e.preventDefault();
   markEntryOk(e.currentTarget||e.target);
+
   if(role==='qty'){
     if(mode==='si'&&!isManager)focusField(mode,i,'salePrice');
     else focusField(mode,i,'price');
@@ -12362,7 +12791,21 @@ function fieldKey(e,mode,i,role){
     focusField(mode,i,'saleKM');
   }else if(mode==='si'&&!isManager && role==='saleKM'){
     focusField(mode,i,'note');
-  }else if(role==='price')focusField(mode,i,'ck');else if(role==='ck')focusField(mode,i,'km');else if(role==='km')focusField(mode,i,'note');else if(role==='note'){let rows=mode==='si'?siRows:soRows;if(i===rows.length-1)(mode==='si'?addSIRow(true):addSORow(true));else focusField(mode,i+1,'product')}
+  }else if(mode==='si'&&isManager && role==='price'){
+    focusField(mode,i,'salePrice');
+  }else if(mode==='si'&&isManager && role==='salePrice'){
+    focusField(mode,i,'ck');
+  }else if(role==='price'){
+    focusField(mode,i,'ck');
+  }else if(role==='ck'){
+    focusField(mode,i,'km');
+  }else if(role==='km'){
+    focusField(mode,i,'note');
+  }else if(role==='note'){
+    let rows=mode==='si'?siRows:soRows;
+    if(i===rows.length-1)(mode==='si'?addSIRow(true):addSORow(true));
+    else focusField(mode,i+1,'product');
+  }
 }
 function renderSIRows(){
   const staffMode=!isManager && staffModuleEnabled('stockin');
@@ -12370,7 +12813,7 @@ function renderSIRows(){
   if(head){
     head.innerHTML=staffMode
       ? '<th style="width:34px">STT</th><th>Tên hàng hóa</th><th style="width:48px">ĐVT</th><th style="width:55px">SL</th><th style="width:88px">Giá bán</th><th style="width:52px">CK %</th><th style="width:60px">KM</th><th style="width:120px">Ghi chú</th>'
-      : '<th style="width:34px">STT</th><th>Tên hàng hóa</th><th style="width:48px">ĐVT</th><th style="width:55px">SL</th><th style="width:86px">Giá nhập</th><th style="width:52px">CK %</th><th style="width:60px">KM</th><th style="width:92px">Giá vốn TT</th><th style="width:96px">Thành tiền</th><th style="width:95px">Ghi chú</th>';
+      : '<th style="width:34px">STT</th><th>Tên hàng hóa</th><th style="width:48px">ĐVT</th><th style="width:55px">SL</th><th style="width:82px">Giá nhập</th><th style="width:88px">Giá bán</th><th style="width:48px">CK %</th><th style="width:56px">KM</th><th style="width:86px">Giá vốn TT</th><th style="width:92px">Thành tiền</th><th style="width:90px">Ghi chú</th>';
   }
 
   $('siBody').innerHTML=siRows.map((r,i)=>{
@@ -12401,12 +12844,14 @@ function renderSIRows(){
 
     const net=calcNet(r);
     const total=net*(Number(r.qty)||0);
+    const salePrice=staffStockinSalesValue(r,p,'salePrice');
     return `<tr data-line="si${i}">
       <td class="center">${i+1}</td>
       <td class="product-cell"><input data-mode="si" data-role="product" data-row="${i}" value="${esc(r.productText||(p?.name||''))}" placeholder="Gõ tên hàng..." oninput="siRows[${i}].productText=this.value;siRows[${i}].productId='';openSuggestions('si',${i},this)" onkeydown="productKey(event,'si',${i},this)"><div class="suggestions" id="sisg${i}"></div></td>
       <td class="center">${unit}</td>
       <td><input data-mode="si" data-role="qty" data-row="${i}" type="number" value="${r.qty}" oninput="changeField('si',${i},'qty',this.value)" onkeydown="fieldKey(event,'si',${i},'qty')"></td>
       <td><input data-mode="si" data-role="price" data-row="${i}" type="number" value="${r.price}" oninput="changeField('si',${i},'price',this.value)" onkeydown="fieldKey(event,'si',${i},'price')"></td>
+      <td><input class="staff-sale-price" data-mode="si" data-role="salePrice" data-row="${i}" type="number" min="0" value="${salePrice}" oninput="changeStaffStockinSaleField(${i},'salePrice',this.value)" onkeydown="fieldKey(event,'si',${i},'salePrice')"></td>
       <td><input data-mode="si" data-role="ck" data-row="${i}" type="number" value="${r.ck}" oninput="changeField('si',${i},'ck',this.value)" onkeydown="fieldKey(event,'si',${i},'ck')"></td>
       <td><input data-mode="si" data-role="km" data-row="${i}" type="number" value="${r.km}" oninput="changeField('si',${i},'km',this.value)" onkeydown="fieldKey(event,'si',${i},'km')"></td>
       <td class="right" data-calc="net">${money(net).replace(' đ','')}</td>
