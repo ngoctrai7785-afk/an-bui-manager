@@ -14,7 +14,7 @@
 <link rel="icon" type="image/png" sizes="64x64" href="./favicon-64.png">
 
 <meta charset="utf-8">
-<meta name="app-version" content="110">
+<meta name="app-version" content="111">
 <title>AN BÙI - Quản lý nội bộ</title>
 <style>
 :root{
@@ -9577,10 +9577,10 @@ function warehouseProductBlur(){
 
 
 function productTotalExportedQty(productId){
-  return (db.stockout||[]).reduce((sum,o=>
+  return (db.stockout||[]).reduce((sum,o)=>
     sum+(o.items||[]).reduce((s,r)=>
       s+(r.productId===productId?(Number(r.qty)||0):0),0)
-  ),0);
+  ,0);
 }
 
 function renderWarehouse(){
@@ -17074,7 +17074,7 @@ async function saveStockinStable(doPrint=false){
 <script id="pwa-register">
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   window.addEventListener('load', function(){
-    navigator.serviceWorker.register('./sw.js?v=ab123-v110-debt-period-sold').catch(function(err){ console.warn('Service worker:', err); });
+    navigator.serviceWorker.register('./sw.js?v=ab123-v111-fix-sum').catch(function(err){ console.warn('Service worker:', err); });
   });
 }
 
