@@ -14,7 +14,7 @@
 <link rel="icon" type="image/png" sizes="64x64" href="./favicon-64.png">
 
 <meta charset="utf-8">
-<meta name="app-version" content="114">
+<meta name="app-version" content="124">
 <title>AN BÙI - Quản lý nội bộ</title>
 <style>
 :root{
@@ -6010,6 +6010,617 @@ input.vnd-dot-input{
 }
 </style>
 
+
+<style id="v115-sale-owner-report">
+/* ===== V115: SALE PHỤ TRÁCH + BÁO CÁO DOANH SỐ SALE ===== */
+.stockout-sale-owner{
+  margin-top:8px;
+  display:grid;
+  grid-template-columns:105px minmax(0,1fr);
+  gap:8px;
+  align-items:center;
+}
+.stockout-sale-owner label{
+  font-size:12px;
+  font-weight:900;
+  color:#2e505b;
+}
+.stockout-sale-owner select{
+  width:100%;
+  min-width:0;
+  height:36px;
+  font-weight:800;
+}
+.stockout-sale-owner select.sale-missing{
+  border-color:#df7068!important;
+  background:#fff4f3!important;
+  color:#a8281e!important;
+}
+.stockout-sale-error{
+  grid-column:1/-1;
+  display:none;
+  padding:6px 8px;
+  border-radius:7px;
+  background:#fff0ef;
+  border:1px solid #edaaa5;
+  color:#b3261e;
+  font-size:11px;
+  font-weight:800;
+}
+.stockout-sale-error.show{display:block}
+#reportSaleFilterBox{display:none}
+#reportSaleFilterBox.show{display:block}
+#reportSaleFilterBox select{width:100%;min-width:220px}
+.sale-report-kpis{
+  display:grid;
+  grid-template-columns:repeat(6,minmax(120px,1fr));
+  gap:8px;
+  margin-bottom:10px;
+}
+.sale-report-kpis>div{
+  border:1px solid #dce6ea;
+  border-radius:9px;
+  padding:9px 10px;
+  background:#fff;
+  min-height:66px;
+}
+.sale-report-kpis span{
+  display:block;
+  color:#647780;
+  font-size:10.5px;
+  font-weight:800;
+  margin-bottom:5px;
+}
+.sale-report-kpis b{color:#183f4b;font-size:16px}
+.sale-report-table table{width:100%!important;table-layout:fixed!important}
+.sale-report-table th,.sale-report-table td{vertical-align:middle!important}
+.sale-report-name{
+  border:0;background:transparent;padding:0;color:#0b6674;font-weight:900;
+  cursor:pointer;text-decoration:underline;text-underline-offset:2px;
+}
+.sale-report-detail{margin-top:12px}
+.sale-report-detail h4{margin:0 0 8px}
+.sale-report-detail table{width:100%!important}
+.employee-sale-block{
+  margin-top:14px;padding-top:12px;border-top:1px solid #dfe7ea;
+}
+.employee-sale-filter{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
+.employee-sale-filter input{width:100%}
+.employee-sale-summary{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 0 10px;
+}
+.employee-sale-summary>div{
+  border:1px solid #dce6ea;border-radius:8px;padding:8px 9px;background:#fafcfd;
+}
+.employee-sale-summary span{display:block;font-size:10.5px;color:#687b83;margin-bottom:4px}
+.employee-sale-summary b{font-size:14px;color:#183f4b}
+.employee-sale-table{overflow:auto;max-height:260px}
+.employee-sale-table table{width:100%!important;min-width:720px!important}
+@media(max-width:1050px){.sale-report-kpis{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:700px){
+  .stockout-sale-owner{grid-template-columns:1fr}
+  .stockout-sale-error{grid-column:auto}
+  .sale-report-kpis{grid-template-columns:1fr 1fr}
+  .employee-sale-summary{grid-template-columns:1fr 1fr}
+}
+</style>
+
+
+<style id="v116-stockout-compact-vat-sale-customer">
+#stockout .vat-source-out{display:none!important}
+.stockout-source-sale-row{
+  display:grid;grid-template-columns:42px minmax(120px,150px) 36px minmax(155px,210px);
+  gap:6px;align-items:center;margin-top:7px
+}
+.stockout-source-sale-row .compact-label{font-size:11px;font-weight:900;color:#536a73}
+.stockout-source-sale-row select{
+  width:100%;min-width:0;height:31px!important;padding:4px 24px 4px 7px!important;
+  font-size:11.5px!important;font-weight:800!important;border-radius:7px!important
+}
+.stockout-source-sale-row .stockout-sale-error{
+  grid-column:1/-1;margin-top:0;padding:4px 7px;font-size:10.5px
+}
+#stockout .stockout-customer-picker-list{max-height:320px}
+@media(max-width:720px){
+  .stockout-source-sale-row{grid-template-columns:45px minmax(0,1fr)}
+}
+</style>
+
+
+<style id="v117-stockout-sale-permission-compact-top">
+/* ===== V117: PHIẾU XUẤT GỌN HƠN ===== */
+.stockout-source-sale-row{
+  grid-template-columns:30px minmax(110px,138px) 30px minmax(150px,195px)!important;
+  gap:4px 5px!important;
+  margin-top:4px!important;
+}
+.stockout-source-sale-row .compact-label{
+  font-size:10px!important;
+  line-height:1!important;
+  margin:0!important;
+}
+.stockout-source-sale-row select{
+  height:26px!important;
+  min-height:26px!important;
+  padding:2px 22px 2px 6px!important;
+  border-radius:6px!important;
+  font-size:10.5px!important;
+  line-height:1.1!important;
+}
+.stockout-source-sale-row #soVatSourceFilter{max-width:138px!important}
+.stockout-source-sale-row #soSaleEmployee{max-width:195px!important}
+.stockout-source-sale-row #soSaleEmployee.sale-missing{
+  border-color:#df7068!important;
+  background:#fff8f7!important;
+}
+/* Bỏ hẳn dòng báo chữ dưới Sale để khối gọn. */
+#soSaleEmployeeError{display:none!important}
+
+/* Phiếu xuất nhích lên gần thanh trên hơn một chút. */
+#stockout.page.active{
+  margin-top:-5px!important;
+}
+#stockout .paper{
+  margin-top:0!important;
+}
+
+/* Online + Nhân viên thẳng hàng ở góc phải trên desktop. */
+@media(min-width:901px){
+  .topbar>.actions{
+    display:flex!important;
+    flex-wrap:nowrap!important;
+    align-items:center!important;
+    justify-content:flex-end!important;
+    gap:5px!important;
+    margin-left:auto!important;
+  }
+  .topbar>.actions #syncStatusBtn,
+  .topbar>.actions #roleBtn{
+    display:inline-flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    height:32px!important;
+    min-height:32px!important;
+    padding:4px 8px!important;
+    line-height:1!important;
+    white-space:nowrap!important;
+    vertical-align:middle!important;
+  }
+}
+
+@media(max-width:720px){
+  .stockout-source-sale-row{
+    grid-template-columns:34px minmax(0,1fr)!important;
+    gap:4px!important;
+  }
+  .stockout-source-sale-row #soVatSourceFilter,
+  .stockout-source-sale-row #soSaleEmployee{
+    max-width:none!important;
+  }
+}
+</style>
+
+
+<style id="v118-line-vat-source">
+/* ===== V118: NGUỒN VAT THEO TỪNG DÒNG HÀNG ===== */
+
+/* Phiếu xuất không còn ô VAT chung; chỉ giữ Sale ở khối trên. */
+.stockout-source-sale-row{
+  display:grid!important;
+  grid-template-columns:34px minmax(150px,210px)!important;
+  gap:4px 5px!important;
+  align-items:center!important;
+  width:max-content!important;
+  max-width:100%!important;
+  margin-top:4px!important;
+}
+.stockout-source-sale-row .compact-label{
+  font-size:10px!important;
+  font-weight:900!important;
+  line-height:1!important;
+}
+.stockout-source-sale-row #soSaleEmployee{
+  width:190px!important;
+  max-width:100%!important;
+  height:26px!important;
+  min-height:26px!important;
+  padding:2px 22px 2px 6px!important;
+  border-radius:6px!important;
+  font-size:10.5px!important;
+}
+
+/* Nguồn VAT nằm ngay từng dòng, mặc định Không VAT. */
+#stockout .so-line-vat-source{
+  width:100%!important;
+  min-width:68px!important;
+  height:27px!important;
+  min-height:27px!important;
+  padding:2px 18px 2px 4px!important;
+  border:1px solid #cfd9de!important;
+  border-radius:5px!important;
+  font-size:10px!important;
+  font-weight:800!important;
+  line-height:1!important;
+  background:#fff!important;
+}
+#stockout .so-line-vat-source.source-nonvat{
+  color:#7a5a00!important;
+  background:#fff9e8!important;
+  border-color:#dfc46b!important;
+}
+#stockout .so-line-vat-source.source-vat{
+  color:#176847!important;
+  background:#eef9f3!important;
+  border-color:#8fc7a7!important;
+}
+#stockout .so-line-vat-source.source-shortage{
+  color:#b3261e!important;
+  background:#fff0ef!important;
+  border-color:#e1736b!important;
+  box-shadow:0 0 0 1px rgba(179,38,30,.08)!important;
+}
+#stockout .invoice-table th.so-source-col,
+#stockout .invoice-table td.so-source-col{
+  width:76px!important;
+  min-width:76px!important;
+  text-align:center!important;
+  padding-left:3px!important;
+  padding-right:3px!important;
+}
+
+@media(max-width:720px){
+  .stockout-source-sale-row{
+    grid-template-columns:34px minmax(0,1fr)!important;
+    width:100%!important;
+  }
+  .stockout-source-sale-row #soSaleEmployee{
+    width:100%!important;
+  }
+}
+</style>
+
+
+<style id="v119-sale-payroll-policy">
+/* ===== V119: CHÍNH SÁCH LƯƠNG SALE ===== */
+.sale-policy-card{margin-top:14px}
+.sale-policy-head{
+  display:flex;align-items:flex-end;justify-content:space-between;gap:10px;flex-wrap:wrap
+}
+.sale-policy-month{width:165px}
+.sale-policy-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px
+}
+.sale-policy-box{
+  border:1px solid #dce6ea;border-radius:10px;background:#fbfdfe;padding:10px
+}
+.sale-policy-box h4{margin:0 0 8px;font-size:13px;color:#234c59}
+.sale-policy-row{
+  display:grid;grid-template-columns:minmax(0,1fr) 105px 38px;gap:6px;
+  align-items:center;margin:6px 0
+}
+.sale-policy-row.milestone{
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr) 38px
+}
+.sale-policy-row input{min-width:0}
+.sale-policy-remove{
+  width:34px!important;min-width:34px!important;height:34px!important;padding:0!important
+}
+.sale-policy-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
+.sale-policy-note{font-size:10.8px;color:#6f8088;line-height:1.45;margin-top:7px}
+
+.sale-payroll-card{margin-top:12px}
+.sale-payroll-summary{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:8px 0 10px
+}
+.sale-payroll-summary>div{
+  border:1px solid #dce6ea;border-radius:9px;padding:8px 9px;background:#fafcfd
+}
+.sale-payroll-summary span{display:block;font-size:10.5px;color:#6d7f87;margin-bottom:4px}
+.sale-payroll-summary b{font-size:14px;color:#183f4b}
+.sale-payroll-table{overflow:auto}
+.sale-payroll-table table{min-width:1050px!important}
+.sale-payroll-detail-brand{
+  display:grid;grid-template-columns:1.15fr .8fr .55fr .8fr;gap:1px;
+  border:1px solid #e1e8eb;border-radius:8px;overflow:hidden;margin-top:8px
+}
+.sale-payroll-detail-brand>div{
+  padding:7px 8px;background:#fff;border-bottom:1px solid #eef2f4;font-size:12px
+}
+.sale-payroll-detail-brand .head{background:#f5f8fa;font-weight:800;color:#526d79}
+
+.product-brand-note{
+  display:block;margin-top:2px;color:#778891;font-size:10.5px;font-weight:600
+}
+
+@media(max-width:850px){
+  .sale-policy-grid{grid-template-columns:1fr}
+  .sale-payroll-summary{grid-template-columns:1fr 1fr}
+}
+</style>
+
+
+<style id="v120-sale-policy-filter-permission-layout">
+/* ===== V120: CHÍNH SÁCH SALE CÓ LỌC NHÂN VIÊN + HÃNG/NHÓM ===== */
+.sale-policy-head{
+  align-items:flex-end!important;
+}
+.sale-policy-top-filters{
+  display:grid;
+  grid-template-columns:minmax(180px,230px) 165px;
+  gap:8px;
+  align-items:end;
+}
+.sale-policy-top-filters select,
+.sale-policy-top-filters input{
+  width:100%!important;
+}
+.sale-policy-row{
+  grid-template-columns:105px minmax(0,1fr) 92px 38px!important;
+}
+.sale-policy-rule-type{
+  width:100%!important;
+}
+.sale-policy-rule-target{
+  min-width:0!important;
+}
+.sale-policy-rule-rate{
+  min-width:0!important;
+}
+.sale-policy-box h4{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+.sale-policy-filter-hint{
+  font-size:10.5px;
+  color:#6f818a;
+  font-weight:600;
+}
+@media(max-width:760px){
+  .sale-policy-top-filters{grid-template-columns:1fr}
+  .sale-policy-row{grid-template-columns:95px minmax(0,1fr) 78px 36px!important}
+}
+
+/* ===== V120: PHÂN QUYỀN - SỬA PHIẾU NẰM NGAY DƯỚI XUẤT KHO ===== */
+/* Với thứ tự DOM: Tổng quan | Xuất kho / Chọn Sale | Sửa phiếu
+   nên ô Sửa phiếu nằm thẳng dưới Xuất kho trên desktop. */
+#staffModuleSettings{
+  align-items:stretch!important;
+}
+#staffModuleSettings>.staff-module-row,
+#staffModuleSettings>.staff-stockout-edit-box{
+  width:100%!important;
+  min-height:64px!important;
+  box-sizing:border-box!important;
+  margin:0!important;
+}
+.staff-stockout-edit-box{
+  grid-column:auto!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) 115px!important;
+  grid-template-areas:
+    "head controls"
+    "note controls";
+  gap:3px 8px!important;
+  align-items:center!important;
+  padding:10px 12px!important;
+  border:1px solid #dfe7eb!important;
+  border-radius:10px!important;
+  background:#f9fbfc!important;
+}
+.staff-stockout-edit-head{
+  grid-area:head;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:8px!important;
+}
+.staff-stockout-edit-controls{
+  grid-area:controls;
+  display:block!important;
+  margin:0!important;
+}
+.staff-stockout-edit-controls span{
+  display:block;
+  font-size:10px!important;
+  color:#6c7c84;
+  margin:0 0 3px!important;
+}
+.staff-stockout-edit-controls select{
+  width:100%!important;
+  height:32px!important;
+  min-height:32px!important;
+  font-size:11px!important;
+  padding:4px 7px!important;
+}
+.staff-stockout-edit-note{
+  grid-area:note;
+  margin:0!important;
+  font-size:10px!important;
+  line-height:1.2!important;
+  color:#708088!important;
+}
+.staff-stockout-edit-head strong{
+  font-size:12.5px!important;
+}
+.staff-stockout-edit-head input{
+  width:20px!important;
+  height:20px!important;
+}
+@media(max-width:760px){
+  .staff-stockout-edit-box{
+    grid-template-columns:minmax(0,1fr) 110px!important;
+  }
+}
+</style>
+
+
+<style id="v121-supplier-policy-compact-enter">
+.unit-settings-head{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px
+}
+.unit-settings-head h3{margin:0}
+.unit-settings-grid{
+  display:grid!important;
+  grid-template-columns:minmax(190px,1fr) minmax(130px,.55fr) minmax(220px,1.25fr);
+  gap:8px!important;
+}
+.unit-settings-grid>div{min-width:0}
+.unit-settings-save{
+  min-height:34px!important;padding:6px 10px!important;white-space:nowrap
+}
+.sale-policy-top-filters{
+  grid-template-columns:minmax(190px,230px) 165px auto!important;
+}
+.sale-policy-save-top{
+  align-self:end;height:36px!important;min-height:36px!important;
+  padding:6px 10px!important;white-space:nowrap
+}
+#salePolicySettingsCard>.modal-actions{display:none!important}
+.sale-policy-row{
+  grid-template-columns:96px minmax(0,1fr) 106px 38px!important;
+}
+.sale-policy-target-select,.sale-policy-rule-target{width:100%!important;min-width:0!important}
+.sale-policy-rate-wrap,.sale-policy-money-wrap{position:relative;min-width:0}
+.sale-policy-rate-wrap input{width:100%!important;padding-right:24px!important}
+.sale-policy-rate-wrap span{
+  position:absolute;right:8px;top:50%;transform:translateY(-50%);
+  font-size:11px;font-weight:800;color:#647780;pointer-events:none
+}
+.sale-policy-money-wrap input{
+  width:100%!important;padding-right:24px!important;text-align:right;
+  font-variant-numeric:tabular-nums
+}
+.sale-policy-money-wrap span{
+  position:absolute;right:8px;top:50%;transform:translateY(-50%);
+  font-size:10.5px;font-weight:800;color:#657780;pointer-events:none
+}
+.sale-policy-row.milestone{
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr) 38px!important;
+}
+.sale-policy-box .sale-policy-note{margin-top:6px!important}
+.product-supplier-note{
+  display:block;margin-top:2px;color:#778891;font-size:10.5px;font-weight:600
+}
+@media(max-width:900px){
+  .unit-settings-grid{grid-template-columns:1fr 1fr!important}
+  .unit-settings-grid .unit-address-field{grid-column:1/-1}
+  .sale-policy-top-filters{grid-template-columns:1fr 160px auto!important}
+}
+@media(max-width:700px){
+  .unit-settings-head{align-items:flex-start}
+  .unit-settings-grid{grid-template-columns:1fr!important}
+  .unit-settings-grid .unit-address-field{grid-column:auto}
+  .sale-policy-top-filters{grid-template-columns:1fr!important}
+  .sale-policy-save-top{width:100%!important}
+  .sale-policy-row{grid-template-columns:92px minmax(0,1fr) 88px 36px!important}
+}
+</style>
+
+
+<style id="v122-bonus-percent-hide-sale">
+/* ===== V122: THƯỞNG MỐC CÓ THỂ LÀ % HOẶC SỐ TIỀN ===== */
+.sale-policy-bonus-wrap{
+  position:relative;
+  min-width:0;
+}
+.sale-policy-bonus-wrap input{
+  width:100%!important;
+  padding-right:30px!important;
+  text-align:right;
+  font-variant-numeric:tabular-nums;
+}
+.sale-policy-bonus-unit{
+  position:absolute;
+  right:8px;
+  top:50%;
+  transform:translateY(-50%);
+  font-size:10.5px;
+  font-weight:800;
+  color:#657780;
+  pointer-events:none;
+}
+.sale-policy-bonus-wrap.is-percent input{
+  padding-right:8px!important;
+}
+.sale-policy-bonus-wrap.is-percent .sale-policy-bonus-unit{
+  display:none!important;
+}
+
+/* Khi Quản lý tắt quyền chọn Sale cho Nhân viên: ẩn hẳn, không để mờ. */
+.stockout-source-sale-row.sale-permission-hidden{
+  display:none!important;
+}
+</style>
+
+
+<style id="v123-report-profit-loss">
+/* ===== V123: BÁO CÁO LỢI NHUẬN ĐỦ CHI PHÍ ===== */
+#reportCards.report-kpi-compact{
+  grid-template-columns:repeat(7,minmax(0,1fr))!important;
+  gap:8px!important;
+}
+#reportCards .kpi{
+  min-width:0!important;
+  padding:10px 11px!important;
+}
+#reportCards .kpi .label{
+  font-size:10.5px!important;
+  line-height:1.2!important;
+}
+#reportCards .kpi .value{
+  font-size:17px!important;
+  line-height:1.15!important;
+  margin-top:5px!important;
+  white-space:nowrap!important;
+}
+#reportCards .kpi .hint{
+  margin-top:4px!important;
+  font-size:9.8px!important;
+  line-height:1.25!important;
+}
+.report-gross-sale-card .value{color:#315f78!important}
+.report-people-cost-card .value{color:#8b5d1e!important}
+.report-reward-cost-card .value{color:#8b5d1e!important}
+.report-other-cost-card .value{color:#8b5d1e!important}
+.net-profit-card.negative .value{color:#b3261e!important}
+.net-profit-card.positive .value{color:#176847!important}
+
+@media(max-width:1450px){
+  #reportCards.report-kpi-compact{
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  }
+}
+@media(max-width:980px){
+  #reportCards.report-kpi-compact{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+}
+@media(max-width:560px){
+  #reportCards.report-kpi-compact{
+    grid-template-columns:1fr 1fr!important;
+  }
+  #reportCards .kpi .value{font-size:15px!important}
+}
+</style>
+
+
+<style id="v124-report-paid-salary">
+/* ===== V124: BÁO CÁO CHỈ GHI NHẬN TIỀN LƯƠNG / THƯỞNG ĐÃ TRẢ ===== */
+.report-paid-note{
+  font-size:9.8px!important;
+  line-height:1.25!important;
+}
+.salary-history-split{
+  display:block;
+  margin-top:2px;
+  font-size:10px;
+  color:#71818a;
+  font-weight:600;
+}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -6256,10 +6867,9 @@ input.vnd-dot-input{
               <input id="soCustomer" autocomplete="off"
                      oninput="stockoutCustomerTyping()"
                      onchange="selectCustomer()"
-                     onfocus="this.select()"
-                     onclick="this.select()"
+                     onfocus="this.select();showStockoutCustomerPickerAll()" onclick="event.stopPropagation();this.select();showStockoutCustomerPickerAll()"
                      onkeydown="if(event.key==='Escape')closeStockoutCustomerPicker()"
-                     placeholder="Chọn khách cũ hoặc gõ tên / SĐT">
+                     placeholder="Bấm để chọn khách hoặc gõ tên / SĐT">
               <button id="soCustomerPickerBtn" type="button" title="Xổ danh sách khách hàng" onclick="event.stopPropagation();toggleStockoutCustomerPicker()">⌄</button>
               <div id="stockoutCustomerPickerList" class="stockout-customer-picker-list"></div>
             </div>
@@ -6268,14 +6878,11 @@ input.vnd-dot-input{
           <div class="formline"><label>Địa chỉ:</label><input id="soCustomerAddress" oninput="stockoutCustomerContactChanged()" placeholder="Khách mới: nhập địa chỉ"></div>
           <div class="formline"><label>Điện thoại:</label><input id="soCustomerPhone" inputmode="tel" oninput="stockoutCustomerContactChanged()" placeholder="Khách mới: nhập SĐT"></div>
           <div id="soCustomerAlert"></div>
-          <div class="stockout-source-filter">
-            <span class="source-filter-label">Nguồn xuất</span>
-            <select id="soVatSourceFilter" class="source-missing" onchange="setStockoutVatSourceCompact(this.value)">
-              <option value="" selected>-- CHỌN VAT --</option>
-              <option value="nonvat">KHÔNG VAT</option>
-              <option value="vat">CÓ VAT</option>
+          <div class="stockout-source-sale-row">
+            <span class="compact-label">Sale</span>
+            <select id="soSaleEmployee" class="sale-missing" onchange="updateStockoutSaleUI()">
+              <option value="">-- SALE PHỤ TRÁCH --</option>
             </select>
-            
           </div>
         </div>
         <div class="info-box">
@@ -6297,6 +6904,7 @@ input.vnd-dot-input{
           </div>
           <div id="soWarrantyDebtSummary" class="warranty-debt-summary none">Chưa chọn khách hàng.</div>
           <textarea id="soContent" oninput="rememberInvoiceContent('so')">Xuất hàng theo đơn đặt hàng.</textarea>
+          
           <div class="warranty-area" id="soWarrantyArea"></div>
           <div class="print-warranty" id="soWarrantyPrint"></div>
         </div>
@@ -6308,6 +6916,7 @@ input.vnd-dot-input{
           <th style="width:34%">Tên hàng hóa</th>
           <th style="width:42px">ĐVT</th>
           <th style="width:46px">SL</th>
+          <th class="so-source-col">Nguồn</th>
           <th style="width:72px">Đơn giá</th>
           <th style="width:36px">CK %</th>
           <th style="width:40px">KM</th>
@@ -6508,6 +7117,17 @@ input.vnd-dot-input{
 
       <div id="salaryDebtOverview" class="salary-debt-overview"></div>
       <div id="employeeList"></div>
+
+      <div id="employeeSalePayrollCard" class="sale-payroll-card">
+        <div class="settings-card-head">
+          <div>
+            <h3 style="margin:0;font-size:15px">Thu nhập Sale theo tháng</h3>
+            <div class="small">Tự tính theo tháng đang chọn ở trên.</div>
+          </div>
+        </div>
+        <div id="employeeSalePayrollSummary" class="sale-payroll-summary"></div>
+        <div id="employeeSalePayroll" class="sale-payroll-table"></div>
+      </div>
     </div>
   </section>
 
@@ -6562,6 +7182,7 @@ input.vnd-dot-input{
       <button id="reportTabOverview" class="report-tab-btn active" type="button" onclick="setReportTab('overview')">Tổng quan</button>
       <button id="reportTabProduct" class="report-tab-btn" type="button" onclick="setReportTab('product')">Doanh thu theo hàng</button>
       <button id="reportTabSupplier" class="report-tab-btn" type="button" onclick="setReportTab('supplier')">Nhập hàng theo NCC</button>
+      <button id="reportTabSales" class="report-tab-btn" type="button" data-manager-only="1" onclick="setReportTab('sales')">Doanh số Sale</button>
     </div>
 
     <div class="report-range-bar v114">
@@ -6574,7 +7195,7 @@ input.vnd-dot-input{
         <input id="reportToDate" type="date" onchange="renderReports()">
       </div>
 
-      <div class="report-unified-filter">
+      <div class="report-unified-filter" id="reportUnifiedFilterBox">
         <label>Lọc báo cáo</label>
         <div class="report-unified-filter-wrap">
           <input id="reportUnifiedFilterInput"
@@ -6591,6 +7212,13 @@ input.vnd-dot-input{
                   onclick="toggleReportUnifiedFilterList()">▼</button>
           <div id="reportUnifiedFilterList" class="report-unified-filter-list"></div>
         </div>
+      </div>
+
+      <div id="reportSaleFilterBox" data-manager-only="1">
+        <label>Sale</label>
+        <select id="reportSaleEmployeeFilter" onchange="renderSaleReport()">
+          <option value="">Tất cả nhân viên</option>
+        </select>
       </div>
 
       <div class="report-range-note v114" id="reportRangeNote"></div>
@@ -6623,17 +7251,77 @@ input.vnd-dot-input{
         <div id="supplierPurchases"></div>
       </div>
     </div>
+
+    <div id="reportSalePanel" class="report-panel" data-manager-only="1">
+      <div class="card">
+        <h3 style="margin-top:0">Doanh số Sale</h3>
+        <div id="saleReportContent"></div>
+      </div>
+    </div>
   </section>
 
   <section class="page" id="settings">
     <div class="card">
-      <h3>Cài đặt đơn vị / NPP</h3>
-      <div class="form-grid">
+      <div class="unit-settings-head">
+        <h3>Cài đặt đơn vị / NPP</h3>
+        <button class="btn primary unit-settings-save" onclick="saveSettings()">Lưu cài đặt</button>
+      </div>
+      <div class="unit-settings-grid">
         <div><label>Tên đơn vị / NPP</label><input id="setName"></div>
         <div><label>Điện thoại</label><input id="setPhone"></div>
-        <div class="full"><label>Địa chỉ</label><input id="setAddress"></div>
+        <div class="unit-address-field"><label>Địa chỉ</label><input id="setAddress"></div>
       </div>
-      <div class="modal-actions"><button class="btn primary" onclick="saveSettings()">Lưu cài đặt</button></div>
+    </div>
+
+    <div id="salePolicySettingsCard" class="card sale-policy-card">
+      <div class="sale-policy-head">
+        <div>
+          <h3 style="margin:0">Chính sách lương Sale</h3>
+          <div class="small">Lọc theo Sale • Hoa hồng theo NCC/Nhóm hàng • Thưởng mốc doanh số.</div>
+        </div>
+        <div class="sale-policy-top-filters">
+          <div>
+            <label>Sale áp dụng</label>
+            <select id="salePolicyEmployeeFilter" onchange="renderSalePolicySettings()">
+              <option value="">Tất cả Sale (mặc định chung)</option>
+            </select>
+          </div>
+          <div>
+            <label>Áp dụng từ tháng</label>
+            <input id="salePolicyEffectiveMonth" type="month"
+                   onchange="renderSalePolicySettings()">
+          </div>
+          <button class="btn primary sale-policy-save-top" type="button"
+                  onclick="saveSaleCompPolicy()">Lưu chính sách</button>
+        </div>
+      </div>
+
+      <datalist id="salePolicyGroupList"></datalist>
+
+      <div class="sale-policy-grid">
+        <div class="sale-policy-box">
+          <h4><span>Hoa hồng theo NCC / Nhóm hàng</span><span class="sale-policy-filter-hint">Nhóm ưu tiên hơn NCC nếu trùng</span></h4>
+          <div id="salePolicyBrandRows"></div>
+          <div class="sale-policy-actions">
+            <button class="btn" type="button" onclick="addSalePolicyBrandRow()">+ Thêm NCC/Nhóm</button>
+          </div>
+          <div class="sale-policy-note">Có thể chọn Theo NCC hoặc Theo nhóm hàng. Danh sách NCC lấy trực tiếp từ Nhà cung cấp.</div>
+        </div>
+
+        <div class="sale-policy-box">
+          <h4>Thưởng mốc doanh số</h4>
+          <div id="salePolicyMilestoneRows"></div>
+          <div class="sale-policy-actions">
+            <button class="btn" type="button" onclick="addSalePolicyMilestoneRow()">+ Thêm mốc</button>
+          </div>
+          <div class="sale-policy-note">Ô Thưởng: nhập 2% = thưởng 2% trên tổng doanh số tháng; nhập 500.000 = thưởng cố định 500.000đ. Đạt nhiều mốc thì lấy mốc cao nhất.</div>
+        </div>
+      </div>
+
+      <div id="salePolicyStatus" class="sale-policy-note"></div>
+      <div class="modal-actions">
+        <button class="btn primary" type="button" onclick="saveSaleCompPolicy()">Lưu chính sách Sale</button>
+      </div>
     </div>
 
     <div class="card" style="margin-top:14px">
@@ -6647,6 +7335,13 @@ input.vnd-dot-input{
       <div id="staffModuleSettings" class="staff-module-grid">
         <label class="staff-module-row"><span>🏠 Tổng quan</span><input type="checkbox" data-staff-module="dashboard" onchange="saveStaffModuleSettings()"></label>
         <label class="staff-module-row"><span>⬆️ Xuất kho</span><input type="checkbox" data-staff-module="stockout" onchange="saveStaffModuleSettings()"></label>
+        <label class="staff-module-row staff-sale-permission-row">
+          <span>👤 Chọn Sale phụ trách trên Phiếu xuất</span>
+          <input id="staffSelectSaleOwnerEnabled"
+                 type="checkbox"
+                 data-staff-action="selectSaleOwner"
+                 onchange="saveStaffModuleSettings()">
+        </label>
         <div class="staff-stockout-edit-box">
           <div class="staff-stockout-edit-head">
             <strong>✎ Sửa phiếu xuất đã lưu</strong>
@@ -7462,6 +8157,7 @@ async function changeQtyWithStockLock(mode,rowIndex,el){
 
   if(!stockOperationManagedOnline() || (stockOperationOwned && stockOperationMode==='stockout')){
     changeField('so',rowIndex,'qty',el.value);
+    validateStockoutLineSourceAfterQty(rowIndex,{askSwitch:true});
     return true;
   }
 
@@ -7505,6 +8201,7 @@ async function changeQtyWithStockLock(mode,rowIndex,el){
   delete freshEl.dataset.stockOperationQtyPending;
   freshEl.value=typed;
   changeField('so',rowIndex,'qty',typed);
+  validateStockoutLineSourceAfterQty(rowIndex,{askSwitch:true});
 
   stockOperationShowBanner('stockout','mine','✓ Đã bắt đầu thao tác PHIẾU XUẤT từ lúc nhập số lượng. Các máy khác tạm thời không thể thao tác Phiếu xuất.');
   setTimeout(()=>{try{freshEl.focus();freshEl.select()}catch(e){}},0);
@@ -8182,8 +8879,8 @@ function updateStockoutEditPermissionUI(){
   sel.disabled=!enabled;
   if(note){
     note.textContent=enabled
-      ? 'Nhân viên được sửa phiếu xuất đã lưu '+(sel.value==='always'?'mọi lúc':'trong '+sel.value+' ngày kể từ lúc lập phiếu')+'.'
-      : 'Nhân viên chỉ được xem/in phiếu cũ, không được sửa.';
+      ? (sel.value==='always'?'Được sửa mọi lúc.':'Được sửa trong '+sel.value+' ngày.')
+      : 'Chỉ xem/in phiếu cũ.';
   }
 }
 
@@ -8204,6 +8901,7 @@ function setStockoutLocked(locked){
   });
   setStockoutCustomerEditState(!selectedCustomerId);
   stockoutSourceChoiceLocked(locked);
+  applyStockoutSalePermissionUI();
 
   const customerPickerBtn=$('soCustomerPickerBtn');
   if(customerPickerBtn)customerPickerBtn.disabled=!!locked;
@@ -8293,6 +8991,7 @@ function loadStockoutIntoForm(invoice){
   $('soCustomerAlert').innerHTML='';
   setStockoutCustomerEditState(false);
   $('soContent').value=invoice.content||'Giao hàng theo đơn đặt hàng.';
+  renderStockoutSaleOptions(invoice.saleEmployeeId||'',invoice.saleEmployeeName||'');
   setHistoricalStockoutVatSource(invoice);
   $('soPaid').value=invoice.paid||'';
 
@@ -8303,11 +9002,29 @@ function loadStockoutIntoForm(invoice){
     price:r.price??'',
     ck:r.ck??'',
     km:r.km??'',
-    note:r.note||''
+    note:r.note||'',
+    vatSource:stockoutItemVatSource(r,invoice),
+    supplierIdAtSale:r.supplierIdAtSale!==undefined
+      ? String(r.supplierIdAtSale||'')
+      : String(db.products.find(p=>p.id===r.productId)?.supplierId||''),
+    supplierNameAtSale:r.supplierNameAtSale!==undefined
+      ? String(r.supplierNameAtSale||'')
+      : String(db.products.find(p=>p.id===r.productId)?.supplierName||''),
+    brandAtSale:'',
+    groupAtSale:r.groupAtSale!==undefined
+      ? String(r.groupAtSale||'')
+      : String(db.products.find(p=>p.id===r.productId)?.group||''),
+    commissionRateAtSale:r.commissionRateAtSale,
+    commissionRuleTypeAtSale:r.commissionRuleTypeAtSale||'',
+    commissionRuleTargetAtSale:r.commissionRuleTargetAtSale||'',
+    commissionRuleTargetNameAtSale:r.commissionRuleTargetNameAtSale||'',
+    commissionPolicyMonthAtSale:r.commissionPolicyMonthAtSale||'',
+    commissionPolicyEmployeeIdAtSale:r.commissionPolicyEmployeeIdAtSale||'',
+    _vatShortage:false
   }));
 
   if(!soRows.length){
-    soRows=[{productId:'',productText:'',qty:'',price:'',ck:'',km:'',note:''}];
+    soRows=[{productId:'',productText:'',qty:'',price:'',ck:'',km:'',note:'',vatSource:'nonvat'}];
   }
 
   /* Chỉ vẽ lại bảng của phiếu xuất, không render toàn bộ ứng dụng */
@@ -8909,29 +9626,12 @@ function currentSaleTermsForProduct(product){
 
 /* ===== V79 MẶC ĐỊNH KHÔNG VAT CHO PHIẾU XUẤT MỚI ===== */
 function setNewStockoutDefaultVatSource(){
-  const sel=$('soVatSourceFilter');
-  sel?.querySelector('option[data-legacy]')?.remove();
-  setStockoutVatSourceCompact('');
+  /* V118: từng dòng tự mặc định Không VAT. Giữ hidden nguồn chung ở nonvat để tương thích mã cũ. */
+  setStockoutVatSourceCompact('nonvat');
 }
 function setHistoricalStockoutVatSource(invoice){
   const source=['vat','nonvat'].includes(invoice?.vatSource)?invoice.vatSource:'';
-  const sel=$('soVatSourceFilter');
-
-  if(sel){
-    sel.querySelector('option[data-legacy]')?.remove();
-
-    if(!source){
-      const opt=document.createElement('option');
-      opt.value='';
-      opt.textContent='CHƯA PHÂN LOẠI';
-      opt.dataset.legacy='1';
-      sel.prepend(opt);
-    }
-  }
-
   setStockoutVatSourceCompact(source);
-
-  if(sel && !source)sel.value='';
 }
 
 /* ===== V77 GIÁ BÁN / CK / KM KHI NHÂN VIÊN NHẬP HÀNG ===== */
@@ -9173,6 +9873,7 @@ function applyPermissions(){
   if($('soEditBtn') && stockoutViewingHistory){
     $('soEditBtn').style.display=(canEditSavedStockout() && !stockoutEditingHistory)?'inline-flex':'none';
   }
+  applyStockoutSalePermissionUI();
   applyStockinPrivacyUI();
 }
 
@@ -9410,13 +10111,16 @@ function ensureExpenseData(){
     db.settings.staffActions={
       manageGroups:false,
       addProduct:false,
-      editStockout:true
+      editStockout:true,
+      selectSaleOwner:true
     };
   }else{
     if(typeof db.settings.staffActions.manageGroups!=='boolean')db.settings.staffActions.manageGroups=false;
     if(typeof db.settings.staffActions.addProduct!=='boolean')db.settings.staffActions.addProduct=false;
     /* V108: mặc định TRUE để không làm mất quyền sửa mà V105-V107 đang có. */
     if(typeof db.settings.staffActions.editStockout!=='boolean')db.settings.staffActions.editStockout=true;
+    /* V117: mặc định TRUE để các app đang dùng Sale không bị mất quyền chọn. */
+    if(typeof db.settings.staffActions.selectSaleOwner!=='boolean')db.settings.staffActions.selectSaleOwner=true;
   }
   if(!['2','3','7','30','always'].includes(String(db.settings.stockoutEditWindow||''))){
     /* Mặc định Mọi lúc để giữ nguyên hành vi bản cũ; Quản lý có thể đổi trong Phân quyền. */
@@ -9556,6 +10260,897 @@ function employeeSundayOvertimeOnDate(employeeId,date){
   return (db.employeeSundayOvertime||[]).find(x=>x.employeeId===employeeId && x.date===date)||null;
 }
 
+
+/* ===== V119: CHÍNH SÁCH HOA HỒNG / THƯỞNG SALE ===== */
+function ensureSaleCompPolicy(){
+  ensureSaleCompPolicyV120();
+}
+
+
+
+
+
+
+/* ===== V120: CHÍNH SÁCH SALE THEO NHÂN VIÊN + HÃNG / NHÓM ===== */
+function ensureSaleCompPolicyV120(){
+  ensureSaleCompPolicyV121();
+}
+
+function salePolicyEmployeeFilterValue(){
+  return String($('salePolicyEmployeeFilter')?.value||'');
+}
+
+function salePolicyForEmployeeMonth(employeeId,month){
+  ensureSaleCompPolicyV120();
+  const emp=String(employeeId||'');
+  const m=String(month||currentISODate().slice(0,7));
+
+  const specific=(db.settings.saleCompPolicyHistory||[])
+    .filter(x=>String(x.employeeId||'')===emp && emp && x.effectiveMonth<=m)
+    .sort((a,b)=>a.effectiveMonth.localeCompare(b.effectiveMonth));
+
+  if(specific.length)return specific[specific.length-1];
+
+  const general=(db.settings.saleCompPolicyHistory||[])
+    .filter(x=>!String(x.employeeId||'') && x.effectiveMonth<=m)
+    .sort((a,b)=>a.effectiveMonth.localeCompare(b.effectiveMonth));
+
+  return general.length?general[general.length-1]:null;
+}
+
+function salePolicyExactEmployeeMonth(employeeId,month){
+  ensureSaleCompPolicyV120();
+  const emp=String(employeeId||'');
+  const m=String(month||'');
+  return (db.settings.saleCompPolicyHistory||[])
+    .find(x=>String(x.employeeId||'')===emp && x.effectiveMonth===m)||null;
+}
+
+/* Giữ hàm V119 tương thích: mặc định trả chính sách chung. */
+function salePolicyForMonth(month){
+  return salePolicyForEmployeeMonth('',month);
+}
+
+function salePolicyExactMonth(month){
+  return salePolicyExactEmployeeMonth('',month);
+}
+
+function saleKnownGroups(){
+  const set=new Set();
+  (db.productGroups||[]).forEach(g=>{
+    const v=String(g||'').trim();
+    if(v)set.add(v);
+  });
+  (db.products||[]).forEach(p=>{
+    const v=String(p?.group||'').trim();
+    if(v)set.add(v);
+  });
+  ensureSaleCompPolicyV120();
+  (db.settings.saleCompPolicyHistory||[]).forEach(pol=>{
+    (pol.rules||[]).forEach(r=>{
+      if(r.type!=='group')return;
+      const v=String(r.target||'').trim();
+      if(v)set.add(v);
+    });
+  });
+  return [...set].sort((a,b)=>a.localeCompare(b,'vi'));
+}
+
+
+
+function saleCommissionRateForBrand(brand,month,employeeId=''){
+  const pol=salePolicyForEmployeeMonth(employeeId,month);
+  const b=norm(String(brand||'').trim());
+  const rule=(pol?.rules||[]).find(r=>r.type==='brand' && norm(r.target)===b);
+  return Math.max(0,Number(rule?.rate)||0);
+}
+
+function saleMilestoneBonusForSales(sales,month,employeeId=''){
+  const pol=salePolicyForEmployeeMonth(employeeId,month);
+  const reached=(pol?.milestones||[])
+    .filter(x=>Number(x.minSales||0)<=Number(sales||0))
+    .sort((a,b)=>Number(a.minSales||0)-Number(b.minSales||0));
+
+  if(!reached.length)return 0;
+  return v122MilestoneBonusAmount(reached[reached.length-1],sales);
+}
+
+function salePolicyEmployeeOptions(){
+  ensureEmployeeData();
+  return (db.employees||[])
+    .slice()
+    .sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'vi'));
+}
+
+function renderSalePolicyEmployeeFilter(){
+  const sel=$('salePolicyEmployeeFilter');
+  if(!sel)return;
+  const current=String(sel.value||'');
+  const rows=salePolicyEmployeeOptions();
+
+  sel.innerHTML='<option value="">Tất cả Sale (mặc định chung)</option>'+
+    rows.map(e=>`<option value="${esc(e.id)}">${esc(e.name||e.id)}</option>`).join('');
+
+  if(current && rows.some(e=>String(e.id)===current))sel.value=current;
+  else sel.value='';
+}
+
+function salePolicyRuleTargetList(type){
+  return type==='group'?saleKnownGroups():saleKnownBrands();
+}
+
+function salePolicyRuleTargetListId(type){
+  return type==='group'?'salePolicyGroupList':'salePolicyBrandList';
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+function saleCommissionLineGroup(item){
+  if(String(item?.groupAtSale||'').trim())return String(item.groupAtSale).trim();
+  const p=(db.products||[]).find(x=>String(x.id)===String(item?.productId||''));
+  return String(p?.group||'').trim();
+}
+
+function saleMonthlyBrandBreakdown(employeeId,month){
+  const map=new Map();
+
+  (db.stockout||[]).forEach(o=>{
+    if(String(o.saleEmployeeId||'')!==String(employeeId||''))return;
+    if(saleInvoiceMonth(o)!==String(month||''))return;
+
+    (o.items||[]).forEach(i=>{
+      const label=saleCommissionLineRuleLabel(i);
+      const rate=saleCommissionRateSnapshot(i);
+      const revenue=saleInvoiceLineRevenue(i);
+      const commission=Math.round(revenue*rate/100);
+      const key=label+'||'+rate;
+
+      if(!map.has(key)){
+        map.set(key,{brand:label,rate,revenue:0,commission:0});
+      }
+      const row=map.get(key);
+      row.revenue+=revenue;
+      row.commission+=commission;
+    });
+  });
+
+  return [...map.values()]
+    .sort((a,b)=>String(a.brand).localeCompare(String(b.brand),'vi'));
+}
+
+function employeeSalePayForMonth(employee,month){
+  if(!employee)return {sales:0,commission:0,milestoneBonus:0,totalSalePay:0};
+  const sales=saleMonthlySales(employee.id,month);
+  const commission=saleMonthlyCommission(employee.id,month);
+  const milestoneBonus=saleMilestoneBonusForSales(sales,month,employee.id);
+  return {
+    sales,
+    commission,
+    milestoneBonus,
+    totalSalePay:commission+milestoneBonus
+  };
+}
+
+
+
+function productSupplierOptions(selectedId='',includeEmpty=true){
+  const wanted=String(selectedId||'');
+  const rows=[...(db.suppliers||[])]
+    .sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'vi'));
+  let html=includeEmpty?'<option value="">-- Chọn NCC --</option>':'';
+  html+=rows.map(s=>
+    `<option value="${esc(s.id)}" ${String(s.id)===wanted?'selected':''}>${esc(s.name||s.id)}</option>`
+  ).join('');
+  return html;
+}
+
+function productSupplierSnapshot(product){
+  const p=product||{};
+  const id=String(p.supplierId||'');
+  const s=(db.suppliers||[]).find(x=>String(x.id)===id);
+  return {
+    id:id || String(s?.id||''),
+    name:String(p.supplierName||s?.name||'').trim()
+  };
+}
+
+function saleKnownSuppliers(){
+  const map=new Map();
+  (db.suppliers||[]).forEach(s=>{
+    if(!s?.id)return;
+    map.set(String(s.id),String(s.name||s.id));
+  });
+  ensureSaleCompPolicyV121();
+  (db.settings.saleCompPolicyHistory||[]).forEach(pol=>{
+    (pol.rules||[]).forEach(r=>{
+      if(r.type!=='supplier')return;
+      const id=String(r.target||'');
+      if(id && !map.has(id))map.set(id,String(r.targetName||id));
+    });
+  });
+  return [...map.entries()]
+    .map(([id,name])=>({id,name}))
+    .sort((a,b)=>a.name.localeCompare(b.name,'vi'));
+}
+
+function v121PolicyMoneyDigits(v){
+  return String(v??'').replace(/[^\d]/g,'').replace(/^0+(?=\d)/,'');
+}
+function v121PolicyMoneyNumber(v){
+  const d=v121PolicyMoneyDigits(v);
+  return d?Number(d):0;
+}
+function v121PolicyMoneyFormat(v){
+  const n=v121PolicyMoneyNumber(v);
+  return n?new Intl.NumberFormat('vi-VN').format(n):'';
+}
+function v121PolicyMoneyInput(el){
+  if(!el)return;
+  const raw=v121PolicyMoneyDigits(el.value);
+  el.value=raw?new Intl.NumberFormat('vi-VN').format(Number(raw)):'';
+}
+
+function settingsEnterNextField(event){
+  if(event.key!=='Enter')return;
+  const root=event.target?.closest?.('#settings');
+  if(!root)return;
+  const tag=event.target.tagName;
+  if(tag==='TEXTAREA')return;
+  if(event.target.type==='checkbox'||event.target.type==='file'||event.target.type==='button')return;
+  const fields=[...root.querySelectorAll('input,select')]
+    .filter(el=>{
+      if(el.disabled||el.readOnly||el.offsetParent===null)return false;
+      const type=String(el.type||'').toLowerCase();
+      return !['checkbox','file','button','submit','hidden'].includes(type);
+    });
+  const i=fields.indexOf(event.target);
+  if(i<0)return;
+  event.preventDefault();
+  const next=fields[i+1];
+  if(next){
+    next.focus();
+    if(typeof next.select==='function'&&next.tagName==='INPUT'){
+      try{next.select()}catch(e){}
+    }
+  }
+}
+
+function ensureSettingsEnterNext(){
+  if(document.documentElement.dataset.v121SettingsEnter==='1')return;
+  document.documentElement.dataset.v121SettingsEnter='1';
+  document.addEventListener('keydown',settingsEnterNextField);
+}
+
+
+/* ===== V122: THƯỞNG MỐC - NHẬP % HOẶC SỐ TIỀN ===== */
+function v122BonusParse(value){
+  const raw=String(value??'').trim();
+  const isPercent=raw.includes('%');
+
+  if(isPercent){
+    let cleaned=raw
+      .replace(/%/g,'')
+      .replace(/\s/g,'')
+      .replace(',','.')
+      .replace(/[^\d.]/g,'');
+    const firstDot=cleaned.indexOf('.');
+    if(firstDot>=0){
+      cleaned=cleaned.slice(0,firstDot+1)+cleaned.slice(firstDot+1).replace(/\./g,'');
+    }
+    return {
+      bonusType:'percent',
+      bonusValue:Math.max(0,Number.parseFloat(cleaned)||0)
+    };
+  }
+
+  return {
+    bonusType:'amount',
+    bonusValue:Math.max(0,v121PolicyMoneyNumber(raw))
+  };
+}
+
+function v122BonusDisplay(row){
+  const type=String(row?.bonusType||'amount')==='percent'?'percent':'amount';
+  const value=Math.max(
+    0,
+    Number(row?.bonusValue!==undefined?row.bonusValue:row?.bonus)||0
+  );
+
+  if(type==='percent'){
+    const s=Number.isInteger(value)?String(value):String(value).replace('.',',');
+    return s+'%';
+  }
+  return v121PolicyMoneyFormat(value);
+}
+
+function v122PolicyBonusInput(el){
+  if(!el)return;
+  const wrap=el.closest('.sale-policy-bonus-wrap');
+  const unit=wrap?.querySelector('.sale-policy-bonus-unit');
+  const raw=String(el.value||'');
+
+  if(raw.includes('%')){
+    const parsed=v122BonusParse(raw);
+    const value=parsed.bonusValue;
+    const s=Number.isInteger(value)?String(value):String(value).replace('.',',');
+    el.value=value>0?s+'%':'%';
+    wrap?.classList.add('is-percent');
+    if(unit)unit.textContent='';
+    return;
+  }
+
+  wrap?.classList.remove('is-percent');
+  if(unit)unit.textContent='đ';
+  v121PolicyMoneyInput(el);
+}
+
+function v122MilestoneBonusAmount(row,sales){
+  if(!row)return 0;
+  const type=String(row.bonusType||'amount')==='percent'?'percent':'amount';
+  const value=Math.max(
+    0,
+    Number(row.bonusValue!==undefined?row.bonusValue:row.bonus)||0
+  );
+
+  if(type==='percent'){
+    return Math.round(Math.max(0,Number(sales)||0)*value/100);
+  }
+  return Math.round(value);
+}
+
+
+function ensureSaleCompPolicyV121(){
+  if(!db.settings)db.settings={};
+  if(!Array.isArray(db.settings.saleCompPolicyHistory))db.settings.saleCompPolicyHistory=[];
+
+  db.settings.saleCompPolicyHistory=db.settings.saleCompPolicyHistory
+    .filter(x=>x&&/^\d{4}-\d{2}$/.test(String(x.effectiveMonth||'')))
+    .map(x=>{
+      const rawRules=Array.isArray(x.rules)
+        ? x.rules
+        : Array.isArray(x.brandRates)
+          ? x.brandRates.map(r=>({
+              type:'supplier',
+              target:String(r?.brand||'').trim(),
+              targetName:String(r?.brand||'').trim(),
+              rate:Math.max(0,Number(r?.rate)||0)
+            }))
+          : [];
+
+      const rules=rawRules.map(r=>{
+        const rawType=String(r?.type||'supplier');
+        const type=rawType==='group'?'group':'supplier';
+        let target=String(r?.target||r?.brand||'').trim();
+        let targetName=String(r?.targetName||r?.brand||'').trim();
+
+        if(type==='supplier'){
+          const byId=(db.suppliers||[]).find(s=>String(s.id)===target);
+          const byName=(db.suppliers||[]).find(s=>norm(s.name)===norm(targetName||target));
+          const s=byId||byName;
+          if(s){
+            target=String(s.id);
+            targetName=String(s.name||s.id);
+          }
+        }
+
+        return {type,target,targetName,rate:Math.max(0,Number(r?.rate)||0)};
+      }).filter(r=>r.target);
+
+      const milestones=Array.isArray(x.milestones)
+        ? x.milestones.map(r=>{
+            const bonusType=String(r?.bonusType||'amount')==='percent'?'percent':'amount';
+            const legacyBonus=Math.max(0,Number(r?.bonus)||0);
+            const bonusValue=Math.max(
+              0,
+              Number(r?.bonusValue!==undefined?r.bonusValue:legacyBonus)||0
+            );
+            return {
+              minSales:Math.max(0,Number(r?.minSales)||0),
+              bonusType,
+              bonusValue,
+              /* giữ trường cũ để các bản trước vẫn đọc được */
+              bonus:bonusType==='amount'?bonusValue:legacyBonus
+            };
+          })
+        : [];
+
+      return {
+        effectiveMonth:String(x.effectiveMonth),
+        employeeId:String(x.employeeId||''),
+        rules,
+        brandRates:[],
+        milestones
+      };
+    })
+    .sort((a,b)=>
+      a.effectiveMonth.localeCompare(b.effectiveMonth)||
+      String(a.employeeId||'').localeCompare(String(b.employeeId||''))
+    );
+}
+
+function saleCommissionRuleForProduct(product,employeeId,month){
+  const p=product||{};
+  const pol=salePolicyForEmployeeMonth(employeeId,month);
+  const rules=Array.isArray(pol?.rules)?pol.rules:[];
+  const group=norm(String(p.group||'').trim());
+  const supplierId=String(p.supplierId||'').trim();
+  let rule=group
+    ? rules.find(r=>r.type==='group'&&norm(r.target)===group)
+    : null;
+  if(!rule&&supplierId){
+    rule=rules.find(r=>r.type==='supplier'&&String(r.target)===supplierId);
+  }
+  return {
+    rate:Math.max(0,Number(rule?.rate)||0),
+    type:String(rule?.type||''),
+    target:String(rule?.target||''),
+    targetName:String(rule?.targetName||''),
+    policyMonth:String(pol?.effectiveMonth||''),
+    policyEmployeeId:String(pol?.employeeId||'')
+  };
+}
+
+function salePolicyRuleTypeChanged(selectEl){
+  const row=selectEl?.closest('.sale-policy-row');
+  if(!row)return;
+  const holder=row.querySelector('.sale-policy-rule-target-holder');
+  const type=String(selectEl.value||'supplier')==='group'?'group':'supplier';
+  if(!holder)return;
+  if(type==='supplier'){
+    holder.innerHTML=`<select class="sale-policy-rule-target sale-policy-target-select">
+      ${productSupplierOptions('',true)}
+    </select>`;
+    holder.querySelector('select')?.focus();
+  }else{
+    holder.innerHTML=`<input class="sale-policy-rule-target"
+      list="salePolicyGroupList" placeholder="Chọn / gõ nhóm hàng">`;
+    holder.querySelector('input')?.focus();
+  }
+}
+
+function salePolicyRuleTargetValue(row){
+  return String(row?.querySelector('.sale-policy-rule-target')?.value||'').trim();
+}
+
+function renderSalePolicySettings(){
+  const card=$('salePolicySettingsCard');
+  if(!card)return;
+  ensureSaleCompPolicyV121();
+  renderSalePolicyEmployeeFilter();
+  const employeeId=salePolicyEmployeeFilterValue();
+  const month=$('salePolicyEffectiveMonth')?.value||currentISODate().slice(0,7);
+  const exact=salePolicyExactEmployeeMonth(employeeId,month);
+  const inherited=salePolicyForEmployeeMonth(employeeId,month);
+  const policy=exact||inherited||{rules:[],milestones:[]};
+  const ruleRows=(policy.rules||[]).length
+    ? policy.rules
+    : [{type:'supplier',target:'',targetName:'',rate:''}];
+  const milestoneRows=(policy.milestones||[]).length
+    ? policy.milestones
+    : [{minSales:'',bonus:''}];
+  const ruleBox=$('salePolicyBrandRows');
+  const milestoneBox=$('salePolicyMilestoneRows');
+  const note=$('salePolicyStatus');
+
+  if(ruleBox){
+    ruleBox.innerHTML=ruleRows.map((r,i)=>{
+      const type=r.type==='group'?'group':'supplier';
+      let targetHtml='';
+      if(type==='supplier'){
+        let opts=productSupplierOptions(r.target,true);
+        const exists=(db.suppliers||[]).some(s=>String(s.id)===String(r.target||''));
+        if(r.target&&!exists){
+          opts+=`<option value="${esc(r.target)}" selected>${esc(r.targetName||r.target)} (cũ)</option>`;
+        }
+        targetHtml=`<select class="sale-policy-rule-target sale-policy-target-select">${opts}</select>`;
+      }else{
+        targetHtml=`<input class="sale-policy-rule-target"
+          list="salePolicyGroupList" value="${esc(r.target||'')}"
+          placeholder="Chọn / gõ nhóm hàng">`;
+      }
+      return `<div class="sale-policy-row">
+        <select class="sale-policy-rule-type" onchange="salePolicyRuleTypeChanged(this)">
+          <option value="supplier" ${type==='supplier'?'selected':''}>Theo NCC</option>
+          <option value="group" ${type==='group'?'selected':''}>Theo nhóm</option>
+        </select>
+        <div class="sale-policy-rule-target-holder">${targetHtml}</div>
+        <div class="sale-policy-rate-wrap">
+          <input class="sale-policy-rule-rate" type="number" min="0" step="0.1"
+                 value="${r.rate!==''?Number(r.rate||0):''}" placeholder="0">
+          <span>%</span>
+        </div>
+        <button class="btn sale-policy-remove" type="button"
+                onclick="removeSalePolicyBrandRow(${i})">×</button>
+      </div>`;
+    }).join('');
+  }
+
+  if(milestoneBox){
+    milestoneBox.innerHTML=milestoneRows.map((r,i)=>{
+      const isPercent=String(r.bonusType||'amount')==='percent';
+      return `<div class="sale-policy-row milestone">
+        <div class="sale-policy-money-wrap">
+          <input class="sale-policy-min" type="text" inputmode="numeric"
+                 value="${esc(v121PolicyMoneyFormat(r.minSales))}"
+                 placeholder="Doanh số từ" oninput="v121PolicyMoneyInput(this)">
+          <span>đ</span>
+        </div>
+        <div class="sale-policy-bonus-wrap ${isPercent?'is-percent':''}">
+          <input class="sale-policy-bonus" type="text" inputmode="text"
+                 value="${esc(v122BonusDisplay(r))}"
+                 placeholder="VD: 500.000 hoặc 2%"
+                 oninput="v122PolicyBonusInput(this)">
+          <span class="sale-policy-bonus-unit">${isPercent?'':'đ'}</span>
+        </div>
+        <button class="btn sale-policy-remove" type="button"
+                onclick="removeSalePolicyMilestoneRow(${i})">×</button>
+      </div>`;
+    }).join('');
+  }
+
+  const groupList=$('salePolicyGroupList');
+  if(groupList){
+    groupList.innerHTML=saleKnownGroups()
+      .map(g=>`<option value="${esc(g)}"></option>`).join('');
+  }
+  const emp=salePolicyEmployeeOptions().find(e=>String(e.id)===employeeId);
+  const who=employeeId?(emp?.name||'Sale đã chọn'):'Tất cả Sale';
+  if(note){
+    if(exact){
+      note.textContent=who+' • chính sách riêng từ '+salaryMonthLabel(month)+'.';
+    }else if(inherited){
+      const inheritedWho=String(inherited.employeeId||'')
+        ? (salePolicyEmployeeOptions().find(e=>String(e.id)===String(inherited.employeeId))?.name||'Sale')
+        : 'chính sách chung';
+      note.textContent=who+' • đang kế thừa '+inheritedWho+' từ '+salaryMonthLabel(inherited.effectiveMonth)+'.';
+    }else{
+      note.textContent=who+' • chưa có chính sách trước tháng này.';
+    }
+  }
+}
+
+function readSalePolicyBrandRows(){
+  return [...document.querySelectorAll('#salePolicyBrandRows .sale-policy-row')]
+    .map(row=>{
+      const type=String(row.querySelector('.sale-policy-rule-type')?.value||'supplier')==='group'?'group':'supplier';
+      const target=salePolicyRuleTargetValue(row);
+      let targetName='';
+      if(type==='supplier'){
+        const s=(db.suppliers||[]).find(x=>String(x.id)===target);
+        targetName=String(s?.name||'');
+      }else{
+        targetName=target;
+      }
+      return {
+        type,target,targetName,
+        rate:Math.max(0,Number(row.querySelector('.sale-policy-rule-rate')?.value)||0)
+      };
+    }).filter(x=>x.target);
+}
+
+function readSalePolicyMilestoneRows(){
+  return [...document.querySelectorAll('#salePolicyMilestoneRows .sale-policy-row')]
+    .map(row=>{
+      const bonus=v122BonusParse(row.querySelector('.sale-policy-bonus')?.value);
+      return {
+        minSales:Math.max(0,v121PolicyMoneyNumber(row.querySelector('.sale-policy-min')?.value)),
+        bonusType:bonus.bonusType,
+        bonusValue:bonus.bonusValue,
+        bonus:bonus.bonusType==='amount'?bonus.bonusValue:0
+      };
+    })
+    .filter(x=>x.minSales>0||x.bonusValue>0)
+    .sort((a,b)=>a.minSales-b.minSales);
+}
+
+function addSalePolicyBrandRow(){
+  const box=$('salePolicyBrandRows');
+  if(!box)return;
+  box.insertAdjacentHTML('beforeend',`
+    <div class="sale-policy-row">
+      <select class="sale-policy-rule-type" onchange="salePolicyRuleTypeChanged(this)">
+        <option value="supplier">Theo NCC</option>
+        <option value="group">Theo nhóm</option>
+      </select>
+      <div class="sale-policy-rule-target-holder">
+        <select class="sale-policy-rule-target sale-policy-target-select">
+          ${productSupplierOptions('',true)}
+        </select>
+      </div>
+      <div class="sale-policy-rate-wrap">
+        <input class="sale-policy-rule-rate" type="number" min="0" step="0.1" placeholder="0">
+        <span>%</span>
+      </div>
+      <button class="btn sale-policy-remove" type="button"
+              onclick="this.closest('.sale-policy-row').remove()">×</button>
+    </div>`);
+}
+
+function addSalePolicyMilestoneRow(){
+  const box=$('salePolicyMilestoneRows');
+  if(!box)return;
+
+  box.insertAdjacentHTML('beforeend',`
+    <div class="sale-policy-row milestone">
+      <div class="sale-policy-money-wrap">
+        <input class="sale-policy-min" type="text" inputmode="numeric"
+               placeholder="Doanh số từ" oninput="v121PolicyMoneyInput(this)">
+        <span>đ</span>
+      </div>
+      <div class="sale-policy-bonus-wrap">
+        <input class="sale-policy-bonus" type="text" inputmode="text"
+               placeholder="VD: 500.000 hoặc 2%"
+               oninput="v122PolicyBonusInput(this)">
+        <span class="sale-policy-bonus-unit">đ</span>
+      </div>
+      <button class="btn sale-policy-remove" type="button"
+              onclick="this.closest('.sale-policy-row').remove()">×</button>
+    </div>`);
+}
+
+async function saveSaleCompPolicy(){
+  if(!isManager)return requireManager(saveSaleCompPolicy,'Chính sách Sale cần quyền Quản lý.');
+  ensureSaleCompPolicyV121();
+  const employeeId=salePolicyEmployeeFilterValue();
+  const month=String($('salePolicyEffectiveMonth')?.value||'').trim();
+  if(!/^\d{4}-\d{2}$/.test(month))return alert('Chọn tháng bắt đầu áp dụng.');
+  const rules=readSalePolicyBrandRows();
+  const milestones=readSalePolicyMilestoneRows();
+  const duplicateRules=rules
+    .map(x=>x.type+'||'+norm(x.target))
+    .filter((x,i,a)=>a.indexOf(x)!==i);
+  if(duplicateRules.length){
+    return alert('Một NCC/Nhóm đang bị nhập trùng. Mỗi NCC hoặc Nhóm chỉ để 1 mức %.');
+  }
+  db.settings.saleCompPolicyHistory=(db.settings.saleCompPolicyHistory||[])
+    .filter(x=>!(String(x.employeeId||'')===employeeId&&x.effectiveMonth===month));
+  db.settings.saleCompPolicyHistory.push({
+    effectiveMonth:month,employeeId,rules,brandRates:[],milestones
+  });
+  db.settings.saleCompPolicyHistory.sort((a,b)=>
+    a.effectiveMonth.localeCompare(b.effectiveMonth)||
+    String(a.employeeId||'').localeCompare(String(b.employeeId||''))
+  );
+  if(await saveDB()){
+    renderSalePolicySettings();
+    renderEmployees();
+    const emp=salePolicyEmployeeOptions().find(e=>String(e.id)===employeeId);
+    toast('Đã lưu chính sách Sale • '+(employeeId?(emp?.name||'Sale'):'Tất cả Sale'));
+  }
+}
+
+function saleCommissionLineSupplier(item){
+  const id=String(item?.supplierIdAtSale||'');
+  const name=String(item?.supplierNameAtSale||'').trim();
+  if(name)return name;
+  const s=(db.suppliers||[]).find(x=>String(x.id)===id);
+  if(s)return String(s.name||s.id);
+  const p=(db.products||[]).find(x=>String(x.id)===String(item?.productId||''));
+  return productSupplierSnapshot(p).name;
+}
+
+function saleCommissionLineRuleLabel(item){
+  const type=String(item?.commissionRuleTypeAtSale||'');
+  const targetName=String(item?.commissionRuleTargetNameAtSale||'').trim();
+  if(type==='group'){
+    return 'Nhóm: '+(targetName||String(item?.groupAtSale||'')||'—');
+  }
+  if(type==='supplier'){
+    return 'NCC: '+(targetName||saleCommissionLineSupplier(item)||'—');
+  }
+  const supplier=saleCommissionLineSupplier(item);
+  const group=String(item?.groupAtSale||'').trim();
+  return supplier?'NCC: '+supplier:group?'Nhóm: '+group:'Chưa gán quy tắc';
+}
+
+
+function saleKnownBrands(){
+  ensureSaleCompPolicyV120();
+  const set=new Set();
+  (db.products||[]).forEach(p=>{
+    const b=String(p?.brand||'').trim();
+    if(b)set.add(b);
+  });
+  (db.settings.saleCompPolicyHistory||[]).forEach(pol=>{
+    (pol.rules||[]).forEach(r=>{
+      if(r.type!=='brand')return;
+      const b=String(r.target||'').trim();
+      if(b)set.add(b);
+    });
+  });
+  return [...set].sort((a,b)=>a.localeCompare(b,'vi'));
+}
+
+
+
+
+
+function saleInvoiceMonth(invoice){
+  const ymd=ymdFromDateText(invoice?.dateText||'');
+  return ymd?ymd.slice(0,7):'';
+}
+
+function saleInvoiceLineRevenue(item){
+  const qty=Math.max(0,Number(item?.qty)||0);
+  const net=Number(item?.net!==undefined?item.net:calcNet(item))||0;
+  return qty*net;
+}
+
+function saleCommissionRateSnapshot(item){
+  const v=item?.commissionRateAtSale;
+  return Number.isFinite(Number(v))?Math.max(0,Number(v)):0;
+}
+
+function saleCommissionLineBrand(item){
+  if(String(item?.brandAtSale||'').trim())return String(item.brandAtSale).trim();
+  const p=(db.products||[]).find(x=>String(x.id)===String(item?.productId||''));
+  return String(p?.brand||'').trim();
+}
+
+function saleMonthlySales(employeeId,month){
+  return (db.stockout||[])
+    .filter(o=>
+      String(o.saleEmployeeId||'')===String(employeeId||'') &&
+      saleInvoiceMonth(o)===String(month||'')
+    )
+    .reduce((sum,o)=>sum+Math.max(0,Number(o.total)||0),0);
+}
+
+function saleMonthlyCommission(employeeId,month){
+  let total=0;
+  (db.stockout||[]).forEach(o=>{
+    if(String(o.saleEmployeeId||'')!==String(employeeId||''))return;
+    if(saleInvoiceMonth(o)!==String(month||''))return;
+
+    (o.items||[]).forEach(i=>{
+      const rate=saleCommissionRateSnapshot(i);
+      if(rate<=0)return;
+      total+=saleInvoiceLineRevenue(i)*rate/100;
+    });
+  });
+  return Math.round(total);
+}
+
+
+
+
+
+function employeeTotalSalePay(employee){
+  if(!employee)return 0;
+  return employeeEmploymentMonths(employee)
+    .reduce((sum,month)=>sum+employeeSalePayForMonth(employee,month).totalSalePay,0);
+}
+
+
+
+
+
+
+
+
+
+
+
+function removeSalePolicyBrandRow(index){
+  const rows=[...document.querySelectorAll('#salePolicyBrandRows .sale-policy-row')];
+  rows[index]?.remove();
+  if(!$('salePolicyBrandRows')?.children.length)addSalePolicyBrandRow();
+}
+
+function removeSalePolicyMilestoneRow(index){
+  const rows=[...document.querySelectorAll('#salePolicyMilestoneRows .sale-policy-row')];
+  rows[index]?.remove();
+  if(!$('salePolicyMilestoneRows')?.children.length)addSalePolicyMilestoneRow();
+}
+
+
+
+function openSalePayrollDetail(employeeId,month){
+  if(!isManager)return;
+  const e=(db.employees||[]).find(x=>String(x.id)===String(employeeId));
+  if(!e)return;
+
+  const salePay=employeeSalePayForMonth(e,month);
+  const payroll=employeePayroll(e,month);
+  const detail=saleMonthlyBrandBreakdown(e.id,month);
+
+  const brandHtml=detail.length
+    ? `<div class="sale-payroll-detail-brand">
+        <div class="head">NCC / Nhóm</div>
+        <div class="head right">Doanh số</div>
+        <div class="head center">% HH</div>
+        <div class="head right">Hoa hồng</div>
+        ${detail.map(x=>`
+          <div><b>${esc(x.brand)}</b></div>
+          <div class="right">${money(x.revenue)}</div>
+          <div class="center">${Number(x.rate||0)}%</div>
+          <div class="right"><b>${money(x.commission)}</b></div>
+        `).join('')}
+      </div>`
+    : '<div class="small">Tháng này chưa có dòng bán nào có mức hoa hồng được chốt.</div>';
+
+  showModal(`
+    <h3>Lương Sale • ${esc(e.name)} • ${esc(salaryMonthLabel(month))}</h3>
+    <div class="salary-payment-summary">
+      <div><span>Doanh số</span><b>${money(salePay.sales)}</b></div>
+      <div><span>Hoa hồng NCC/Nhóm</span><b>${money(salePay.commission)}</b></div>
+      <div><span>Thưởng mốc</span><b>${money(salePay.milestoneBonus)}</b></div>
+      <div><span>Lương theo công</span><b>${money(payroll.basePay)}</b></div>
+      <div><span>Tăng ca</span><b>${money(payroll.sundayOvertime)}</b></div>
+      <div><span>Tổng thu nhập</span><b>${money(payroll.payable)}</b></div>
+    </div>
+    ${brandHtml}
+    <div class="sale-policy-note">
+      Hoa hồng dòng hàng dùng mức % đã chốt trên phiếu lúc bán. Thưởng mốc lấy mốc cao nhất đạt được trong tháng.
+    </div>
+    <div class="modal-actions"><button class="btn" onclick="closeModal()">Đóng</button></div>
+  `);
+}
+
+function renderSalePayroll(){
+  const box=$('employeeSalePayroll');
+  const summary=$('employeeSalePayrollSummary');
+  if(!box || !summary)return;
+  if(!isManager){
+    box.innerHTML='';
+    summary.innerHTML='';
+    return;
+  }
+
+  ensurePayrollMonthDefault();
+  const month=$('employeePayrollMonth')?.value||currentISODate().slice(0,7);
+
+  let totalSales=0,totalCommission=0,totalBonus=0,totalIncome=0;
+
+  const rows=(db.employees||[]).map(e=>{
+    const salePay=employeeSalePayForMonth(e,month);
+    const payroll=employeePayroll(e,month);
+    const paid=employeeSalaryPaid(e.id,month);
+    const remaining=Math.max(0,payroll.payable-paid);
+
+    totalSales+=salePay.sales;
+    totalCommission+=salePay.commission;
+    totalBonus+=salePay.milestoneBonus;
+    totalIncome+=payroll.payable;
+
+    return `<tr>
+      <td><b>${esc(e.name||'')}</b></td>
+      <td class="right">${money(salePay.sales)}</td>
+      <td class="right">${money(salePay.commission)}</td>
+      <td class="right">${money(salePay.milestoneBonus)}</td>
+      <td class="right">${money(payroll.basePay)}</td>
+      <td class="right">${money(payroll.sundayOvertime)}</td>
+      <td class="right"><b>${money(payroll.payable)}</b></td>
+      <td class="right">${money(paid)}</td>
+      <td class="right"><b>${money(remaining)}</b></td>
+      <td class="center"><button class="btn" onclick="openSalePayrollDetail('${esc(e.id)}','${esc(month)}')">Chi tiết</button></td>
+    </tr>`;
+  });
+
+  summary.innerHTML=`
+    <div><span>Doanh số Sale</span><b>${money(totalSales)}</b></div>
+    <div><span>Hoa hồng NCC/Nhóm</span><b>${money(totalCommission)}</b></div>
+    <div><span>Thưởng mốc</span><b>${money(totalBonus)}</b></div>
+    <div><span>Tổng thu nhập dự kiến</span><b>${money(totalIncome)}</b></div>
+  `;
+
+  box.innerHTML=table(
+    ['Nhân viên','Doanh số','HH NCC/Nhóm','Thưởng mốc','Lương theo công','Tăng ca','Tổng thu nhập','Đã trả','Còn lại','Chi tiết'],
+    rows
+  );
+}
+
+
 function employeeSalaryForMonth(employee,month){
   ensureEmployeeData();
 
@@ -9574,7 +11169,11 @@ function employeePayroll(employee,month){
   const absent=employeeAbsenceCount(employee.id,month);
   const basePay=Math.max(0,daily*workDays);
   const sundayOvertime=employeeSundayOvertimeForMonth(employee.id,month);
-  const payable=Math.max(0,basePay+sundayOvertime);
+  const salePay=employeeSalePayForMonth(employee,month);
+  const payable=Math.max(
+    0,
+    basePay+sundayOvertime+salePay.commission+salePay.milestoneBonus
+  );
 
   return {
     salary:daily*26,
@@ -9583,6 +11182,10 @@ function employeePayroll(employee,month){
     workDays,
     basePay,
     sundayOvertime,
+    saleSales:salePay.sales,
+    saleCommission:salePay.commission,
+    saleMilestoneBonus:salePay.milestoneBonus,
+    salePayTotal:salePay.totalSalePay,
     payable
   };
 }
@@ -9646,10 +11249,11 @@ function employeeTotalPaid(employee){
 function employeeLifetimeBalance(employee){
   const baseSalary=employeeTotalBaseSalary(employee);
   const overtime=employeeTotalOvertime(employee);
-  const totalSalary=baseSalary+overtime;
+  const salePay=employeeTotalSalePay(employee);
+  const totalSalary=baseSalary+overtime+salePay;
   const paid=employeeTotalPaid(employee);
   const remaining=Math.max(0,totalSalary-paid);
-  return {baseSalary,overtime,totalSalary,paid,remaining};
+  return {baseSalary,overtime,salePay,totalSalary,paid,remaining};
 }
 
 
@@ -9774,7 +11378,7 @@ function renderProducts(){
   if(isManager){
     let rows=filtered.map(p=>`<tr>
       <td>${p.id}</td>
-      <td><b>${p.name}</b></td>
+      <td><b>${p.name}</b>${p.supplierName?`<span class="product-supplier-note">NCC: ${esc(p.supplierName)}</span>`:''}</td>
       <td>${p.group}</td>
       <td>${p.unit}</td>
       <td class="right">${money(p.cost)}</td>
@@ -10030,7 +11634,7 @@ function renderWarehouse(){
 
     return `<tr>
       <td>${esc(p.id)}</td>
-      <td><b>${esc(p.name)}</b></td>
+      <td><b>${esc(p.name)}</b>${p.supplierName?`<span class="product-supplier-note">NCC: ${esc(p.supplierName)}</span>`:''}</td>
       <td>${esc(p.group||'')}</td>
       <td class="center">${esc(p.unit||'')}</td>
       <td class="right"><b>${money(p.salePrice!==undefined?p.salePrice:(p.price||0))}</b></td>
@@ -10809,13 +12413,684 @@ function renderDebts(){
   }
 }
 
+
+
+/* ===== V117: PHÂN QUYỀN CHỌN SALE PHỤ TRÁCH ===== */
+function canSelectStockoutSale(){
+  ensureExpenseData();
+  return isManager || db.settings?.staffActions?.selectSaleOwner===true;
+}
+
+function applyStockoutSalePermissionUI(){
+  const sel=$('soSaleEmployee');
+  if(!sel)return;
+
+  const row=sel.closest('.stockout-source-sale-row');
+  const historyLocked=!!(stockoutViewingHistory && !stockoutEditingHistory);
+  const allowed=canSelectStockoutSale();
+
+  /* V122: Nhân viên bị tắt quyền thì ẩn hẳn chức năng Sale trên Phiếu xuất. */
+  if(row){
+    row.classList.toggle('sale-permission-hidden',!allowed);
+    row.setAttribute('aria-hidden',allowed?'false':'true');
+  }
+
+  if(!allowed){
+    sel.disabled=true;
+    sel.title='';
+    return;
+  }
+
+  if(!historyLocked && !stockOperationLastConflict){
+    sel.disabled=false;
+  }
+
+  sel.title='Chọn nhân viên phụ trách phiếu xuất';
+}
+
+
+
+/* ===== V118: NGUỒN VAT THEO TỪNG DÒNG ===== */
+function stockoutNormalizeLineVatSource(v){
+  return String(v||'')==='vat'?'vat':'nonvat';
+}
+
+function stockoutItemVatSource(item,invoice=null){
+  const saved=String(item?.vatSource||'');
+  if(saved==='vat'||saved==='nonvat')return saved;
+
+  const vq=Number(item?.vatQty)||0;
+  const nq=Number(item?.nonVatQty)||0;
+  if(vq>0 && nq<=0)return 'vat';
+  if(nq>0 && vq<=0)return 'nonvat';
+
+  const legacy=String(invoice?.vatSource||'');
+  if(legacy==='vat'||legacy==='nonvat')return legacy;
+
+  return 'nonvat';
+}
+
+function stockoutLineVatSource(row){
+  return stockoutNormalizeLineVatSource(row?.vatSource);
+}
+
+function stockoutCurrentEditingInvoice(){
+  if(!(stockoutViewingHistory && stockoutEditingHistory))return null;
+  const id=String($('soNo')?.textContent||'').trim();
+  return (db.stockout||[]).find(o=>String(o.id)===id)||null;
+}
+
+function stockoutOriginalQtyByProduct(invoice){
+  const map={};
+  (invoice?.items||[]).forEach(r=>{
+    map[r.productId]=(map[r.productId]||0)+(Number(r.qty)||0);
+  });
+  return map;
+}
+
+function stockoutLineSourceAvailable(rowIndex,source){
+  const row=soRows?.[rowIndex];
+  if(!row?.productId)return 0;
+
+  const invoice=stockoutCurrentEditingInvoice();
+  const originalQty=stockoutOriginalQtyByProduct(invoice);
+  const p=(db.products||[]).find(x=>x.id===row.productId);
+  if(!p)return 0;
+
+  const targetStock=Number(p.stock||0)+(invoice?Number(originalQty[row.productId]||0):0);
+  const b=vatStockSummary(row.productId,{
+    excludeStockoutId:invoice?.id||'',
+    targetStock
+  });
+
+  let usedByOtherRows=0;
+  (soRows||[]).forEach((other,idx)=>{
+    if(idx===rowIndex)return;
+    if(String(other?.productId||'')!==String(row.productId))return;
+    if(stockoutLineVatSource(other)!==source)return;
+    usedByOtherRows+=Math.max(0,Number(other.qty)||0);
+  });
+
+  return Math.max(0,Number(source==='vat'?b.vat:b.nonVat)-usedByOtherRows);
+}
+
+function updateStockoutLineVatSourceUI(rowIndex){
+  const row=soRows?.[rowIndex];
+  const sel=$('soVatLine'+rowIndex);
+  if(!row || !sel)return;
+
+  const source=stockoutLineVatSource(row);
+  sel.value=source;
+  sel.classList.toggle('source-vat',source==='vat');
+  sel.classList.toggle('source-nonvat',source==='nonvat');
+  sel.classList.toggle('source-shortage',!!row._vatShortage);
+}
+
+function validateStockoutLineSourceAfterQty(rowIndex,{askSwitch=true}={}){
+  const row=soRows?.[rowIndex];
+  if(!row?.productId)return true;
+
+  const qty=Math.max(0,Number(row.qty)||0);
+  if(qty<=0){
+    row._vatShortage=false;
+    updateStockoutLineVatSourceUI(rowIndex);
+    return true;
+  }
+
+  const p=(db.products||[]).find(x=>x.id===row.productId);
+  if(!p)return true;
+
+  const source=stockoutLineVatSource(row);
+  const available=stockoutLineSourceAvailable(rowIndex,source);
+
+  if(qty<=available){
+    row._vatShortage=false;
+    updateStockoutLineVatSourceUI(rowIndex);
+    return true;
+  }
+
+  if(source==='nonvat'){
+    const vatAvailable=stockoutLineSourceAvailable(rowIndex,'vat');
+    row._vatShortage=true;
+    updateStockoutLineVatSourceUI(rowIndex);
+
+    const shortageText=available<=0
+      ? `${p.name} đã hết hàng KHÔNG VAT.`
+      : `${p.name} không đủ hàng KHÔNG VAT (còn ${available}).`;
+
+    if(askSwitch && qty<=vatAvailable){
+      const yes=confirm(shortageText+`\n\nChuyển riêng dòng này sang CÓ VAT để tiếp tục?`);
+      if(yes){
+        row.vatSource='vat';
+        row._vatShortage=false;
+        updateStockoutLineVatSourceUI(rowIndex);
+        toast('Đã chuyển '+p.name+' sang CÓ VAT');
+        return true;
+      }
+    }else if(askSwitch && vatAvailable<qty){
+      alert(shortageText+`\nTồn CÓ VAT cũng chỉ còn ${vatAvailable}. Vui lòng giảm số lượng hoặc kiểm tra lại kho.`);
+    }
+    return false;
+  }
+
+  row._vatShortage=true;
+  updateStockoutLineVatSourceUI(rowIndex);
+  if(askSwitch){
+    alert(`${p.name} không đủ hàng CÓ VAT (còn ${available}). Vui lòng giảm số lượng hoặc chuyển dòng này về KHÔNG VAT nếu còn hàng.`);
+  }
+  return false;
+}
+
+function changeStockoutLineVatSource(rowIndex,source,el=null){
+  const row=soRows?.[rowIndex];
+  if(!row)return false;
+
+  const previous=stockoutLineVatSource(row);
+  const next=stockoutNormalizeLineVatSource(source);
+  row.vatSource=next;
+  row._vatShortage=false;
+
+  const qty=Math.max(0,Number(row.qty)||0);
+  if(qty>0 && !validateStockoutLineSourceAfterQty(rowIndex,{askSwitch:false})){
+    const p=(db.products||[]).find(x=>x.id===row.productId);
+    const available=stockoutLineSourceAvailable(rowIndex,next);
+    row.vatSource=previous;
+    row._vatShortage=false;
+    updateStockoutLineVatSourceUI(rowIndex);
+    alert(`${p?.name||'Mặt hàng'} chỉ còn ${available} ${next==='vat'?'hàng CÓ VAT':'hàng KHÔNG VAT'}. Chưa thể chuyển nguồn.`);
+    return false;
+  }
+
+  updateStockoutLineVatSourceUI(rowIndex);
+  return true;
+}
+
+function stockoutOverallVatSource(rows){
+  const sources=[...new Set((rows||[]).map(stockoutLineVatSource))];
+  if(!sources.length)return '';
+  if(sources.length===1)return sources[0];
+  return 'mixed';
+}
+
+
+/* ===== V115: SALE PHỤ TRÁCH - 1 PHIẾU = 1 NHÂN VIÊN ===== */
+function activeStockoutSaleEmployees(){
+  ensureEmployeeData();
+  return (db.employees||[])
+    .filter(e=>e && e.active!==false)
+    .slice()
+    .sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'vi'));
+}
+
+function renderStockoutSaleOptions(selectedId='',snapshotName=''){
+  const sel=$('soSaleEmployee');
+  if(!sel)return;
+
+  const wanted=String(selectedId||sel.value||'');
+  const rows=activeStockoutSaleEmployees();
+
+  let html='<option value="">-- SALE PHỤ TRÁCH --</option>';
+  html+=rows.map(e=>`<option value="${esc(e.id)}">${esc(e.name||e.id)}</option>`).join('');
+
+  const exists=rows.some(e=>String(e.id)===wanted);
+  if(wanted && !exists && snapshotName){
+    html+=`<option value="${esc(wanted)}" data-legacy-sale="1">${esc(snapshotName)} (phiếu cũ)</option>`;
+  }
+
+  sel.innerHTML=html;
+  sel.value=wanted && (exists || snapshotName)?wanted:'';
+  updateStockoutSaleUI();
+  applyStockoutSalePermissionUI();
+}
+
+function updateStockoutSaleUI(){
+  const sel=$('soSaleEmployee');
+  if(!sel)return;
+
+  const needsSale=canSelectStockoutSale();
+  const ok=!!String(sel.value||'');
+  sel.classList.toggle('sale-missing',needsSale && !ok);
+  applyStockoutSalePermissionUI();
+}
+
+function stockoutSelectedSaleEmployee(){
+  const id=String($('soSaleEmployee')?.value||'');
+  if(!id)return null;
+  return (db.employees||[]).find(e=>String(e.id)===id && e.active!==false)||null;
+}
+
+function ensureStockoutSaleBeforeSave(){
+  const emp=stockoutSelectedSaleEmployee();
+  if(emp)return emp;
+
+  /* Nếu Quản lý tắt quyền chọn Sale cho Nhân viên:
+     Nhân viên vẫn được lưu phiếu nhưng phiếu chưa gán Sale.
+     Quản lý có thể sửa và gán Sale sau. */
+  if(!canSelectStockoutSale())return true;
+
+  updateStockoutSaleUI();
+  alert('Chưa chọn Sale phụ trách.');
+  $('soSaleEmployee')?.focus();
+  return null;
+}
+
+/* ===== V115: FIFO THU TIỀN THEO PHIẾU / SALE ===== */
+function saleIdentityMap(){
+  const map=new Map();
+
+  (db.employees||[]).forEach(e=>{
+    if(!e?.id)return;
+    map.set(String(e.id),{
+      id:String(e.id),
+      name:String(e.name||e.id),
+      active:e.active!==false
+    });
+  });
+
+  (db.stockout||[]).forEach(o=>{
+    const id=String(o?.saleEmployeeId||'');
+    if(!id || map.has(id))return;
+    map.set(id,{
+      id,
+      name:String(o.saleEmployeeName||id),
+      active:false
+    });
+  });
+
+  return map;
+}
+
+function saleReportTimeBounds(fromValue='',toValue=''){
+  const from=fromValue || $('reportFromDate')?.value || '';
+  const to=toValue || $('reportToDate')?.value || '';
+  const start=debtDateFromInput(from,false) || 0;
+  const end=debtDateFromInput(to,true) || Number.MAX_SAFE_INTEGER;
+  return {fromValue:from,toValue:to,start,end};
+}
+
+function buildSaleCollectionLedger(asOf=Date.now()){
+  const end=Math.min(Number(asOf||Date.now()),Date.now());
+  const allocations=[];
+  const outstandingLots=[];
+
+  for(const customer of (db.customers||[])){
+    const customerId=String(customer.id||'');
+    if(!customerId)continue;
+
+    const lots=[];
+    const oldDebt=Math.max(0,Number(customer.oldDebt||0));
+    if(oldDebt>0){
+      lots.push({
+        customerId,
+        invoiceId:'OLD:'+customerId,
+        employeeId:'',
+        employeeName:'',
+        amount:oldDebt,
+        original:oldDebt,
+        t:0,
+        legacy:true
+      });
+    }
+
+    const events=[];
+
+    (db.stockout||[]).forEach((o,idx)=>{
+      if(String(o.customerId||'')!==customerId)return;
+      const t=stockoutDateTimeValue(o.dateText);
+      if(!t || t>end)return;
+
+      const total=Math.max(0,Number(o.total||0));
+      const paid=Math.max(0,Number(o.paid||0));
+      const employeeId=String(o.saleEmployeeId||'');
+
+      if(total>0){
+        events.push({
+          t,
+          order:idx*10,
+          kind:'debit',
+          amount:total,
+          invoiceId:String(o.id||''),
+          employeeId,
+          employeeName:String(o.saleEmployeeName||''),
+          dateText:o.dateText||''
+        });
+      }
+
+      if(paid>0){
+        events.push({
+          t,
+          order:idx*10+1,
+          kind:'stockout_paid',
+          amount:paid,
+          sourceInvoiceId:String(o.id||''),
+          cash:true,
+          dateText:o.dateText||''
+        });
+      }
+    });
+
+    (db.customerPayments||[]).forEach((p,idx)=>{
+      if(String(p.customerId||'')!==customerId)return;
+      const t=customerDebtPaymentTime(p);
+      if(!t || t>end)return;
+
+      const amount=Math.max(0,Number(p.amount||0));
+      if(amount<=0)return;
+
+      const isReturn=p.transactionType==='warranty_return';
+      events.push({
+        t,
+        order:1000000+idx,
+        kind:isReturn?'debt_reduction':'customer_payment',
+        amount,
+        paymentId:String(p.id||''),
+        cash:!isReturn,
+        dateText:p.dateText||''
+      });
+    });
+
+    events.sort((a,b)=>a.t-b.t || a.order-b.order);
+
+    const applyCredit=(event)=>{
+      let remain=Math.max(0,Number(event.amount)||0);
+
+      for(const lot of lots){
+        if(remain<=0)break;
+        if(Number(lot.amount||0)<=0)continue;
+
+        const used=Math.min(remain,Number(lot.amount)||0);
+        lot.amount=Math.max(0,Number(lot.amount||0)-used);
+        remain-=used;
+
+        if(lot.employeeId){
+          let type='reduction';
+          if(event.cash){
+            type=(event.kind==='stockout_paid' && event.sourceInvoiceId===lot.invoiceId)
+              ? 'immediate'
+              : 'debt';
+          }
+
+          allocations.push({
+            customerId,
+            employeeId:lot.employeeId,
+            employeeName:lot.employeeName,
+            invoiceId:lot.invoiceId,
+            amount:used,
+            t:event.t,
+            dateText:event.dateText||'',
+            type,
+            cash:!!event.cash,
+            source:event.kind,
+            sourceInvoiceId:event.sourceInvoiceId||'',
+            paymentId:event.paymentId||''
+          });
+        }
+      }
+    };
+
+    for(const ev of events){
+      if(ev.kind==='debit'){
+        lots.push({
+          customerId,
+          invoiceId:ev.invoiceId,
+          employeeId:ev.employeeId,
+          employeeName:ev.employeeName,
+          amount:ev.amount,
+          original:ev.amount,
+          t:ev.t,
+          dateText:ev.dateText||'',
+          legacy:false
+        });
+      }else{
+        applyCredit(ev);
+      }
+    }
+
+    lots.filter(l=>Number(l.amount||0)>0.000001).forEach(l=>outstandingLots.push({...l}));
+  }
+
+  return {allocations,outstandingLots,asOf:end};
+}
+
+function saleReportEmployeeIds(){
+  const map=saleIdentityMap();
+  return [...map.values()]
+    .filter(x=>
+      (db.stockout||[]).some(o=>String(o.saleEmployeeId||'')===x.id) ||
+      (db.employees||[]).some(e=>String(e.id||'')===x.id)
+    )
+    .sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'vi'));
+}
+
+function renderReportSaleFilterOptions(){
+  const sel=$('reportSaleEmployeeFilter');
+  if(!sel)return;
+
+  const current=String(sel.value||'');
+  const rows=saleReportEmployeeIds();
+
+  sel.innerHTML='<option value="">Tất cả nhân viên</option>'+
+    rows.map(e=>`<option value="${esc(e.id)}">${esc(e.name)}</option>`).join('');
+
+  if(rows.some(e=>e.id===current))sel.value=current;
+  else sel.value='';
+}
+
+function saleReportSummary(employeeId='',bounds=saleReportTimeBounds()){
+  const target=String(employeeId||'');
+  const ids=target?[target]:saleReportEmployeeIds().map(x=>x.id);
+  const idSet=new Set(ids);
+  const end=Math.min(Number(bounds.end||Date.now()),Date.now());
+
+  const invoices=(db.stockout||[]).filter(o=>{
+    const id=String(o.saleEmployeeId||'');
+    if(!idSet.has(id))return false;
+    const t=stockoutDateTimeValue(o.dateText);
+    return !!t && t>=bounds.start && t<=bounds.end && Number(o.total||0)>0;
+  });
+
+  const ledger=buildSaleCollectionLedger(end);
+
+  const collectionInPeriod=ledger.allocations.filter(a=>
+    idSet.has(String(a.employeeId||'')) &&
+    a.cash &&
+    a.t>=bounds.start &&
+    a.t<=bounds.end
+  );
+
+  const immediate=collectionInPeriod
+    .filter(a=>a.type==='immediate')
+    .reduce((s,a)=>s+Number(a.amount||0),0);
+
+  const debtCollected=collectionInPeriod
+    .filter(a=>a.type==='debt')
+    .reduce((s,a)=>s+Number(a.amount||0),0);
+
+  const outstanding=ledger.outstandingLots
+    .filter(l=>idSet.has(String(l.employeeId||'')))
+    .reduce((s,l)=>s+Number(l.amount||0),0);
+
+  return {
+    invoiceCount:invoices.length,
+    sales:invoices.reduce((s,o)=>s+Number(o.total||0),0),
+    immediate,
+    debtCollected,
+    collected:immediate+debtCollected,
+    outstanding,
+    invoices,
+    ledger
+  };
+}
+
+function saleInvoiceCollectionMetrics(invoice,ledger){
+  const invoiceId=String(invoice?.id||'');
+
+  const immediate=(ledger.allocations||[])
+    .filter(a=>a.invoiceId===invoiceId && a.type==='immediate' && a.cash)
+    .reduce((s,a)=>s+Number(a.amount||0),0);
+
+  const debt=(ledger.allocations||[])
+    .filter(a=>a.invoiceId===invoiceId && a.type==='debt' && a.cash)
+    .reduce((s,a)=>s+Number(a.amount||0),0);
+
+  const reduction=(ledger.allocations||[])
+    .filter(a=>a.invoiceId===invoiceId && a.type==='reduction')
+    .reduce((s,a)=>s+Number(a.amount||0),0);
+
+  const outstanding=(ledger.outstandingLots||[])
+    .filter(l=>String(l.invoiceId||'')===invoiceId)
+    .reduce((s,l)=>s+Number(l.amount||0),0);
+
+  return {immediate,debt,reduction,collected:immediate+debt,outstanding};
+}
+
+function renderSaleReport(){
+  const box=$('saleReportContent');
+  if(!box)return;
+
+  renderReportSaleFilterOptions();
+  const selected=String($('reportSaleEmployeeFilter')?.value||'');
+  const bounds=saleReportTimeBounds();
+
+  const rows=saleReportEmployeeIds()
+    .filter(e=>!selected || e.id===selected)
+    .map(e=>({e,s:saleReportSummary(e.id,bounds)}))
+    .filter(x=>selected || x.s.invoiceCount>0 || x.s.collected>0 || x.s.outstanding>0);
+
+  const total=saleReportSummary(selected,bounds);
+
+  const summaryHtml=`
+    <div class="sale-report-kpis">
+      <div><span>Số phiếu</span><b>${total.invoiceCount}</b></div>
+      <div><span>Doanh số bán</span><b>${money(total.sales)}</b></div>
+      <div><span>Thu ngay</span><b>${money(total.immediate)}</b></div>
+      <div><span>Thu công nợ</span><b>${money(total.debtCollected)}</b></div>
+      <div><span>Tổng đã thu</span><b>${money(total.collected)}</b></div>
+      <div><span>Còn phải thu đến cuối kỳ</span><b>${money(total.outstanding)}</b></div>
+    </div>`;
+
+  const tableRows=rows.map(({e,s})=>`<tr>
+    <td><button class="sale-report-name" onclick="selectSaleReportEmployee('${esc(e.id)}')">${esc(e.name)}</button></td>
+    <td class="center"><b>${s.invoiceCount}</b></td>
+    <td class="right"><b>${money(s.sales)}</b></td>
+    <td class="right">${money(s.immediate)}</td>
+    <td class="right">${money(s.debtCollected)}</td>
+    <td class="right"><b>${money(s.collected)}</b></td>
+    <td class="right"><b>${money(s.outstanding)}</b></td>
+  </tr>`);
+
+  let detailHtml='';
+  if(selected){
+    const identity=saleIdentityMap().get(selected);
+    const s=saleReportSummary(selected,bounds);
+    const invoiceRows=s.invoices
+      .slice()
+      .sort((a,b)=>stockoutDateTimeValue(b.dateText)-stockoutDateTimeValue(a.dateText))
+      .map(o=>{
+        const c=(db.customers||[]).find(x=>String(x.id)===String(o.customerId));
+        const m=saleInvoiceCollectionMetrics(o,s.ledger);
+        return `<tr>
+          <td>${esc(o.dateText||'')}</td>
+          <td><b>${esc(o.id||'')}</b></td>
+          <td>${esc(c?.name||'')}</td>
+          <td class="right">${money(o.total||0)}</td>
+          <td class="right">${money(m.collected)}</td>
+          <td class="right">${money(m.outstanding)}</td>
+        </tr>`;
+      });
+
+    detailHtml=`<div class="sale-report-detail">
+      <h4>Chi tiết • ${esc(identity?.name||selected)}</h4>
+      ${table(['Ngày','Số phiếu','Khách hàng','Doanh số','Đã thu đến cuối kỳ','Còn nợ'],invoiceRows)}
+    </div>`;
+  }
+
+  box.innerHTML=summaryHtml+
+    `<div class="sale-report-table">${table(
+      ['Sale','Số phiếu','Doanh số bán','Thu ngay','Thu công nợ','Tổng đã thu','Còn phải thu'],
+      tableRows
+    )}</div>`+
+    detailHtml;
+}
+
+function selectSaleReportEmployee(employeeId){
+  const sel=$('reportSaleEmployeeFilter');
+  if(!sel)return;
+  sel.value=String(employeeId||'');
+  renderSaleReport();
+}
+
+function employeeSaleRangeBounds(){
+  const from=$('employeeSaleFrom')?.value||'';
+  const to=$('employeeSaleTo')?.value||'';
+  return saleReportTimeBounds(from,to);
+}
+
+function renderEmployeeSelfSales(employeeId){
+  const empId=String(employeeId||'');
+  if(!isManager && String(employeeSelfSessionId||'')!==empId)return;
+
+  const summaryBox=$('employeeSaleSummary');
+  const tableBox=$('employeeSaleTable');
+  if(!summaryBox || !tableBox)return;
+
+  const bounds=employeeSaleRangeBounds();
+  const s=saleReportSummary(empId,bounds);
+
+  const fromMonth=String($('employeeSaleFrom')?.value||'').slice(0,7);
+  const toMonth=String($('employeeSaleTo')?.value||'').slice(0,7);
+  let saleCommission=0,saleBonus=0;
+  if(fromMonth && toMonth){
+    let cur=fromMonth;
+    while(cur<=toMonth){
+      const emp=(db.employees||[]).find(x=>String(x.id)===empId);
+      const sp=employeeSalePayForMonth(emp,cur);
+      saleCommission+=sp.commission;
+      saleBonus+=sp.milestoneBonus;
+      const [y,m]=cur.split('-').map(Number);
+      const d=new Date(y,m,1);
+      cur=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    }
+  }
+
+  summaryBox.innerHTML=`
+    <div><span>Số phiếu</span><b>${s.invoiceCount}</b></div>
+    <div><span>Doanh số bán</span><b>${money(s.sales)}</b></div>
+    <div><span>Hoa hồng NCC/Nhóm</span><b>${money(saleCommission)}</b></div>
+    <div><span>Thưởng mốc</span><b>${money(saleBonus)}</b></div>
+    <div><span>Thu ngay</span><b>${money(s.immediate)}</b></div>
+    <div><span>Thu công nợ</span><b>${money(s.debtCollected)}</b></div>
+    <div><span>Tổng đã thu</span><b>${money(s.collected)}</b></div>
+    <div><span>Còn phải thu đến cuối kỳ</span><b>${money(s.outstanding)}</b></div>
+  `;
+
+  const rows=s.invoices
+    .slice()
+    .sort((a,b)=>stockoutDateTimeValue(b.dateText)-stockoutDateTimeValue(a.dateText))
+    .map(o=>{
+      const c=(db.customers||[]).find(x=>String(x.id)===String(o.customerId));
+      const m=saleInvoiceCollectionMetrics(o,s.ledger);
+      return `<tr>
+        <td>${esc(o.dateText||'')}</td>
+        <td><b>${esc(o.id||'')}</b></td>
+        <td>${esc(c?.name||'')}</td>
+        <td class="right">${money(o.total||0)}</td>
+        <td class="right">${money(m.collected)}</td>
+        <td class="right">${money(m.outstanding)}</td>
+      </tr>`;
+    });
+
+  tableBox.innerHTML=table(['Ngày','Phiếu','Khách hàng','Doanh số','Đã thu đến cuối kỳ','Còn nợ'],rows);
+}
+
+
 /* ===== V114: TAB BÁO CÁO + LỌC TẤT CẢ / NHÓM / HÀNG BẰNG 1 Ô ===== */
 let reportActiveTab='overview';
 let reportUnifiedFilter={type:'all',value:''};
 let reportUnifiedFilterIndex=-1;
 
 function setReportTab(tab){
-  reportActiveTab=['overview','product','supplier'].includes(tab)?tab:'overview';
+  reportActiveTab=['overview','product','supplier','sales'].includes(tab)?tab:'overview';
   applyReportTabUI();
 }
 
@@ -10823,13 +13098,23 @@ function applyReportTabUI(){
   const map={
     overview:'reportOverviewPanel',
     product:'reportProductPanel',
-    supplier:'reportSupplierPanel'
+    supplier:'reportSupplierPanel',
+    sales:'reportSalePanel'
   };
 
   Object.entries(map).forEach(([key,id])=>{
     $(id)?.classList.toggle('active',key===reportActiveTab);
     $('reportTab'+key.charAt(0).toUpperCase()+key.slice(1))?.classList.toggle('active',key===reportActiveTab);
   });
+
+  const saleMode=reportActiveTab==='sales';
+  const unified=$('reportUnifiedFilterBox');
+  const saleBox=$('reportSaleFilterBox');
+
+  if(unified)unified.style.display=saleMode?'none':'block';
+  if(saleBox)saleBox.classList.toggle('show',saleMode);
+
+  if(saleMode)renderSaleReport();
 }
 
 function reportUnifiedFilterLabel(filter=reportUnifiedFilter){
@@ -11151,6 +13436,276 @@ function reportProductBlur(){
   setTimeout(()=>$('reportProductList')?.classList.remove('show'),120);
 }
 
+
+/* ===== V123: CHI PHÍ NHÂN SỰ / THƯỞNG / KHÁC THEO KỲ BÁO CÁO ===== */
+function reportRangeISO(){
+  ensureReportDateDefaults();
+  let from=String($('reportFromDate')?.value||'');
+  let to=String($('reportToDate')?.value||'');
+  if(from && to && from>to){
+    const t=from;from=to;to=t;
+  }
+  return {from,to};
+}
+
+function reportISODateEach(from,to,fn){
+  if(!from||!to||from>to)return;
+  let d=new Date(from+'T12:00:00');
+  const end=new Date(to+'T12:00:00');
+  while(d<=end){
+    const iso=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    fn(iso,d);
+    d.setDate(d.getDate()+1);
+  }
+}
+
+
+/* ===== V124: PHÂN BỔ TIỀN TRẢ LƯƠNG THỰC TẾ =====
+   - Chi phí nhân sự: phần lương cố định + tăng ca đã thực trả.
+   - Chi phí thưởng: phần hoa hồng + thưởng mốc Sale đã thực trả.
+   - Nếu trả từng phần: ưu tiên thanh toán lương/tăng ca trước, sau đó mới sang thưởng.
+   - Khoản cũ chưa có snapshot sẽ được phân bổ lại theo cùng nguyên tắc để báo cáo không mất dữ liệu.
+*/
+function salaryPaymentEarnedComponents(employee,month){
+  if(!employee)return {personnel:0,reward:0,total:0};
+  const p=employeePayroll(employee,month);
+  const personnel=Math.max(0,Number(p.basePay||0)+Number(p.sundayOvertime||0));
+  const reward=Math.max(0,Number(p.saleCommission||0)+Number(p.saleMilestoneBonus||0));
+  return {
+    personnel:Math.round(personnel),
+    reward:Math.round(reward),
+    total:Math.round(personnel+reward)
+  };
+}
+
+function salaryPaymentSortRows(rows){
+  return [...(rows||[])].sort((a,b)=>
+    String(a.date||'').localeCompare(String(b.date||'')) ||
+    String(a.id||'').localeCompare(String(b.id||''))
+  );
+}
+
+function salaryPaymentAllocationRows(employeeId,month){
+  ensureEmployeeData();
+  const e=(db.employees||[]).find(x=>String(x.id)===String(employeeId));
+  if(!e)return [];
+
+  const earned=salaryPaymentEarnedComponents(e,month);
+  let usedPersonnel=0;
+  let usedReward=0;
+
+  return salaryPaymentSortRows(
+    (db.salaryPayments||[]).filter(p=>
+      String(p.employeeId||'')===String(employeeId) &&
+      String(p.month||'')===String(month)
+    )
+  ).map(p=>{
+    const amount=Math.max(0,Number(p.amount)||0);
+
+    let personnelAmount=Number(p.personnelAmount);
+    let rewardAmount=Number(p.rewardAmount);
+    const snapshotValid=
+      Number.isFinite(personnelAmount) &&
+      Number.isFinite(rewardAmount) &&
+      personnelAmount>=0 &&
+      rewardAmount>=0 &&
+      Math.abs((personnelAmount+rewardAmount)-amount)<1;
+
+    if(snapshotValid){
+      personnelAmount=Math.round(personnelAmount);
+      rewardAmount=Math.round(rewardAmount);
+    }else{
+      const personnelRemain=Math.max(0,earned.personnel-usedPersonnel);
+      personnelAmount=Math.min(amount,personnelRemain);
+      const left=Math.max(0,amount-personnelAmount);
+      const rewardRemain=Math.max(0,earned.reward-usedReward);
+      rewardAmount=Math.min(left,rewardRemain);
+
+      /* Dữ liệu rất cũ có thể trả lớn hơn số đã tính được.
+         Phần dư vẫn xem là lương nhân sự, không đẩy sang Chi phí khác. */
+      const extra=Math.max(0,left-rewardAmount);
+      personnelAmount+=extra;
+
+      personnelAmount=Math.round(personnelAmount);
+      rewardAmount=Math.round(rewardAmount);
+    }
+
+    usedPersonnel+=personnelAmount;
+    usedReward+=rewardAmount;
+
+    return {
+      payment:p,
+      personnelAmount,
+      rewardAmount
+    };
+  });
+}
+
+function salaryPaymentAllocationPreview(employeeId,month,amount){
+  ensureEmployeeData();
+  const e=(db.employees||[]).find(x=>String(x.id)===String(employeeId));
+  if(!e)return {personnelAmount:Math.max(0,Number(amount)||0),rewardAmount:0};
+
+  const earned=salaryPaymentEarnedComponents(e,month);
+  const existing=salaryPaymentAllocationRows(employeeId,month);
+  const usedPersonnel=existing.reduce((s,x)=>s+x.personnelAmount,0);
+  const usedReward=existing.reduce((s,x)=>s+x.rewardAmount,0);
+
+  const total=Math.max(0,Number(amount)||0);
+  const personnelRemain=Math.max(0,earned.personnel-usedPersonnel);
+  const personnelAmount=Math.min(total,personnelRemain);
+  const left=Math.max(0,total-personnelAmount);
+  const rewardRemain=Math.max(0,earned.reward-usedReward);
+  const rewardAmount=Math.min(left,rewardRemain);
+
+  /* Nếu có phần dư do dữ liệu/điều chỉnh, xếp vào lương nhân sự. */
+  const extra=Math.max(0,left-rewardAmount);
+
+  return {
+    personnelAmount:Math.round(personnelAmount+extra),
+    rewardAmount:Math.round(rewardAmount)
+  };
+}
+
+function salaryPaymentAllocationById(paymentId){
+  const p=(db.salaryPayments||[]).find(x=>String(x.id)===String(paymentId));
+  if(!p)return {personnelAmount:0,rewardAmount:0};
+  const row=salaryPaymentAllocationRows(p.employeeId,p.month)
+    .find(x=>String(x.payment.id)===String(paymentId));
+  return row
+    ? {personnelAmount:row.personnelAmount,rewardAmount:row.rewardAmount}
+    : {personnelAmount:Math.max(0,Number(p.amount)||0),rewardAmount:0};
+}
+
+function reportPaidSalaryCosts(){
+  ensureEmployeeData();
+  const {from,to}=reportRangeISO();
+  const result={
+    personnel:0,
+    reward:0,
+    total:0,
+    payments:0
+  };
+
+  const grouped=new Map();
+  (db.salaryPayments||[]).forEach(p=>{
+    const key=String(p.employeeId||'')+'||'+String(p.month||'');
+    if(!grouped.has(key))grouped.set(key,[]);
+    grouped.get(key).push(p);
+  });
+
+  grouped.forEach((rows,key)=>{
+    const [employeeId,month]=key.split('||');
+    const allocated=salaryPaymentAllocationRows(employeeId,month);
+
+    allocated.forEach(x=>{
+      const d=String(x.payment.date||'');
+      if(!d)return;
+      if(from && d<from)return;
+      if(to && d>to)return;
+
+      result.personnel+=x.personnelAmount;
+      result.reward+=x.rewardAmount;
+      result.total+=x.personnelAmount+x.rewardAmount;
+      result.payments++;
+    });
+  });
+
+  result.personnel=Math.round(result.personnel);
+  result.reward=Math.round(result.reward);
+  result.total=Math.round(result.total);
+  return result;
+}
+
+
+function reportEmployeePersonnelCost(){
+  ensureEmployeeData();
+  const {from,to}=reportRangeISO();
+  if(!from||!to)return 0;
+
+  const today=currentISODate();
+  const cappedTo=to>today?today:to;
+  if(from>cappedTo)return 0;
+
+  let base=0;
+  let overtime=0;
+
+  (db.employees||[]).forEach(e=>{
+    const start=employeeStartDate(e);
+    const startDate=start>from?start:from;
+    if(startDate>cappedTo)return;
+
+    const monthCounts={};
+    reportISODateEach(startDate,cappedTo,(iso,d)=>{
+      if(d.getDay()===0)return;
+      if(employeeAttendanceStateOnDate(e.id,iso)!=='work')return;
+      const month=iso.slice(0,7);
+      monthCounts[month]=Math.min(26,(monthCounts[month]||0)+1);
+    });
+
+    const daily=Math.max(0,Number(e.dailySalary)||0);
+    Object.values(monthCounts).forEach(n=>{base+=daily*Number(n||0)});
+  });
+
+  overtime=(db.employeeSundayOvertime||[])
+    .filter(x=>{
+      const d=String(x.date||'');
+      return d && d>=from && d<=cappedTo;
+    })
+    .reduce((s,x)=>s+(Number(x.amount)||0),0);
+
+  return Math.round(base+overtime);
+}
+
+function reportStockoutCommission(invoice){
+  return (invoice?.items||[]).reduce((sum,i)=>{
+    const rate=saleCommissionRateSnapshot(i);
+    if(rate<=0)return sum;
+    return sum+saleInvoiceLineRevenue(i)*rate/100;
+  },0);
+}
+
+function reportSaleRewardCost(stockouts){
+  ensureEmployeeData();
+  const commission=Math.round(
+    (stockouts||[]).reduce((s,o)=>s+reportStockoutCommission(o),0)
+  );
+
+  const salesByEmployeeMonth=new Map();
+  (stockouts||[]).forEach(o=>{
+    const employeeId=String(o.saleEmployeeId||'');
+    const month=saleInvoiceMonth(o);
+    if(!employeeId||!month)return;
+    const key=employeeId+'||'+month;
+    salesByEmployeeMonth.set(
+      key,
+      (salesByEmployeeMonth.get(key)||0)+Math.max(0,Number(o.total)||0)
+    );
+  });
+
+  let milestone=0;
+  salesByEmployeeMonth.forEach((sales,key)=>{
+    const [employeeId,month]=key.split('||');
+    milestone+=saleMilestoneBonusForSales(sales,month,employeeId);
+  });
+
+  return {
+    commission:Math.round(commission),
+    milestone:Math.round(milestone),
+    total:Math.round(commission+milestone)
+  };
+}
+
+function reportOtherExpenseRows(){
+  return expensesInReportRange().filter(e=>!e.salaryPaymentId);
+}
+
+function reportOtherExpenseTotal(){
+  return reportOtherExpenseRows()
+    .reduce((s,e)=>s+(Number(e.amount)||0),0);
+}
+
+
 function renderReports(){
   if(!$('reportCards'))return;
 
@@ -11165,26 +13720,51 @@ function renderReports(){
   const stockins=(db.stockin||[]).filter(reportInDateRange);
   const filterIsAll=reportUnifiedFilter.type==='all';
 
-  let rev=stockouts.reduce((s,o)=>s+reportStockoutRevenueForFilter(o),0);
+  /* 1. DOANH THU */
+  const revenue=stockouts.reduce((s,o)=>s+reportStockoutRevenueForFilter(o),0);
 
-  let cost=stockouts.reduce((s,o)=>s+reportInvoiceFilteredItems(o).reduce((a,i)=>{
+  /* 2. TỔNG VỐN */
+  const totalCost=stockouts.reduce((s,o)=>s+reportInvoiceFilteredItems(o).reduce((a,i)=>{
     const p=(db.products||[]).find(x=>x.id===i.productId);
     return a+(Number(i.qty)||0)*(Number(p?.cost)||0);
   },0),0);
 
-  const expenseTotal=expenseTotalInRange();
-  const profit=filterIsAll ? (rev-cost-expenseTotal) : (rev-cost);
+  /* 3. TỔNG BÁN = phần còn lại sau vốn, trước chi phí vận hành */
+  const totalSale=Math.round(revenue-totalCost);
+
+  /* V124: chỉ lấy tiền đã thực trả trong Lịch trả lương */
+  const paidSalary=reportPaidSalaryCosts();
+
+  /* 4. CHI PHÍ NHÂN SỰ = lương/tăng ca ĐÃ TRẢ cho tất cả NV */
+  const personnelCost=paidSalary.personnel;
+
+  /* 5. CHI PHÍ THƯỞNG = hoa hồng/thưởng Sale ĐÃ TRẢ */
+  const rewardCost=paidSalary.reward;
+
+  /* 6. CHI PHÍ KHÁC = sổ Chi phí, loại trừ các bản ghi trả lương */
+  const otherExpense=reportOtherExpenseTotal();
+
+  /* 7. LỢI NHUẬN */
+  const netProfit=filterIsAll
+    ? Math.round(totalSale-personnelCost-rewardCost-otherExpense)
+    : Math.round(totalSale);
 
   const inventoryValue=(db.products||[])
     .filter(reportFilterMatchesProduct)
     .reduce((s,p)=>s+(Number(p.stock)||0)*(Number(p.cost)||0),0);
 
+  const filteredHint=filterIsAll
+    ? 'Sau các khoản thực chi'
+    : 'Đang lọc hàng/nhóm • chưa phân bổ chi phí chung';
+
   $('reportCards').innerHTML=[
-    `<div class="card kpi"><div class="label">Doanh thu</div><div class="value">${money(rev)}</div></div>`,
-    `<div class="card kpi"><div class="label">Giá vốn</div><div class="value">${money(cost)}</div></div>`,
-    `<button type="button" class="card kpi expense-kpi-card" onclick="openExpenseDetail()"><div class="label">Chi phí tổng</div><div class="value">${money(expenseTotal)}</div></button>`,
-    `<div class="card kpi net-profit-card"><div class="label">${filterIsAll?'Lợi nhuận thực':'Lợi nhuận gộp'}</div><div class="value">${money(profit)}</div></div>`,
-    `<div class="card kpi"><div class="label">Giá trị tồn</div><div class="value">${money(inventoryValue)}</div></div>`
+    `<div class="card kpi"><div class="label">Doanh thu</div><div class="value">${money(revenue)}</div><div class="hint">Tổng giá trị bán trong kỳ</div></div>`,
+    `<div class="card kpi"><div class="label">Tổng vốn</div><div class="value">${money(totalCost)}</div><div class="hint">Giá vốn hàng đã bán</div></div>`,
+    `<div class="card kpi report-gross-sale-card"><div class="label">Tổng bán</div><div class="value">${money(totalSale)}</div><div class="hint">Doanh thu − Tổng vốn</div></div>`,
+    `<div class="card kpi report-people-cost-card"><div class="label">Chi phí nhân sự</div><div class="value">${money(personnelCost)}</div><div class="hint report-paid-note">Lương + tăng ca đã trả trong Lịch trả lương</div></div>`,
+    `<div class="card kpi report-reward-cost-card"><div class="label">Chi phí thưởng</div><div class="value">${money(rewardCost)}</div><div class="hint report-paid-note">Hoa hồng + thưởng Sale đã thực trả</div></div>`,
+    `<button type="button" class="card kpi expense-kpi-card report-other-cost-card" onclick="openExpenseDetail()"><div class="label">Chi phí khác</div><div class="value">${money(otherExpense)}</div><div class="hint">Xăng, vật phẩm, vận hành...</div></button>`,
+    `<div class="card kpi net-profit-card ${netProfit<0?'negative':'positive'}"><div class="label">${filterIsAll?'Lợi nhuận':'Lợi nhuận gộp'}</div><div class="value">${money(netProfit)}</div><div class="hint">${filteredHint}</div></div>`
   ].join('');
 
   let arr=(db.products||[]).filter(reportFilterMatchesProduct).map(p=>{
@@ -11234,6 +13814,7 @@ function renderReports(){
   }
 
   renderVatReport(stockins,stockouts);
+  if(isManager)renderSaleReport();
 }
 
 
@@ -11252,7 +13833,10 @@ function closeExpenseDetail(){
 }
 
 function renderExpenseDetail(){
-  const rows=expensesInReportRange().filter(e=>isManager || !expenseCategoryIsPrivate(e.category)).sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+  const rows=reportOtherExpenseRows()
+    .filter(e=>isManager || !expenseCategoryIsPrivate(e.category))
+    .sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+
   const total=rows.reduce((s,e)=>s+(Number(e.amount)||0),0);
 
   const grouped={};
@@ -11266,14 +13850,14 @@ function renderExpenseDetail(){
   }
 
   if($('expenseSummary')){
-    const cats=(db.expenseCategories||[]).filter(c=>grouped[c]>0);
+    const cats=Object.keys(grouped).filter(c=>grouped[c]>0);
     $('expenseSummary').innerHTML=`
       <div class="expense-total-box">
-        <span>Tổng chi phí</span>
+        <span>Tổng chi phí khác</span>
         <b>${money(total)}</b>
       </div>
       <div class="expense-category-grid">
-        ${cats.map(c=>`<div><span>${esc(c)}</span><b>${money(grouped[c])}</b></div>`).join('') || '<div class="small">Chưa có chi phí trong thời gian này.</div>'}
+        ${cats.map(c=>`<div><span>${esc(c)}</span><b>${money(grouped[c])}</b></div>`).join('') || '<div class="small">Chưa có chi phí khác trong thời gian này.</div>'}
       </div>
     `;
   }
@@ -11290,7 +13874,7 @@ function renderExpenseDetail(){
         <button class="icon-btn danger-icon" title="Xóa" onclick="deleteExpense('${e.id}')">🗑</button>
       </td>
     </tr>`);
-    $('expenseDetailTable').innerHTML=table(['Ngày','Loại chi phí','Nội dung','Số tiền','Ghi chú','Thao tác'],tr);
+    $('expenseDetailTable').innerHTML=table(['Ngày','Loại chi phí','Nội dung','Số tiền','Ghi chú',''],tr);
   }
 }
 
@@ -11931,14 +14515,14 @@ function openEmployeePinLogin(employeeId){
   if(!emp)return alert('Không tìm thấy nhân viên.');
   showModal(`
     <h3>${esc(emp.name||'')}</h3>
-    <div class="hint">Nhập đúng mã PIN để xem lịch công cá nhân.</div>
+    <div class="hint">Nhập đúng mã PIN để xem chi tiết cá nhân.</div>
     <div style="margin-top:12px"><label>Mã PIN</label>
       <input id="employeePinLoginInput" type="password" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="Nhập PIN">
     </div>
     <div id="employeePinLoginMessage" class="small" style="margin-top:8px;color:#b3261e"></div>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal()">Hủy</button>
-      <button class="btn primary" onclick="employeePinLogin('${emp.id}')">Vào lịch công</button>
+      <button class="btn primary" onclick="employeePinLogin('${emp.id}')">Xem chi tiết</button>
     </div>`);
   setTimeout(()=>{const input=$('employeePinLoginInput'); if(input){input.focus(); input.onkeydown=ev=>{if(ev.key==='Enter'){ev.preventDefault();employeePinLogin(String(emp.id))}}}},50);
 }
@@ -12113,6 +14697,7 @@ function renderEmployees(){
   if(!$('employeeList'))return;
 
   ensureEmployeeData();
+  const currentSaleSelection=$('soSaleEmployee')?.value||'';
   ensurePayrollMonthDefault();
 
   let sumTotalSalary=0;
@@ -12185,6 +14770,10 @@ function renderEmployees(){
     ['Tên NV','SĐT','PIN','Lương/ngày','Tổng lương','Còn lại','Tăng ca','Đã trả','Thao tác'],
     rows
   );
+
+  if($('soSaleEmployee'))renderStockoutSaleOptions(currentSaleSelection);
+  if($('reportSaleEmployeeFilter'))renderReportSaleFilterOptions();
+  renderSalePayroll();
 }
 
 function openDailySalarySetup(){
@@ -12658,6 +15247,8 @@ function openEmployeeSelfCalendar(employeeId,monthOverride=''){
   }
 
   const month=monthOverride||currentISODate().slice(0,7);
+  const saleFrom=`${month}-01`;
+  const saleTo=month===currentISODate().slice(0,7)?currentISODate():monthLastDayISO(month);
   const totalDays=daysInMonth(month);
   const today=currentISODate();
 
@@ -12766,6 +15357,20 @@ function openEmployeeSelfCalendar(employeeId,monthOverride=''){
 
     <div class="employee-calendar-grid">${cells}</div>
 
+    <div class="employee-sale-block">
+      <div class="employee-self-detail-title" style="margin-top:0">Doanh số</div>
+      <div class="employee-sale-filter">
+        <label>Từ ngày
+          <input id="employeeSaleFrom" type="date" value="${saleFrom}" onchange="renderEmployeeSelfSales('${empId}')">
+        </label>
+        <label>Đến ngày
+          <input id="employeeSaleTo" type="date" value="${saleTo}" onchange="renderEmployeeSelfSales('${empId}')">
+        </label>
+      </div>
+      <div id="employeeSaleSummary" class="employee-sale-summary"></div>
+      <div id="employeeSaleTable" class="employee-sale-table"></div>
+    </div>
+
     <div class="employee-self-detail-title">Chi tiết tháng ${salaryMonthLabel(month)}</div>
     <div class="employee-calendar-summary employee-self-detail-summary">
       <div><span>Ngày đi làm</span><b>${stats.workDays}/26</b></div>
@@ -12788,6 +15393,8 @@ function openEmployeeSelfCalendar(employeeId,monthOverride=''){
     <div class="hint">Chủ nhật không tính vào ngày đi làm hoặc ngày nghỉ.</div>
     <div class="modal-actions"><button class="btn" onclick="closeModal()">Đóng</button></div>
   `);
+
+  setTimeout(()=>renderEmployeeSelfSales(empId),0);
 }
 
 async function toggleEmployeeSelfAttendanceDay(employeeId,date,month){
@@ -13152,6 +15759,10 @@ function openEmployeeDayEditor(employeeId,date,month){
           <div>
             <span>${esc(p.note||'Thanh toán lương')}</span>
             <b>${money(p.amount)}</b>
+            ${(()=>{
+              const a=salaryPaymentAllocationById(p.id);
+              return `<span class="salary-history-split">Lương ${money(a.personnelAmount)}${a.rewardAmount>0?' • Thưởng '+money(a.rewardAmount):''}</span>`;
+            })()}
           </div>
         `).join('')}
       </div>
@@ -13243,15 +15854,20 @@ async function saveEmployeeDayEditor(employeeId,date,month){
     const paymentId='LUONG'+String(Date.now()).slice(-9);
     const expenseId='CP'+String(Date.now()+1).slice(-9);
 
+    const paymentMonth=date.slice(0,7);
+    const allocation=salaryPaymentAllocationPreview(e.id,paymentMonth,paymentAmount);
+
     db.salaryPayments.push({
       id:paymentId,
       employeeId:e.id,
       employeeName:e.name,
-      month:date.slice(0,7),
+      month:paymentMonth,
       date,
       amount:paymentAmount,
       note:'Trả lương theo lịch công',
-      salaryBase:(Number(e.dailySalary)||0)*26
+      salaryBase:(Number(e.dailySalary)||0)*26,
+      personnelAmount:allocation.personnelAmount,
+      rewardAmount:allocation.rewardAmount
     });
 
     db.expenses.push({
@@ -13327,7 +15943,17 @@ function openSalaryPayment(employeeId){
       </div>
 
       <div>
-        <span>Lương đã tích lũy</span>
+        <span>Hoa hồng NCC/Nhóm</span>
+        <b>${money(p.saleCommission||0)}</b>
+      </div>
+
+      <div>
+        <span>Thưởng mốc doanh số</span>
+        <b>${money(p.saleMilestoneBonus||0)}</b>
+      </div>
+
+      <div>
+        <span>Tổng thu nhập tích lũy</span>
         <b>${money(p.payable)}</b>
       </div>
 
@@ -13428,6 +16054,8 @@ async function saveSalaryPayment(employeeId,month){
   const paymentId='LUONG'+String(Date.now()).slice(-9);
   const expenseId='CP'+String(Date.now()+1).slice(-9);
 
+  const allocation=salaryPaymentAllocationPreview(e.id,month,amount);
+
   const payment={
     id:paymentId,
     employeeId:e.id,
@@ -13436,7 +16064,9 @@ async function saveSalaryPayment(employeeId,month){
     date,
     amount,
     note,
-    salaryBase:balance.salary
+    salaryBase:balance.salary,
+    personnelAmount:allocation.personnelAmount,
+    rewardAmount:allocation.rewardAmount
   };
 
   const expense={
@@ -13466,7 +16096,7 @@ async function saveSalaryPayment(employeeId,month){
   renderEmployees();
   renderReports();
   renderExpenseEntryPage();
-  toast('Đã trừ tiền thanh toán khỏi lương còn lại và tự ghi vào chi phí');
+  toast('Đã thanh toán lương và ghi nhận vào báo cáo theo số tiền thực trả');
 }
 
 
@@ -13482,6 +16112,13 @@ function renderSettings(){
   ['siAddress','soAddress'].forEach(id=>$(id).textContent=db.settings.address);
   renderLastBackup();
   renderStaffModuleSettings();
+  ensureSaleCompPolicyV121();
+  ensureSettingsEnterNext();
+  if($('salePolicyEffectiveMonth') && !$('salePolicyEffectiveMonth').value){
+    $('salePolicyEffectiveMonth').value=currentISODate().slice(0,7);
+  }
+  renderSalePolicyEmployeeFilter();
+  renderSalePolicySettings();
   applyAppConfigUI();
   if(APP_CONFIG.isMaster)updateNewAppPreview();
 }
@@ -13749,6 +16386,7 @@ function openEditProduct(id){
         <label>Nhóm hàng</label>
         <select id="epgroup">${productGroupOptions(p.group)}</select>
       </div>
+      <div><label>Nhà cung cấp (NCC)</label><select id="epsupplier">${productSupplierOptions(p.supplierId||'',true)}</select></div>
       <div><label>ĐVT</label><input id="epunit" value="${esc(p.unit||'Cái')}"></div>
 
       <div>
@@ -13792,6 +16430,8 @@ async function saveEditedProduct(){
 
   const name=$('epname').value.trim();
   const group=$('epgroup').value;
+  const supplierId=String($('epsupplier')?.value||'');
+  const supplierName=String((db.suppliers||[]).find(s=>String(s.id)===supplierId)?.name||'');
   const unit=$('epunit').value.trim()||'Cái';
   const salePrice=Number($('epsale').value)||0;
   const min=Number($('epmin').value)||0;
@@ -13801,6 +16441,9 @@ async function saveEditedProduct(){
 
   p.name=name;
   p.group=group;
+  p.supplierId=supplierId;
+  p.supplierName=supplierName;
+  p.brand='';
   p.unit=unit;
   p.salePrice=salePrice;
   p.min=min;
@@ -13834,6 +16477,7 @@ function openAddProductGlobal(){
           ${productGroupOptions()}
         </select>
       </div>
+      <div><label>Nhà cung cấp (NCC)</label><select id="mpsupplier">${productSupplierOptions('',true)}</select></div>
       <div><label>ĐVT</label><input id="mpunit" value="Cái"></div>
       <div><label>Giá vốn</label><input id="mpcost" type="number"></div>
       <div><label>Giá bán</label><input id="mpsale" type="number"></div>
@@ -13854,6 +16498,9 @@ async function saveProductGlobal(){
     id:$('mpid').value.trim(),
     name:$('mpname').value.trim(),
     group:$('mpgroup').value,
+    supplierId:String($('mpsupplier')?.value||''),
+    supplierName:String((db.suppliers||[]).find(s=>String(s.id)===String($('mpsupplier')?.value||''))?.name||''),
+    brand:'',
     unit:$('mpunit').value.trim()||'Cái',
     stock:Number($('mpstock').value)||0,
     cost:Number($('mpcost').value)||0,
@@ -14513,6 +17160,7 @@ function openQuickProductFromStockin(row,name=''){
           <button class="btn" type="button" onclick="quickAddGroupFromStockin()">+ Nhóm</button>
         </div>
       </div>
+      <div><label>Nhà cung cấp (NCC)</label><select id="qsipsupplier">${productSupplierOptions(selectedSupplierId||'',true)}</select></div>
       <div><label>ĐVT</label><input id="qsipunit" value="Cái"></div>
       <div><label>Giá nhập</label><input id="qsipcost" type="number" min="0" placeholder="0"></div>
       <div><label>Giá bán</label><input id="qsipsale" type="number" min="0" placeholder="0"></div>
@@ -14557,6 +17205,9 @@ async function saveQuickProductFromStockin(){
     id:String($('qsipid')?.value||'').trim()||code('SP'),
     name:String($('qsipname')?.value||'').trim(),
     group:String($('qsipgroup')?.value||'').trim(),
+    supplierId:String($('qsipsupplier')?.value||''),
+    supplierName:String((db.suppliers||[]).find(s=>String(s.id)===String($('qsipsupplier')?.value||''))?.name||''),
+    brand:'',
     unit:String($('qsipunit')?.value||'').trim()||'Cái',
     stock:0,
     cost:Number($('qsipcost')?.value)||0,
@@ -14620,11 +17271,13 @@ function stockoutCustomerPickerMatches(){
     .slice(0,100);
 }
 
-function renderStockoutCustomerPicker(open=true){
+function renderStockoutCustomerPicker(open=true,forceAll=false){
   const box=$('stockoutCustomerPickerList');
   if(!box)return;
 
-  const list=stockoutCustomerPickerMatches();
+  const list=forceAll
+    ? [...(db.customers||[])].sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'vi')).slice(0,100)
+    : stockoutCustomerPickerMatches();
   box.innerHTML=list.length
     ? list.map(c=>`
       <div class="stockout-customer-picker-item"
@@ -14640,6 +17293,13 @@ function renderStockoutCustomerPicker(open=true){
   if(open)box.classList.add('show');
 }
 
+function showStockoutCustomerPickerAll(){
+  const input=$('soCustomer');
+  const btn=$('soCustomerPickerBtn');
+  if(input?.disabled || btn?.disabled)return;
+  renderStockoutCustomerPicker(true,true);
+}
+
 function toggleStockoutCustomerPicker(){
   const btn=$('soCustomerPickerBtn');
   if(btn?.disabled)return;
@@ -14650,8 +17310,8 @@ function toggleStockoutCustomerPicker(){
     closeStockoutCustomerPicker();
     return;
   }
-  renderStockoutCustomerPicker(true);
-  setTimeout(()=>$('soCustomer')?.focus(),0);
+  renderStockoutCustomerPicker(true,true);
+  setTimeout(()=>{const input=$('soCustomer');if(input){input.focus();input.select()}},0);
 }
 
 function chooseStockoutCustomerPicker(id){
@@ -14908,6 +17568,7 @@ function newStockout(){
   $('soCustomerAlert').innerHTML='';
   setStockoutCustomerEditState(true);
   $('soContent').value=rememberedInvoiceContent('so');
+  renderStockoutSaleOptions('');
   setNewStockoutDefaultVatSource();
   $('soPaid').value='';
   if($('soReceivable'))$('soReceivable').textContent='0 đ';
@@ -15004,7 +17665,7 @@ function horiz(e,mode,i,role){
   return true;
 }
 function addSIRow(focus){siRows.push({productId:'',productText:'',qty:'',price:'',ck:'',km:'',note:''});renderSIRows();if(focus)focusField('si',siRows.length-1,'product')}
-function addSORow(focus){soRows.push({productId:'',productText:'',qty:'',price:'',ck:'',km:'',note:''});renderSORows();if(focus)focusField('so',soRows.length-1,'product')}
+function addSORow(focus){soRows.push({productId:'',productText:'',qty:'',price:'',ck:'',km:'',note:'',vatSource:'nonvat'});renderSORows();if(focus)focusField('so',soRows.length-1,'product')}
 
 function isBlankRow(r){
   return !r || (!String(r.productId||'').trim() && !String(r.productText||'').trim());
@@ -15021,6 +17682,19 @@ function chooseProduct(mode,i,id){
   r.qty='';
 
   if(mode==='so'){
+    r.vatSource='nonvat';
+    r._vatShortage=false;
+    const supplierSnap=productSupplierSnapshot(p);
+    r.supplierIdAtSale=supplierSnap.id;
+    r.supplierNameAtSale=supplierSnap.name;
+    r.brandAtSale='';
+    r.groupAtSale=String(p.group||'').trim();
+    delete r.commissionRateAtSale;
+    delete r.commissionRuleTypeAtSale;
+    delete r.commissionRuleTargetAtSale;
+    delete r.commissionRuleTargetNameAtSale;
+    delete r.commissionPolicyMonthAtSale;
+    delete r.commissionPolicyEmployeeIdAtSale;
     const terms=currentSaleTermsForProduct(p);
     r.price=terms.salePrice||'';
     r.ck=Number(terms.ck||0)>0?Number(terms.ck):'';
@@ -15140,21 +17814,32 @@ function renderSIRows(){
 }
 function renderSORows(){
   $('soBody').innerHTML=soRows.map((r,i)=>{
+    if(!r.vatSource)r.vatSource='nonvat';
     let p=db.products.find(x=>x.id===r.productId),
         unit=p?.unit||'',
         net=calcNet(r),
-        total=net*(Number(r.qty)||0);
+        total=net*(Number(r.qty)||0),
+        source=stockoutLineVatSource(r);
     return `<tr data-line="so${i}">
       <td class="center">${i+1}</td>
       <td class="product-cell">
         <input data-mode="so" data-role="product" data-row="${i}"
           value="${esc(r.productText||(p?.name||''))}" placeholder="Gõ tên hàng..."
-          oninput="soRows[${i}].productText=this.value;soRows[${i}].productId='';openSuggestions('so',${i},this)"
+          oninput="soRows[${i}].productText=this.value;soRows[${i}].productId='';soRows[${i}].vatSource='nonvat';soRows[${i}]._vatShortage=false;openSuggestions('so',${i},this)"
           onkeydown="productKey(event,'so',${i},this)">
         <div class="suggestions" id="sosg${i}"></div>
       </td>
       <td class="center">${unit}</td>
       <td><input data-mode="so" data-role="qty" data-row="${i}" type="number" value="${r.qty}" oninput="changeQtyWithStockLock('stockout',${i},this)" onkeydown="fieldKey(event,'so',${i},'qty')"></td>
+      <td class="so-source-col">
+        <select id="soVatLine${i}"
+                class="so-line-vat-source ${source==='vat'?'source-vat':'source-nonvat'} ${r._vatShortage?'source-shortage':''}"
+                data-mode="so" data-role="vatSource" data-row="${i}"
+                onchange="changeStockoutLineVatSource(${i},this.value,this)">
+          <option value="nonvat" ${source==='nonvat'?'selected':''}>Không VAT</option>
+          <option value="vat" ${source==='vat'?'selected':''}>Có VAT</option>
+        </select>
+      </td>
       <td><input data-mode="so" data-role="price" data-row="${i}" type="number" value="${r.price}" oninput="changeField('so',${i},'price',this.value)" onkeydown="fieldKey(event,'so',${i},'price')"></td>
       <td><input data-mode="so" data-role="ck" data-row="${i}" type="number" value="${r.ck}" oninput="changeField('so',${i},'ck',this.value)" onkeydown="fieldKey(event,'so',${i},'ck')"></td>
       <td><input data-mode="so" data-role="km" data-row="${i}" type="number" value="${r.km}" oninput="changeField('so',${i},'km',this.value)" onkeydown="fieldKey(event,'so',${i},'km')"></td>
@@ -15896,8 +18581,19 @@ async function saveStockout(doPrint=false){
     return alert('Phiếu đã khóa. Bấm Sửa nếu muốn thay đổi nội dung phiếu.');
   }
 
+  if(!ensureStockoutSaleBeforeSave())return false;
+
   if(!(await ensureStockOperationLock('stockout')))return false;
   if(!(await stockOperationRefreshBase('stockout')))return false;
+
+  const saleEmployee=stockoutSelectedSaleEmployee();
+  if(canSelectStockoutSale() && !saleEmployee){
+    await releaseStockOperationLock('stockout',{silent:true});
+    updateStockoutSaleUI();
+    alert('Sale phụ trách không còn trong danh sách nhân viên đang hoạt động. Vui lòng chọn lại.');
+    $('soSaleEmployee')?.focus();
+    return false;
+  }
 
   const currentId=$('soNo')?.textContent?.trim()||'';
   const originalIndex=editing?(db.stockout||[]).findIndex(o=>o.id===currentId):-1;
@@ -15923,12 +18619,9 @@ async function saveStockout(doPrint=false){
     return alert('Chưa có hàng bán hoặc hàng bảo hành để trả. Nếu chỉ trả bảo hành, hãy bấm “Đang xử lý (NPP nợ)” để chuyển sang “Đã trả theo phiếu”.');
   }
 
-  const vatSource=currentStockoutVatSource();
-  if(validRows.length && !vatSource){
-    alert('Vui lòng chọn CÓ VAT hoặc KHÔNG VAT trước khi xuất phiếu để tránh sai sót.');
-    $('soVatSourceFilter')?.focus();
-    return false;
-  }
+  /* V118: nguồn VAT được chọn theo từng dòng. Mặc định mỗi dòng là Không VAT. */
+  validRows.forEach(r=>{r.vatSource=stockoutLineVatSource(r)});
+  const vatSource=stockoutOverallVatSource(validRows);
   const vatAllocations=[];
   const vatRemaining={};
 
@@ -15958,8 +18651,18 @@ async function saveStockout(doPrint=false){
         targetStock:available
       });
     }
-    const alloc=allocateVatForQty(q,vatSource,balances);
-    if(!alloc.ok)return alert(p.name+' • '+alloc.message);
+    const lineSource=stockoutLineVatSource(r);
+    const alloc=allocateVatForQty(q,lineSource,balances);
+    if(!alloc.ok){
+      r._vatShortage=true;
+      renderSORows();
+      setTimeout(()=>$('soVatLine'+i)?.focus(),0);
+      if(lineSource==='nonvat'){
+        return alert(p.name+' • Đã hết hoặc không đủ hàng KHÔNG VAT. Vui lòng chọn CÓ VAT tại dòng này hoặc giảm số lượng.');
+      }
+      return alert(p.name+' • Không đủ hàng CÓ VAT. Vui lòng giảm số lượng hoặc chuyển dòng này về KHÔNG VAT nếu còn hàng.');
+    }
+    r._vatShortage=false;
     vatAllocations[i]=alloc;
     vatRemaining[r.productId]={
       vat:Math.max(0,Number(balances.vat||0)-Number(alloc.vatQty||0)),
@@ -15993,6 +18696,45 @@ async function saveStockout(doPrint=false){
 
   rememberInvoiceContent('so');
 
+  const salePolicyMonth=(ymdFromDateText(returnTime)||currentISODate()).slice(0,7);
+  const effectiveSaleEmployeeId=saleEmployee
+    ? String(saleEmployee.id||'')
+    : (editing?String(original?.saleEmployeeId||''):'');
+  const saleChanged=editing &&
+    String(original?.saleEmployeeId||'')!==effectiveSaleEmployeeId;
+
+  validRows.forEach(r=>{
+    const p=(db.products||[]).find(x=>x.id===r.productId);
+    const supplierId=String(r.supplierIdAtSale!==undefined?r.supplierIdAtSale:(p?.supplierId||'')).trim();
+    const supplierName=String(r.supplierNameAtSale!==undefined?r.supplierNameAtSale:(p?.supplierName||'')).trim();
+    const group=String(r.groupAtSale!==undefined?r.groupAtSale:(p?.group||'')).trim();
+    r.supplierIdAtSale=supplierId;
+    r.supplierNameAtSale=supplierName;
+    r.brandAtSale='';
+    r.groupAtSale=group;
+
+    if(!editing || saleChanged){
+      const rule=saleCommissionRuleForProduct(
+        {supplierId,supplierName,group},
+        effectiveSaleEmployeeId,
+        salePolicyMonth
+      );
+      r.commissionRateAtSale=rule.rate;
+      r.commissionRuleTypeAtSale=rule.type;
+      r.commissionRuleTargetAtSale=rule.target;
+      r.commissionRuleTargetNameAtSale=rule.targetName;
+      r.commissionPolicyMonthAtSale=rule.policyMonth||salePolicyMonth;
+      r.commissionPolicyEmployeeIdAtSale=rule.policyEmployeeId||'';
+    }else if(r.commissionRateAtSale===undefined){
+      r.commissionRateAtSale=0;
+      r.commissionRuleTypeAtSale='';
+      r.commissionRuleTargetAtSale='';
+      r.commissionRuleTargetNameAtSale='';
+      r.commissionPolicyMonthAtSale='';
+      r.commissionPolicyEmployeeIdAtSale='';
+    }
+  });
+
   let savedInvoice={
     id:stockoutId,
     dateText:returnTime,
@@ -16005,6 +18747,18 @@ async function saveStockout(doPrint=false){
       : latestDebtDateForCustomer(selectedCustomerId),
     items:validRows.map((r,i)=>({
       ...r,
+      _vatShortage:undefined,
+      vatSource:stockoutLineVatSource(r),
+      supplierIdAtSale:String(r.supplierIdAtSale||''),
+      supplierNameAtSale:String(r.supplierNameAtSale||''),
+      brandAtSale:'',
+      groupAtSale:String(r.groupAtSale||''),
+      commissionRateAtSale:Math.max(0,Number(r.commissionRateAtSale)||0),
+      commissionRuleTypeAtSale:String(r.commissionRuleTypeAtSale||''),
+      commissionRuleTargetAtSale:String(r.commissionRuleTargetAtSale||''),
+      commissionRuleTargetNameAtSale:String(r.commissionRuleTargetNameAtSale||''),
+      commissionPolicyMonthAtSale:String(r.commissionPolicyMonthAtSale||''),
+      commissionPolicyEmployeeIdAtSale:String(r.commissionPolicyEmployeeIdAtSale||''),
       net:calcNet(r),
       vatQty:Number(vatAllocations[i]?.vatQty||0),
       nonVatQty:Number(vatAllocations[i]?.nonVatQty||0),
@@ -16015,6 +18769,12 @@ async function saveStockout(doPrint=false){
     paid,
     debt,
     content:$('soContent').value,
+    saleEmployeeId:saleEmployee
+      ? String(saleEmployee.id||'')
+      : (editing?String(original?.saleEmployeeId||''):''),
+    saleEmployeeName:saleEmployee
+      ? String(saleEmployee.name||'')
+      : (editing?String(original?.saleEmployeeName||''):''),
     warrantyIds:editing?[...(original.warrantyIds||[])]:warrantyRows.map(w=>w.id),
     warrantyItems:editing
       ? (Array.isArray(original.warrantyItems)&&original.warrantyItems.length
@@ -16519,7 +19279,13 @@ function decorateStockoutVatPreview(data){
   paper.querySelectorAll('.vat-internal-print-note').forEach(x=>x.remove());
   const div=document.createElement('div');
   div.className='vat-internal-print-note';
-  const source=data.vatSource==='vat'?'Hàng VAT':data.vatSource==='nonvat'?'Hàng Không VAT':'Phiếu cũ/chưa phân loại';
+
+  let source='';
+  if(data.vatSource==='mixed')source='Hỗn hợp: VAT + Không VAT';
+  else if(data.vatSource==='vat')source='Hàng VAT';
+  else if(data.vatSource==='nonvat')source='Hàng Không VAT';
+  else source='Phiếu cũ/chưa phân loại';
+
   div.innerHTML='<b>Nguồn xuất nội bộ:</b> '+source+' <span class="small">(không in trên phiếu giao khách)</span>';
   const table=paper.querySelector('table');
   if(table)table.before(div);
@@ -17941,7 +20707,7 @@ async function saveStockinStable(doPrint=false){
 <script id="pwa-register">
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   window.addEventListener('load', function(){
-    navigator.serviceWorker.register('./sw.js?v=ab123-v114-report-tabs-filter').catch(function(err){ console.warn('Service worker:', err); });
+    navigator.serviceWorker.register('./sw.js?v=ab123-v124-report-paid-salary-reward').catch(function(err){ console.warn('Service worker:', err); });
   });
 }
 

@@ -1,4 +1,4 @@
-const CACHE='ab123-an-bui-v21';
+const CACHE='ab123-an-bui-v31';
 const SHELL=['./','./index.html','./AB123_MANAGER.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./favicon-64.png'];
 
 self.addEventListener('install', event => {
