@@ -14,7 +14,7 @@
 <link rel="icon" type="image/png" sizes="64x64" href="./favicon-64.png">
 
 <meta charset="utf-8">
-<meta name="app-version" content="124">
+<meta name="app-version" content="127">
 <title>AN BÙI - Quản lý nội bộ</title>
 <style>
 :root{
@@ -6621,6 +6621,283 @@ input.vnd-dot-input{
 }
 </style>
 
+
+<style id="v125-compact-responsive-ui">
+#stockoutHistoryNote{display:none!important}
+#stockout{padding-top:0!important} #stockout>.paper{margin-top:0!important}
+#stockoutSearchResults:not(.show){margin:0!important}
+#stockin .stockin-history-panel.v125-stockin-history{display:grid!important;grid-template-columns:auto 145px auto minmax(260px,1fr) auto;gap:6px!important;align-items:center!important;margin:0 0 6px!important}
+#stockin .stockin-history-panel.v125-stockin-history .stockin-history-left{display:contents!important}
+#stockin .stockin-history-panel.v125-stockin-history .stockin-history-search{width:100%!important;min-width:0!important}
+#stockin .stockin-history-panel.v125-stockin-history #stockinHistoryDate,#stockin .stockin-history-panel.v125-stockin-history #stockinSearch{height:36px!important;min-height:36px!important}
+#stockin .stockin-history-panel.v125-stockin-history #stockinSearch{width:100%!important}
+#stockin .stockin-history-panel.v125-stockin-history .stockout-history-status{min-width:88px!important;text-align:right!important}
+#payments .payment-box{padding:10px!important}
+#payments .payment-customer-grid.v125-payment-grid{display:grid!important;grid-template-columns:minmax(230px,1.35fr) 128px 128px minmax(145px,.7fr) minmax(155px,.8fr) auto!important;gap:7px!important;align-items:end!important}
+#payments .payment-customer-grid.v125-payment-grid input,#payments .payment-customer-grid.v125-payment-grid button{min-height:36px!important;height:36px!important}
+#payments .payment-customer-grid.v125-payment-grid .payment-debt-box{min-height:36px!important;padding:4px 8px!important}
+#payments .payment-customer-grid.v125-payment-grid .payment-debt-box b{font-size:15px!important;margin-top:0!important}
+#payments .payment-filter-label{display:block;font-size:10.5px;font-weight:800;color:#607681;margin-bottom:3px}
+#payments .payment-history-head{margin-top:9px!important}.payment-source{font-size:10.5px;color:#6a7d87;display:block;margin-top:2px}.payment-source.invoice{color:#176847;font-weight:700}.payment-source.return{color:#996219}
+#expenses>.card{padding:9px!important}
+#expenses .expense-v125-head{display:flex;align-items:end;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+#expenses .expense-v125-title{display:flex;align-items:center;gap:8px}#expenses .expense-v125-title h3{margin:0!important;font-size:17px!important}
+#expenses .expense-calendar-nav{display:flex!important;align-items:center!important;gap:5px!important;flex-wrap:wrap!important}
+#expenses .expense-calendar-nav .btn{min-height:34px!important;height:34px!important;padding:5px 8px!important;font-size:11.5px!important}
+#expenses .expense-calendar-nav input[type=month]{width:142px!important;min-height:34px!important;height:34px!important}
+#expenses .expense-calendar-summary{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important;margin:0 0 7px!important}
+#expenses .expense-calendar-summary>div{padding:7px 9px!important;border-radius:8px!important;background:#f8fafb!important}
+#expenses .expense-calendar-summary span{font-size:10.5px!important}#expenses .expense-calendar-summary b{font-size:15px!important;margin-top:1px!important}
+#expenses .expense-calendar-help{display:none!important}
+#expenses .expense-calendar-grid{display:grid!important;grid-template-columns:repeat(7,minmax(0,1fr))!important;gap:6px!important;border:0!important;overflow:visible!important;background:transparent!important}
+#expenses .expense-cal-head{border:0!important;border-radius:6px!important;padding:5px 3px!important;background:#f1f5f7!important;font-size:10.5px!important}
+#expenses .expense-cal-day{min-height:76px!important;padding:5px!important;border:1px solid #d9e3e7!important;border-radius:9px!important;background:#fff!important;text-align:center!important}
+#expenses .expense-cal-day.blank{border-color:transparent!important;background:transparent!important}
+#expenses .expense-cal-day.has-expense{background:#eef8f3!important;border-color:#bcdcca!important}
+#expenses .expense-cal-day.sunday{background:#f1f3f5!important;border-color:#d7dde1!important}
+#expenses .expense-cal-day.sunday.has-expense{background:#fff5d9!important;border-color:#e5c777!important}
+#expenses .expense-cal-day.today{box-shadow:inset 0 0 0 2px #2f806e!important}
+#expenses .expense-cal-date{font-size:16px!important;color:#17324d!important}.expense-cal-total{margin-top:4px!important;font-size:11px!important}.expense-cal-count{font-size:9.5px!important}
+#expenses .expense-list-block{margin-top:9px!important}
+@media(max-width:1100px){
+#stockin .stockin-history-panel.v125-stockin-history{grid-template-columns:auto 135px auto minmax(190px,1fr)!important}
+#stockin .stockin-history-panel.v125-stockin-history .stockout-history-status{grid-column:1/-1!important;text-align:left!important}
+#payments .payment-customer-grid.v125-payment-grid{grid-template-columns:minmax(220px,1fr) 130px 130px!important}
+#payments .payment-customer-grid.v125-payment-grid .payment-pay-cell{grid-column:1/3!important}#payments .payment-customer-grid.v125-payment-grid .payment-confirm-cell{grid-column:3!important}}
+@media(max-width:680px){
+#stockin .stockin-history-panel.v125-stockin-history{grid-template-columns:36px minmax(125px,1fr) 36px!important}
+#stockin .stockin-history-panel.v125-stockin-history .stockin-history-search{grid-column:1/-1!important}
+#stockin .stockin-history-panel.v125-stockin-history .stockout-history-status{grid-column:1/-1!important;text-align:center!important}
+#payments .payment-customer-grid.v125-payment-grid{grid-template-columns:1fr 1fr!important}
+#payments .payment-customer-grid.v125-payment-grid .payment-search-cell{grid-column:1/-1!important}
+#payments .payment-customer-grid.v125-payment-grid .payment-debt-box{grid-column:1!important}#payments .payment-customer-grid.v125-payment-grid .payment-pay-cell{grid-column:2!important}
+#payments .payment-customer-grid.v125-payment-grid .payment-confirm-cell{grid-column:1/-1!important}#payments .payment-customer-grid.v125-payment-grid .payment-confirm-cell .btn{width:100%!important}
+#expenses .expense-v125-title{width:100%;justify-content:space-between}#expenses .expense-calendar-nav{width:100%!important}#expenses .expense-calendar-nav input[type=month]{flex:1!important;width:auto!important}
+#expenses .expense-calendar-summary{grid-template-columns:repeat(3,minmax(0,1fr))!important}#expenses .expense-calendar-summary>div{padding:6px!important}#expenses .expense-calendar-summary span{font-size:9.5px!important}#expenses .expense-calendar-summary b{font-size:12px!important;white-space:nowrap}
+#expenses .expense-calendar-grid{gap:3px!important;min-width:0!important}#expenses .expense-cal-head{font-size:9px!important;padding:4px 1px!important}
+#expenses .expense-cal-day{min-height:62px!important;padding:3px 2px!important;border-radius:7px!important}#expenses .expense-cal-date{font-size:13px!important}#expenses .expense-cal-total{font-size:8.8px!important}.expense-cal-private{display:none!important}}
+</style>
+
+
+<style id="v127-settings-compact-date-safe">
+/* =========================================================
+   V127 - CÀI ĐẶT GỌN + Ô NGÀY/THÁNG KHÔNG CHE CHỮ
+   ========================================================= */
+
+/* Chừa khoảng riêng cho biểu tượng lịch để không đè lên số ngày/tháng */
+input[type="date"],
+input[type="month"]{
+  box-sizing:border-box!important;
+  min-width:150px;
+  padding-left:9px!important;
+  padding-right:38px!important;
+  font-variant-numeric:tabular-nums;
+  color-scheme:light;
+}
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="month"]::-webkit-calendar-picker-indicator{
+  width:18px;
+  height:18px;
+  margin-left:7px;
+  flex:0 0 18px;
+  cursor:pointer;
+}
+
+/* Cài đặt: thu gọn khoảng cách, ô nhập và tiêu đề */
+#settings{
+  padding-top:0!important;
+}
+#settings>.card{
+  margin-top:8px!important;
+  padding:10px!important;
+}
+#settings>.card:first-child{
+  margin-top:0!important;
+}
+#settings .settings-card-head,
+#settings .unit-settings-head{
+  margin-bottom:7px!important;
+  min-height:30px!important;
+}
+#settings h3{
+  font-size:15px!important;
+  line-height:1.2!important;
+}
+#settings h4{
+  margin-top:7px!important;
+  margin-bottom:6px!important;
+}
+#settings label{
+  font-size:10.8px!important;
+  margin-bottom:3px!important;
+}
+#settings input:not([type="checkbox"]):not([type="file"]),
+#settings select{
+  min-height:34px!important;
+  height:34px!important;
+  padding-top:5px!important;
+  padding-bottom:5px!important;
+}
+#settings .btn{
+  min-height:34px!important;
+  padding:6px 9px!important;
+}
+
+/* Đơn vị/NPP nằm gọn trên 1 hàng desktop */
+#settings .unit-settings-grid{
+  grid-template-columns:minmax(190px,1fr) minmax(130px,.55fr) minmax(230px,1.3fr)!important;
+  gap:7px!important;
+}
+#settings .unit-settings-grid .unit-address-field{
+  grid-column:auto!important;
+}
+
+/* Chính sách Sale gọn */
+#settings #salePolicySettingsCard{
+  padding:9px!important;
+}
+#settings .sale-policy-head{
+  gap:8px!important;
+  margin-bottom:2px!important;
+}
+#settings .sale-policy-top-filters{
+  gap:6px!important;
+}
+#settings .sale-policy-grid{
+  gap:8px!important;
+  margin-top:7px!important;
+}
+#settings .sale-policy-box{
+  padding:8px!important;
+}
+#settings .sale-policy-row{
+  margin:4px 0!important;
+  gap:5px!important;
+}
+#settings .sale-policy-actions{
+  margin-top:5px!important;
+}
+
+/* Bớt các dòng chữ hướng dẫn nhỏ - giữ trạng thái/warning quan trọng */
+#settings #salePolicySettingsCard .sale-policy-head .small,
+#settings .sale-policy-filter-hint,
+#settings .sale-policy-box>.sale-policy-note,
+#settings #staffModuleSettings small,
+#settings #staffStockoutEditPermissionNote,
+#settings .print-designer-note,
+#settings .pd-row-height-note,
+#settings .print-designer-panel>.hint,
+#settings .master-builder-card>div[style*="display:flex"]>.hint{
+  display:none!important;
+}
+
+/* Phân quyền: giữ bố cục cũ nhưng giảm chiều cao */
+#settings #staffModuleSettings{
+  gap:6px!important;
+  margin-top:6px!important;
+}
+#settings #staffModuleSettings>.staff-module-row,
+#settings #staffModuleSettings>.staff-stockout-edit-box{
+  min-height:48px!important;
+  padding:7px 9px!important;
+  border-radius:8px!important;
+}
+#settings .staff-module-row{
+  font-size:11.8px!important;
+}
+#settings .staff-module-row input[type="checkbox"],
+#settings .staff-stockout-edit-head input[type="checkbox"]{
+  width:18px!important;
+  height:18px!important;
+}
+#settings .staff-stockout-edit-box{
+  grid-template-areas:"head controls"!important;
+  grid-template-columns:minmax(0,1fr) 112px!important;
+}
+#settings .staff-stockout-edit-note{
+  display:none!important;
+}
+#settings .staff-stockout-edit-controls span{
+  font-size:9.5px!important;
+}
+
+/* Các khối thiết kế/in/lưu trữ gọn */
+#settings .print-designer-grid{
+  gap:8px!important;
+}
+#settings .print-designer-panel{
+  padding:8px!important;
+}
+#settings .print-designer-toolbar,
+#settings .backup-actions{
+  gap:6px!important;
+}
+#settings .archive-warning{
+  padding:7px 9px!important;
+  font-size:10.5px!important;
+  line-height:1.3!important;
+}
+#settings .modal-actions{
+  margin-top:8px!important;
+}
+#settings .app-builder-grid{
+  gap:7px!important;
+}
+#settings .app-builder-preview{
+  margin-top:7px!important;
+}
+#settings .app-builder-modules{
+  gap:5px!important;
+}
+
+/* Tablet */
+@media(max-width:900px){
+  input[type="date"],
+  input[type="month"]{
+    min-width:145px;
+    padding-right:36px!important;
+  }
+  #settings .unit-settings-grid{
+    grid-template-columns:1fr 1fr!important;
+  }
+  #settings .unit-settings-grid .unit-address-field{
+    grid-column:1/-1!important;
+  }
+  #settings .sale-policy-head{
+    align-items:flex-start!important;
+  }
+}
+
+/* Điện thoại */
+@media(max-width:680px){
+  input[type="date"],
+  input[type="month"]{
+    min-width:0!important;
+    width:100%!important;
+    padding-right:36px!important;
+  }
+  #settings>.card{
+    margin-top:6px!important;
+    padding:8px!important;
+  }
+  #settings .unit-settings-grid{
+    grid-template-columns:1fr!important;
+  }
+  #settings .unit-settings-grid .unit-address-field{
+    grid-column:auto!important;
+  }
+  #settings #staffModuleSettings{
+    grid-template-columns:1fr!important;
+  }
+  #settings .staff-stockout-edit-box{
+    grid-template-columns:minmax(0,1fr) 105px!important;
+  }
+  #settings .sale-policy-grid{
+    grid-template-columns:1fr!important;
+  }
+}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -6745,15 +7022,13 @@ input.vnd-dot-input{
   </section>
 
   <section class="page" id="stockin">
-    <div class="stockin-history-panel">
+    <div class="stockin-history-panel v125-stockin-history">
       <div class="stockin-history-left">
         <button id="stockinPrevBtn" class="btn stockin-arrow-btn" type="button" title="Phiếu nhập trước" onclick="browseStockinHistory(-1)">←</button>
-        <input id="stockinHistoryDate" type="date" title="Chọn ngày xem phiếu nhập" onchange="loadStockinHistoryDate()">
+        <input id="stockinHistoryDate" type="date" title="Lọc ngày phiếu nhập" onchange="loadStockinHistoryDate()">
         <button id="stockinNextBtn" class="btn stockin-arrow-btn" type="button" title="Phiếu nhập sau" onclick="browseStockinHistory(1)">→</button>
+        <div class="stockin-history-search"><input id="stockinSearch" placeholder="Tìm số phiếu / NCC / SĐT..." oninput="searchStockinInvoices()" onfocus="this.select()" onclick="this.select()"></div>
         <span id="stockinHistoryStatus" class="stockout-history-status">0 phiếu</span>
-      </div>
-      <div class="stockin-history-search">
-        <input id="stockinSearch" placeholder="Tìm số phiếu, tên NCC hoặc SĐT..." oninput="searchStockinInvoices()" onfocus="this.select()" onclick="this.select()">
       </div>
     </div>
     <div id="stockinSearchResults" class="stockout-search-results"></div>
@@ -6850,7 +7125,7 @@ input.vnd-dot-input{
 
   <section class="page" id="stockout">
     <div id="stockoutSearchResults" class="stockout-search-results"></div>
-    <div id="stockoutHistoryNote" class="history-view-note"></div>
+    <div id="stockoutHistoryNote" class="history-view-note" hidden></div>
 
     <div class="paper">
       <div class="invoice-header">
@@ -7036,24 +7311,15 @@ input.vnd-dot-input{
       </div>
 
       <div id="paymentCustomerPanel" class="payment-box">
-        <div class="payment-customer-grid">
-          <div>
-            <label>Tìm khách hàng</label>
-            <input id="payCustomerSearch" list="payCustomerList" placeholder="Nhập tên hoặc SĐT..."
-            onfocus="this.select()" onclick="this.select()" oninput="selectPaymentCustomer()">
-            <datalist id="payCustomerList"></datalist>
-          </div>
-          <div class="payment-debt-box">
-            <span>Tổng công nợ hiện tại</span>
-            <b id="payCustomerDebt">0 đ</b>
-          </div>
-          <div>
-            <label>Số tiền khách thanh toán</label>
-            <input id="payCustomerAmount" type="number" min="0" placeholder="0">
-          </div>
-          <button class="btn primary" onclick="saveCustomerPayment()">Xác nhận thanh toán</button>
+        <div class="payment-customer-grid v125-payment-grid">
+          <div class="payment-search-cell"><label class="payment-filter-label">Tìm khách hàng</label><input id="payCustomerSearch" list="payCustomerList" placeholder="Tên / SĐT / địa chỉ..." onfocus="this.select()" onclick="this.select()" oninput="selectPaymentCustomer()"><datalist id="payCustomerList"></datalist></div>
+          <div><label class="payment-filter-label">Từ ngày</label><input id="payCustomerFrom" type="date" onchange="renderCustomerPaymentHistoryOnly()"></div>
+          <div><label class="payment-filter-label">Đến ngày</label><input id="payCustomerTo" type="date" onchange="renderCustomerPaymentHistoryOnly()"></div>
+          <div class="payment-debt-box"><span>Tổng công nợ hiện tại</span><b id="payCustomerDebt">0 đ</b></div>
+          <div class="payment-pay-cell"><label class="payment-filter-label">Khách thanh toán</label><input id="payCustomerAmount" type="number" min="0" placeholder="0"></div>
+          <div class="payment-confirm-cell"><button class="btn primary" onclick="saveCustomerPayment()">Xác nhận</button></div>
         </div>
-        <div class="payment-history-head"><h3>Lịch sử khách hàng thanh toán</h3></div>
+        <div class="payment-history-head"><h3 id="paymentCustomerHistoryTitle">Lịch sử thanh toán khách hàng</h3></div>
         <div id="customerPaymentHistory"></div>
       </div>
 
@@ -7133,51 +7399,26 @@ input.vnd-dot-input{
 
   <section class="page" id="expenses">
     <div class="card">
-      <div class="settings-card-head">
-        <div>
-          <h3 style="margin:0">Lịch chi phí</h3>
-          
-        </div>
-        <button class="btn primary" onclick="openAddExpense(currentISODate())">+ Ghi chi phí hôm nay</button>
-      </div>
-
-      <div class="expense-calendar-toolbar">
+      <div class="expense-v125-head">
+        <div class="expense-v125-title"><h3>Lịch chi phí</h3><button class="btn primary" onclick="openAddExpense(currentISODate())">+ Ghi chi phí</button></div>
         <div class="expense-calendar-nav">
-          <button class="btn" onclick="moveExpenseMonth(-1)">← Tháng trước</button>
+          <button class="btn" onclick="moveExpenseMonth(-1)" title="Tháng trước">←</button>
           <input id="expenseCalendarMonth" type="month" onchange="renderExpenseCalendar()">
-          <button class="btn" onclick="moveExpenseMonth(1)">Tháng sau →</button>
+          <button class="btn" onclick="moveExpenseMonth(1)" title="Tháng sau">→</button>
           <button class="btn" onclick="goExpenseCurrentMonth()">Tháng này</button>
         </div>
       </div>
-
       <div id="expenseCalendarSummary" class="expense-calendar-summary"></div>
-      <div class="expense-calendar-help">
-        Nhân viên bấm ngày để ghi chi phí phát sinh. Quản lý thấy toàn bộ chi phí, kể cả khoản riêng của Quản lý/Lương.
-        Tất cả khoản đã lưu tự động chạy vào Báo cáo → Chi phí tổng.
-      </div>
-
-      <div class="expense-calendar-scroll">
-        <div id="expenseCalendarGrid" class="expense-calendar-grid"></div>
-      </div>
-
-      <div style="margin-top:14px">
-        <div class="settings-card-head">
-          <div>
-            <h3 style="margin:0;font-size:16px">Danh sách chi phí</h3>
-            
-          </div>
-        </div>
-        <div class="expense-entry-filter">
-          <input id="expenseEntryFrom" type="date" onchange="renderExpenseEntryPage()">
-          <span>đến</span>
-          <input id="expenseEntryTo" type="date" onchange="renderExpenseEntryPage()">
-        </div>
+      <div class="expense-calendar-scroll"><div id="expenseCalendarGrid" class="expense-calendar-grid"></div></div>
+      <div class="expense-list-block">
+        <div class="settings-card-head"><div><h3 style="margin:0;font-size:14px">Danh sách chi phí</h3></div></div>
+        <div class="expense-entry-filter"><input id="expenseEntryFrom" type="date" onchange="renderExpenseEntryPage()"><span>đến</span><input id="expenseEntryTo" type="date" onchange="renderExpenseEntryPage()"></div>
         <div id="expenseEntryTable"></div>
       </div>
     </div>
   </section>
 
-    <section class="page" id="reports">
+  <section class="page" id="reports">
     <div class="report-tabs">
       <button id="reportTabOverview" class="report-tab-btn active" type="button" onclick="setReportTab('overview')">Tổng quan</button>
       <button id="reportTabProduct" class="report-tab-btn" type="button" onclick="setReportTab('product')">Doanh thu theo hàng</button>
@@ -9050,10 +9291,8 @@ function loadStockoutIntoForm(invoice){
   renderOldInvoiceWarrantyStatus(invoice);
 
   if($('stockoutHistoryNote')){
-    $('stockoutHistoryNote').classList.add('show');
-    $('stockoutHistoryNote').innerHTML=
-      'Đang xem phiếu cũ <b>'+esc(invoice.id)+'</b> • '+esc(invoice.dateText||'')+
-      ' — dùng ← / → để xem phiếu trước/sau. Xem/In không bị khóa bởi máy khác. Quyền Sửa phiếu của Nhân viên theo Cài đặt → Phân quyền.';
+    $('stockoutHistoryNote').classList.remove('show');
+    $('stockoutHistoryNote').innerHTML='';
   }
 
   clearRemoteStockLockUIForHistory('stockout');
@@ -12677,26 +12916,9 @@ function ensureStockoutSaleBeforeSave(){
 /* ===== V115: FIFO THU TIỀN THEO PHIẾU / SALE ===== */
 function saleIdentityMap(){
   const map=new Map();
-
-  (db.employees||[]).forEach(e=>{
-    if(!e?.id)return;
-    map.set(String(e.id),{
-      id:String(e.id),
-      name:String(e.name||e.id),
-      active:e.active!==false
-    });
-  });
-
-  (db.stockout||[]).forEach(o=>{
-    const id=String(o?.saleEmployeeId||'');
-    if(!id || map.has(id))return;
-    map.set(id,{
-      id,
-      name:String(o.saleEmployeeName||id),
-      active:false
-    });
-  });
-
+  (db.employees||[]).forEach(e=>{if(e?.id)map.set(String(e.id),{id:String(e.id),name:String(e.name||e.id),active:e.active!==false})});
+  (db.stockout||[]).forEach(o=>{const id=String(o?.saleEmployeeId||'').trim();if(id&&!map.has(id))map.set(id,{id,name:String(o.saleEmployeeName||id),active:false})});
+  if((db.stockout||[]).some(o=>!String(o?.saleEmployeeId||'').trim()))map.set('__UNASSIGNED__',{id:'__UNASSIGNED__',name:'⚠ Chưa gán Sale',active:false});
   return map;
 }
 
@@ -12741,7 +12963,7 @@ function buildSaleCollectionLedger(asOf=Date.now()){
 
       const total=Math.max(0,Number(o.total||0));
       const paid=Math.max(0,Number(o.paid||0));
-      const employeeId=String(o.saleEmployeeId||'');
+      const employeeId=String(o.saleEmployeeId||'').trim() || '__UNASSIGNED__';
 
       if(total>0){
         events.push({
@@ -12751,7 +12973,7 @@ function buildSaleCollectionLedger(asOf=Date.now()){
           amount:total,
           invoiceId:String(o.id||''),
           employeeId,
-          employeeName:String(o.saleEmployeeName||''),
+          employeeName:String(o.saleEmployeeName||'').trim() || 'Chưa gán Sale',
           dateText:o.dateText||''
         });
       }
@@ -12854,12 +13076,7 @@ function buildSaleCollectionLedger(asOf=Date.now()){
 
 function saleReportEmployeeIds(){
   const map=saleIdentityMap();
-  return [...map.values()]
-    .filter(x=>
-      (db.stockout||[]).some(o=>String(o.saleEmployeeId||'')===x.id) ||
-      (db.employees||[]).some(e=>String(e.id||'')===x.id)
-    )
-    .sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'vi'));
+  return [...map.values()].filter(x=>x.id==='__UNASSIGNED__'?(db.stockout||[]).some(o=>!String(o.saleEmployeeId||'').trim()):(db.stockout||[]).some(o=>String(o.saleEmployeeId||'')===x.id)||(db.employees||[]).some(e=>String(e.id||'')===x.id)).sort((a,b)=>a.id==='__UNASSIGNED__'?-1:b.id==='__UNASSIGNED__'?1:String(a.name||'').localeCompare(String(b.name||''),'vi'));
 }
 
 function renderReportSaleFilterOptions(){
@@ -13720,6 +13937,10 @@ function renderReports(){
   const stockins=(db.stockin||[]).filter(reportInDateRange);
   const filterIsAll=reportUnifiedFilter.type==='all';
 
+  /* V127: GIÁ TRỊ TỒN TỔNG KHO = tồn hiện tại x giá vốn hiện tại */
+  const totalWarehouseStockValue=(db.products||[])
+    .reduce((s,p)=>s+Math.max(0,Number(p.stock)||0)*Math.max(0,Number(p.cost)||0),0);
+
   /* 1. DOANH THU */
   const revenue=stockouts.reduce((s,o)=>s+reportStockoutRevenueForFilter(o),0);
 
@@ -13729,40 +13950,28 @@ function renderReports(){
     return a+(Number(i.qty)||0)*(Number(p?.cost)||0);
   },0),0);
 
-  /* 3. TỔNG BÁN = phần còn lại sau vốn, trước chi phí vận hành */
-  const totalSale=Math.round(revenue-totalCost);
-
-  /* V124: chỉ lấy tiền đã thực trả trong Lịch trả lương */
+  /* Chỉ lấy tiền đã thực trả trong Lịch trả lương */
   const paidSalary=reportPaidSalaryCosts();
 
-  /* 4. CHI PHÍ NHÂN SỰ = lương/tăng ca ĐÃ TRẢ cho tất cả NV */
   const personnelCost=paidSalary.personnel;
-
-  /* 5. CHI PHÍ THƯỞNG = hoa hồng/thưởng Sale ĐÃ TRẢ */
   const rewardCost=paidSalary.reward;
-
-  /* 6. CHI PHÍ KHÁC = sổ Chi phí, loại trừ các bản ghi trả lương */
   const otherExpense=reportOtherExpenseTotal();
 
-  /* 7. LỢI NHUẬN */
+  /* Lợi nhuận = Doanh thu - Tổng vốn - toàn bộ chi phí thực chi */
   const netProfit=filterIsAll
-    ? Math.round(totalSale-personnelCost-rewardCost-otherExpense)
-    : Math.round(totalSale);
-
-  const inventoryValue=(db.products||[])
-    .filter(reportFilterMatchesProduct)
-    .reduce((s,p)=>s+(Number(p.stock)||0)*(Number(p.cost)||0),0);
+    ? Math.round(revenue-totalCost-personnelCost-rewardCost-otherExpense)
+    : Math.round(revenue-totalCost);
 
   const filteredHint=filterIsAll
-    ? 'Sau các khoản thực chi'
+    ? 'Doanh thu − vốn − các khoản thực chi'
     : 'Đang lọc hàng/nhóm • chưa phân bổ chi phí chung';
 
   $('reportCards').innerHTML=[
+    `<div class="card kpi report-stock-total-card"><div class="label">Giá trị tồn</div><div class="value">${money(totalWarehouseStockValue)}</div><div class="hint">Tổng giá vốn tồn hiện tại toàn kho</div></div>`,
     `<div class="card kpi"><div class="label">Doanh thu</div><div class="value">${money(revenue)}</div><div class="hint">Tổng giá trị bán trong kỳ</div></div>`,
     `<div class="card kpi"><div class="label">Tổng vốn</div><div class="value">${money(totalCost)}</div><div class="hint">Giá vốn hàng đã bán</div></div>`,
-    `<div class="card kpi report-gross-sale-card"><div class="label">Tổng bán</div><div class="value">${money(totalSale)}</div><div class="hint">Doanh thu − Tổng vốn</div></div>`,
-    `<div class="card kpi report-people-cost-card"><div class="label">Chi phí nhân sự</div><div class="value">${money(personnelCost)}</div><div class="hint report-paid-note">Lương + tăng ca đã trả trong Lịch trả lương</div></div>`,
-    `<div class="card kpi report-reward-cost-card"><div class="label">Chi phí thưởng</div><div class="value">${money(rewardCost)}</div><div class="hint report-paid-note">Hoa hồng + thưởng Sale đã thực trả</div></div>`,
+    `<div class="card kpi report-people-cost-card"><div class="label">Chi phí nhân sự</div><div class="value">${money(personnelCost)}</div><div class="hint report-paid-note">Lương + tăng ca đã trả</div></div>`,
+    `<div class="card kpi report-reward-cost-card"><div class="label">Chi phí thưởng</div><div class="value">${money(rewardCost)}</div><div class="hint report-paid-note">Hoa hồng + thưởng Sale đã trả</div></div>`,
     `<button type="button" class="card kpi expense-kpi-card report-other-cost-card" onclick="openExpenseDetail()"><div class="label">Chi phí khác</div><div class="value">${money(otherExpense)}</div><div class="hint">Xăng, vật phẩm, vận hành...</div></button>`,
     `<div class="card kpi net-profit-card ${netProfit<0?'negative':'positive'}"><div class="label">${filterIsAll?'Lợi nhuận':'Lợi nhuận gộp'}</div><div class="value">${money(netProfit)}</div><div class="hint">${filteredHint}</div></div>`
   ].join('');
@@ -19737,68 +19946,18 @@ function goExpenseCurrentMonth(){
 }
 
 function renderExpenseCalendar(){
-  const grid=$('expenseCalendarGrid');
-  if(!grid)return;
-
-  ensureExpenseData();
-  const month=ensureExpenseCalendarMonth();
-  const [y,m]=month.split('-').map(Number);
-  const rows=expenseMonthRows(month);
-  const today=currentISODate();
-
-  const byDay={};
-  rows.forEach(e=>{
-    const d=expenseDateISO(e);
-    if(!byDay[d])byDay[d]=[];
-    byDay[d].push(e);
-  });
-
-  const monthTotal=rows.reduce((s,e)=>s+(Number(e.amount)||0),0);
-  const todayRows=rows.filter(e=>expenseDateISO(e)===today);
-  const todayTotal=todayRows.reduce((s,e)=>s+(Number(e.amount)||0),0);
-
-  if($('expenseCalendarSummary')){
-    $('expenseCalendarSummary').innerHTML=`
-      <div><span>Chi phí tháng</span><b>${money(monthTotal)}</b></div>
-      <div><span>Chi phí hôm nay</span><b>${money(todayTotal)}</b></div>
-      <div><span>Số khoản chi</span><b>${rows.length}</b></div>
-    `;
-  }
-
-  if($('expenseRoleHint')){
-    $('expenseRoleHint').textContent=isManager
-      ?'Quản lý thấy toàn bộ chi phí. Bấm ngày để xem, thêm, sửa hoặc xóa.'
-      :'Bấm ngày để ghi chi phí phát sinh. Các khoản riêng của Quản lý/Lương không hiển thị.';
-  }
-
-  const heads=['T2','T3','T4','T5','T6','T7','CN']
-    .map(x=>`<div class="expense-cal-head">${x}</div>`).join('');
-
-  const first=new Date(y,m-1,1);
-  const days=new Date(y,m,0).getDate();
-  const offset=(first.getDay()+6)%7; // Monday=0
-  let cells='';
-
+  const grid=$('expenseCalendarGrid');if(!grid)return;
+  ensureExpenseData();const month=ensureExpenseCalendarMonth();const [y,m]=month.split('-').map(Number);const rows=expenseMonthRows(month);const today=currentISODate();
+  const byDay={};rows.forEach(e=>{const d=expenseDateISO(e);if(!byDay[d])byDay[d]=[];byDay[d].push(e)});
+  const monthTotal=rows.reduce((s,e)=>s+(Number(e.amount)||0),0);const todayRows=rows.filter(e=>expenseDateISO(e)===today);const todayTotal=todayRows.reduce((s,e)=>s+(Number(e.amount)||0),0);
+  if($('expenseCalendarSummary'))$('expenseCalendarSummary').innerHTML=`<div><span>Chi phí tháng</span><b>${money(monthTotal)}</b></div><div><span>Chi phí hôm nay</span><b>${money(todayTotal)}</b></div><div><span>Số khoản chi</span><b>${rows.length}</b></div>`;
+  const heads=['T2','T3','T4','T5','T6','T7','CN'].map(x=>`<div class="expense-cal-head">${x}</div>`).join('');
+  const first=new Date(y,m-1,1),days=new Date(y,m,0).getDate(),offset=(first.getDay()+6)%7;let cells='';
   for(let i=0;i<offset;i++)cells+='<div class="expense-cal-day blank"></div>';
-
   for(let day=1;day<=days;day++){
-    const iso=`${month}-${String(day).padStart(2,'0')}`;
-    const arr=byDay[iso]||[];
-    const total=arr.reduce((s,e)=>s+(Number(e.amount)||0),0);
-    const privateCount=isManager?arr.filter(e=>expenseCategoryIsPrivate(e.category)).length:0;
-
-    cells+=`
-      <div class="expense-cal-day ${iso===today?'today':''} ${arr.length?'has-expense':''}"
-           onclick="openExpenseDay('${iso}')">
-        <div class="expense-cal-date">${day}</div>
-        ${arr.length?`
-          <div class="expense-cal-total">${money(total)}</div>
-          <div class="expense-cal-count">${arr.length} khoản</div>
-          ${privateCount?`<div class="expense-cal-private">🔒 ${privateCount} khoản riêng</div>`:''}
-        `:''}
-      </div>`;
+    const iso=`${month}-${String(day).padStart(2,'0')}`,arr=byDay[iso]||[],total=arr.reduce((s,e)=>s+(Number(e.amount)||0),0),privateCount=isManager?arr.filter(e=>expenseCategoryIsPrivate(e.category)).length:0,sunday=new Date(iso+'T12:00:00').getDay()===0;
+    cells+=`<div class="expense-cal-day ${sunday?'sunday':''} ${iso===today?'today':''} ${arr.length?'has-expense':''}" onclick="openExpenseDay('${iso}')"><div class="expense-cal-date">${day}</div>${arr.length?`<div class="expense-cal-total">${money(total)}</div><div class="expense-cal-count">${arr.length} khoản</div>${privateCount?`<div class="expense-cal-private">🔒 ${privateCount}</div>`:''}`:'<div class="expense-cal-count">—</div>'}</div>`;
   }
-
   grid.innerHTML=heads+cells;
 }
 
@@ -19866,73 +20025,80 @@ function setPaymentTab(tab){
   renderPayments();
 }
 
+
+function paymentEventDateISO(v){
+  const raw=String(v?.dateText||v?.date||'').trim();
+  if(/^\d{4}-\d{2}-\d{2}$/.test(raw))return raw;
+  const m=raw.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+  if(m)return `${m[3]}-${m[2]}-${m[1]}`;
+  const ts=Number(v?.ts||0)||stockoutDateTimeValue(raw);
+  if(!ts)return '';
+  const d=new Date(ts);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function customerPaymentHistoryEvents(){
+  ensurePaymentData();
+  const out=[];
+  (db.stockout||[]).forEach((o,idx)=>{
+    const amount=Math.max(0,Number(o.paid)||0);
+    if(amount<=0||!o.customerId)return;
+    const linked=(db.customerPayments||[]).some(p=>String(p.stockoutId||p.sourceInvoiceId||'')===String(o.id||''));
+    if(linked)return;
+    out.push({id:'SO:'+String(o.id||idx),kind:'stockout',customerId:String(o.customerId||''),amount,dateText:String(o.dateText||''),ts:stockoutDateTimeValue(o.dateText||'')||idx,invoiceId:String(o.id||''),operator:'Phiếu xuất'});
+  });
+  (db.customerPayments||[]).forEach((p,idx)=>out.push({...p,id:'PAY:'+String(p.id||idx),_rawPaymentId:String(p.id||''),kind:p.transactionType==='warranty_return'?'return':'debt',ts:customerDebtPaymentTime(p)||Number(p.ts||0)||idx}));
+  return out;
+}
+function customerPaymentBalanceAfterMap(customerId){
+  const cid=String(customerId||'');
+  const c=(db.customers||[]).find(x=>String(x.id||'')===cid);
+  let balance=Math.max(0,Number(c?.oldDebt)||0);
+  const ev=[];
+  (db.stockout||[]).forEach((o,idx)=>{if(String(o.customerId||'')===cid)ev.push({t:stockoutDateTimeValue(o.dateText||'')||idx,order:idx*10,key:'SO:'+String(o.id||idx),delta:Number(o.debt)||0})});
+  (db.customerPayments||[]).forEach((p,idx)=>{if(String(p.customerId||'')===cid)ev.push({t:customerDebtPaymentTime(p)||1000000000+idx,order:1000000+idx,key:'PAY:'+String(p.id||idx),delta:-Math.max(0,Number(p.amount)||0)})});
+  ev.sort((a,b)=>a.t-b.t||a.order-b.order);
+  const map=new Map();
+  ev.forEach(x=>{balance=Math.max(0,balance+Number(x.delta||0));map.set(x.key,balance)});
+  return map;
+}
+function paymentHistoryRangeMatch(e){
+  const d=paymentEventDateISO(e),from=$('payCustomerFrom')?.value||'',to=$('payCustomerTo')?.value||'';
+  if(from&&(!d||d<from))return false;
+  if(to&&(!d||d>to))return false;
+  return true;
+}
+function paymentHistorySourceHtml(e){
+  if(e.kind==='stockout')return `<span class="payment-source invoice">Thu tại phiếu ${esc(e.invoiceId||'')}</span>`;
+  if(e.kind==='return')return `<span class="payment-source return">${esc(e.content||'Giảm nợ do trả hàng/bảo hành')}</span>`;
+  return '<span class="payment-source debt">Thu công nợ</span>';
+}
+
 function renderPayments(){
   if(!$('customerPaymentHistory'))return;
   ensurePaymentData();
-
-  if($('payCustomerList')){
-    $('payCustomerList').innerHTML=(db.customers||[]).map(c=>
-      `<option value="${esc(c.name+' - '+(c.phone||''))}"></option>`).join('');
-  }
-  if($('paySupplierList')){
-    $('paySupplierList').innerHTML=(db.suppliers||[]).map(s=>
-      `<option value="${esc(s.name+' - '+(s.phone||''))}"></option>`).join('');
-  }
-
-  const selectedCustomerPayments=selectedPayCustomerId
-    ? (db.customerPayments||[]).filter(p=>p.customerId===selectedPayCustomerId)
-    : [];
-
-  const cRows=[...selectedCustomerPayments].sort((a,b)=>Number(b.ts||0)-Number(a.ts||0)).map(p=>{
-    const c=(db.customers||[]).find(x=>x.id===p.customerId);
-    const laterPaid=(db.customerPayments||[])
-      .filter(x=>x.customerId===p.customerId && Number(x.ts||0)>Number(p.ts||0))
-      .reduce((s,x)=>s+Number(x.amount||0),0);
-    const debtAfter=Math.max(0,customerDebt(p.customerId)+laterPaid);
-    return `<tr>
-      <td>${esc(p.dateText||'')}</td>
-      <td>${isManager
-        ? `<button class="recent-invoice-link" style="border:0;background:none;padding:0;font:inherit;font-weight:800" onclick="openCustomerPaymentManage('${p.id}')">${esc(c?.name||'')}</button>${p.transactionType==='warranty_return'?`<div class="small">${esc(p.content||'Khách trả lại hàng')}</div>`:''}`
-        : `<b>${esc(c?.name||'')}</b>${p.transactionType==='warranty_return'?`<div class="small">${esc(p.content||'Khách trả lại hàng')}</div>`:''}`}</td>
-      <td class="right"><b>${money(p.amount)}</b></td>
-      <td class="right"><b>${money(debtAfter)}</b></td>
-      <td>${esc(p.operator||'')}</td>
-    </tr>`;
-  });
-
-  $('customerPaymentHistory').innerHTML=selectedPayCustomerId
-    ? table(['Ngày giờ','Khách hàng','Đã thanh toán','Nợ còn lại','Người ghi'],cRows)
-    : '<div class="small" style="padding:14px;border:1px dashed #ccd8de;border-radius:9px">Chọn khách hàng phía trên để xem lịch sử thanh toán.</div>';
-
+  if($('payCustomerList'))$('payCustomerList').innerHTML=(db.customers||[]).map(c=>`<option value="${esc(c.name+' - '+(c.phone||''))}"></option>`).join('');
+  if($('paySupplierList'))$('paySupplierList').innerHTML=(db.suppliers||[]).map(s=>`<option value="${esc(s.name+' - '+(s.phone||''))}"></option>`).join('');
+  renderCustomerPaymentHistoryOnly();
   if($('supplierPaymentHistory')){
     if(isManager){
       const sRows=[...(db.supplierPayments||[])].sort((a,b)=>Number(b.ts||0)-Number(a.ts||0)).map(p=>{
         const s=(db.suppliers||[]).find(x=>x.id===p.supplierId);
-        return `<tr>
-          <td>${esc(p.dateText||'')}</td>
-          <td><b>${esc(s?.name||'')}</b></td>
-          <td class="right"><b>${money(p.amount)}</b></td>
-          <td>${esc(p.operator||'Quản lý')}</td>
-          <td class="center">
-            <button class="btn" onclick="editSupplierPayment('${p.id}')">Sửa</button>
-            <button class="btn danger-lite" onclick="deleteSupplierPayment('${p.id}')">Xóa</button>
-          </td>
-        </tr>`;
+        return `<tr><td>${esc(p.dateText||'')}</td><td><b>${esc(s?.name||'')}</b></td><td class="right"><b>${money(p.amount)}</b></td><td>${esc(p.operator||'Quản lý')}</td><td class="center"><button class="btn" onclick="editSupplierPayment('${p.id}')">Sửa</button> <button class="btn danger-lite" onclick="deleteSupplierPayment('${p.id}')">Xóa</button></td></tr>`;
       });
       $('supplierPaymentHistory').innerHTML=table(['Ngày giờ','Nhà cung cấp','Đã trả','Người thao tác','Thao tác'],sRows);
-    }else{
-      $('supplierPaymentHistory').innerHTML='';
-    }
+    }else $('supplierPaymentHistory').innerHTML='';
   }
-
   updatePaymentDebtDisplays();
 }
 
 function findCustomerByPaymentInput(){
-  const q=norm($('payCustomerSearch')?.value||'');
+  const q=norm($('payCustomerSearch')?.value||'').trim();
   if(!q)return null;
-  return (db.customers||[]).find(c=>norm(c.name+' - '+(c.phone||''))===q)
-    || (db.customers||[]).find(c=>norm(c.name+' '+(c.phone||'')).includes(q));
+  const list=(db.customers||[]);
+  return list.find(c=>norm(c.name+' - '+(c.phone||''))===q)
+    ||list.find(c=>norm(c.name||'')===q)
+    ||list.find(c=>norm(c.phone||'')===q)
+    ||list.find(c=>norm((c.name||'')+' '+(c.phone||'')+' '+(c.address||'')).includes(q));
 }
 function selectPaymentCustomer(){
   const c=findCustomerByPaymentInput();
@@ -20069,36 +20235,21 @@ function openCustomerPaymentManage(id){
 
 
 function renderCustomerPaymentHistoryOnly(){
-  const box=$('customerPaymentHistory');
-  if(!box)return;
-  ensurePaymentData();
-
-  if(!selectedPayCustomerId){
-    box.innerHTML='<div class="small" style="padding:14px;border:1px dashed #ccd8de;border-radius:9px">Chọn khách hàng phía trên để xem lịch sử thanh toán.</div>';
-    return;
-  }
-
-  const rows=(db.customerPayments||[])
-    .filter(p=>p.customerId===selectedPayCustomerId)
-    .sort((a,b)=>Number(b.ts||0)-Number(a.ts||0))
-    .map(p=>{
-      const c=(db.customers||[]).find(x=>x.id===p.customerId);
-      const laterPaid=(db.customerPayments||[])
-        .filter(x=>x.customerId===p.customerId && Number(x.ts||0)>Number(p.ts||0))
-        .reduce((s,x)=>s+Number(x.amount||0),0);
-      const debtAfter=Math.max(0,customerDebt(p.customerId)+laterPaid);
-      return `<tr>
-        <td>${esc(p.dateText||'')}</td>
-        <td>${isManager
-          ? `<button class="recent-invoice-link" style="border:0;background:none;padding:0;font:inherit;font-weight:800" onclick="openCustomerPaymentManage('${p.id}')">${esc(c?.name||'')}</button>`
-          : `<b>${esc(c?.name||'')}</b>`}</td>
-        <td class="right"><b>${money(p.amount)}</b></td>
-        <td class="right"><b>${money(debtAfter)}</b></td>
-        <td>${esc(p.operator||'')}</td>
-      </tr>`;
-    });
-
-  box.innerHTML=table(['Ngày giờ','Khách hàng','Đã thanh toán','Nợ còn lại','Người ghi'],rows);
+  const box=$('customerPaymentHistory');if(!box)return;ensurePaymentData();
+  const cid=String(selectedPayCustomerId||'');
+  const events=customerPaymentHistoryEvents().filter(e=>!cid||String(e.customerId||'')===cid).filter(paymentHistoryRangeMatch).sort((a,b)=>Number(b.ts||0)-Number(a.ts||0)).slice(0,500);
+  const maps=new Map();
+  const balanceAfter=e=>{const c=String(e.customerId||'');if(!maps.has(c))maps.set(c,customerPaymentBalanceAfterMap(c));return maps.get(c).get(String(e.id||''))??customerDebt(c)};
+  const rows=events.map(e=>{
+    const c=(db.customers||[]).find(x=>String(x.id||'')===String(e.customerId||''));
+    const source=paymentHistorySourceHtml(e);
+    let customerCell=`<b>${esc(c?.name||'Khách hàng')}</b>${source}`;
+    if(isManager&&e.kind!=='stockout'&&e._rawPaymentId)customerCell=`<button class="recent-invoice-link" style="border:0;background:none;padding:0;font:inherit;font-weight:800" onclick="openCustomerPaymentManage('${esc(e._rawPaymentId)}')">${esc(c?.name||'Khách hàng')}</button>${source}`;
+    else if(e.kind==='stockout'&&e.invoiceId)customerCell=`<button class="recent-invoice-link" style="border:0;background:none;padding:0;font:inherit;font-weight:800" onclick="openStockoutInvoice('${esc(e.invoiceId)}')">${esc(c?.name||'Khách hàng')}</button>${source}`;
+    return `<tr><td>${esc(e.dateText||'')}</td><td>${customerCell}</td><td class="right"><b>${money(e.amount)}</b></td><td class="right"><b>${money(balanceAfter(e))}</b></td><td>${esc(e.operator||'')}</td></tr>`;
+  });
+  box.innerHTML=rows.length?table(['Ngày giờ','Khách hàng / Nguồn thu','Đã thanh toán','Nợ còn lại','Người ghi'],rows):'<div class="small" style="padding:12px;border:1px dashed #ccd8de;border-radius:9px">Chưa có giao dịch thanh toán trong khoảng đang lọc.</div>';
+  const h=$('paymentCustomerHistoryTitle');if(h){const c=(db.customers||[]).find(x=>String(x.id||'')===cid);h.textContent=cid&&c?'Lịch sử • '+c.name:'Lịch sử thanh toán khách hàng'}
 }
 
 
@@ -20707,7 +20858,7 @@ async function saveStockinStable(doPrint=false){
 <script id="pwa-register">
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   window.addEventListener('load', function(){
-    navigator.serviceWorker.register('./sw.js?v=ab123-v124-report-paid-salary-reward').catch(function(err){ console.warn('Service worker:', err); });
+    navigator.serviceWorker.register('./sw.js?v=ab123-v127-stock-value-settings-compact').catch(function(err){ console.warn('Service worker:', err); });
   });
 }
 
