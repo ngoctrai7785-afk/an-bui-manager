@@ -14,7 +14,7 @@
 <link rel="icon" type="image/png" sizes="64x64" href="./favicon-64.png">
 
 <meta charset="utf-8">
-<meta name="app-version" content="127">
+<meta name="app-version" content="129">
 <title>AN BÙI - Quản lý nội bộ</title>
 <style>
 :root{
@@ -10235,6 +10235,42 @@ async function changeManagerPin(){
   }
 }
 
+
+/* ===== V129: MẶC ĐỊNH CÁC BỘ LỌC NGÀY = ĐẦU THÁNG -> HÔM NAY ===== */
+function currentMonthDateRange(){
+  const today=currentISODate();
+  return {
+    from:today.slice(0,7)+'-01',
+    to:today,
+    month:today.slice(0,7)
+  };
+}
+
+function setMonthRangeInputs(fromId,toId){
+  const r=currentMonthDateRange();
+  const from=$(fromId);
+  const to=$(toId);
+  if(from)from.value=r.from;
+  if(to)to.value=r.to;
+  return r;
+}
+
+function resetPageMonthDateFilters(pageId){
+  const r=currentMonthDateRange();
+
+  if(pageId==='debts'){
+    setMonthRangeInputs('customerDebtFrom','customerDebtTo');
+  }else if(pageId==='payments'){
+    setMonthRangeInputs('payCustomerFrom','payCustomerTo');
+  }else if(pageId==='expenses'){
+    setMonthRangeInputs('expenseEntryFrom','expenseEntryTo');
+    if($('expenseCalendarMonth'))$('expenseCalendarMonth').value=r.month;
+  }else if(pageId==='reports'){
+    setMonthRangeInputs('reportFromDate','reportToDate');
+  }
+}
+
+
 function go(id){
   if(!isManager && !staffModuleEnabled(id)){
     toast('Chức năng này đang được Quản lý ẩn khỏi giao diện Nhân viên.');
@@ -10262,14 +10298,22 @@ function go(id){
     reports:'Báo cáo',
     settings:'Cài đặt'
   }[id]||(APP_CONFIG.appName||'Manager');
+
+  /* V129: mỗi lần chuyển sang một cửa sổ có Từ ngày - Đến ngày,
+     mặc định lại từ ngày 01 tháng hiện tại đến hôm nay.
+     Người dùng vẫn có thể đổi tùy ý trong khi đang ở cửa sổ đó. */
+  resetPageMonthDateFilters(id);
+
   renderAll();
   applyPermissions();
   refreshStockoutHistoryNav();
   refreshStockinHistoryNav();
+
   if(id==='stockout'){
     initStockoutHistoryNav();
     setTimeout(()=>refreshStockOperationGate('stockout',{announce:true}),0);
   }
+
   if(id==='stockin'){
     setTimeout(()=>{stockOperationSetBlockedUI('stockin',false);stockOperationShowBanner('stockin','','');},0);
     if(!isManager){
@@ -10279,10 +10323,11 @@ function go(id){
     }
     applyStockinPrivacyUI();
   }
+
   if(id==='reports'){
-    ensureReportDateDefaults();
     renderReports();
   }
+
   if(id==='employees'){
     renderEmployeeToday();
     renderEmployees();
@@ -12004,8 +12049,7 @@ function renderWarehouseMovementFiltered(){
 }
 
 function resetWarehouseMovementFilters(){
-  if($('whMoveFrom'))$('whMoveFrom').value='';
-  if($('whMoveTo'))$('whMoveTo').value='';
+  setMonthRangeInputs('whMoveFrom','whMoveTo');
   if($('whMoveType'))$('whMoveType').value='all';
   renderWarehouseMovementFiltered();
 }
@@ -12057,6 +12101,7 @@ function openProductMovement(productId){
     </div>
   `);
 
+  setMonthRangeInputs('whMoveFrom','whMoveTo');
   renderWarehouseMovementFiltered();
 }
 
@@ -12257,7 +12302,23 @@ function renderCustomers(){
 }
 function renderSuppliers(){
   let q=norm($('supSearch')?.value||'');
-  $('suppliersTable').innerHTML=table(['Mã','Nhà cung cấp','SĐT','Địa chỉ','Nợ cũ','Tổng còn nợ'],db.suppliers.filter(s=>norm(s.name+' '+s.phone).includes(q)).map(s=>`<tr><td>${s.id}</td><td><b>${s.name}</b></td><td>${s.phone}</td><td>${s.address}</td><td class="right">${money(s.oldDebt)}</td><td class="right">${money(supplierDebt(s.id))}</td></tr>`));
+  const list=(db.suppliers||[])
+    .filter(s=>norm((s.name||'')+' '+(s.phone||'')+' '+(s.address||'')).includes(q));
+
+  $('suppliersTable').innerHTML=table(
+    ['Mã','Nhà cung cấp','SĐT','Địa chỉ','Nợ cũ','Tổng còn nợ','Thao tác'],
+    list.map(s=>`<tr>
+      <td>${esc(s.id||'')}</td>
+      <td><b>${esc(s.name||'')}</b></td>
+      <td>${esc(s.phone||'')}</td>
+      <td>${esc(s.address||'')}</td>
+      <td class="right">${money(s.oldDebt)}</td>
+      <td class="right">${money(supplierDebt(s.id))}</td>
+      <td class="center">
+        <button class="btn" onclick="openEditSupplier('${esc(s.id)}')">✎ Sửa</button>
+      </td>
+    </tr>`)
+  );
 }
 
 function renderWarranty(){
@@ -12330,12 +12391,9 @@ function ensureCustomerDebtPeriodDefaults(){
   const to=$('customerDebtTo');
   if(!from || !to)return;
 
-  if(!from.value || !to.value){
-    const now=new Date();
-    const first=new Date(now.getFullYear(),now.getMonth(),1);
-    if(!from.value)from.value=debtInputDate(first);
-    if(!to.value)to.value=debtInputDate(now);
-  }
+  const r=currentMonthDateRange();
+  if(!from.value)from.value=r.from;
+  if(!to.value)to.value=r.to;
 }
 
 function setCustomerDebtPeriod(preset){
@@ -12632,7 +12690,6 @@ function renderDebts(){
   if(isManager){
     const sq=norm($('supplierDebtSearch')?.value||'');
     const supplierRows=(db.suppliers||[])
-      .filter(s=>supplierDebt(s.id)>0)
       .filter(s=>!sq || norm((s.name||'')+' '+(s.phone||'')+' '+(s.address||'')).includes(sq))
       .sort((a,b)=>supplierDebt(b.id)-supplierDebt(a.id) || String(a.name||'').localeCompare(String(b.name||''),'vi'))
       .map(s=>`<tr>
@@ -13528,19 +13585,9 @@ function reportDateParts(s){
 }
 
 function ensureReportDateDefaults(){
-  const dates=(db.stockout||[]).map(o=>reportDateParts(o.dateText)).filter(Boolean);
-  const inDates=(db.stockin||[]).map(o=>reportDateParts(o.dateText)).filter(Boolean);
-  const all=[...dates,...inDates].sort();
-
-  const today=new Date();
-  const todayStr=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-
-  if($('reportFromDate') && !$('reportFromDate').value){
-    $('reportFromDate').value=all[0]||todayStr;
-  }
-  if($('reportToDate') && !$('reportToDate').value){
-    $('reportToDate').value=all[all.length-1]||todayStr;
-  }
+  const r=currentMonthDateRange();
+  if($('reportFromDate') && !$('reportFromDate').value)$('reportFromDate').value=r.from;
+  if($('reportToDate') && !$('reportToDate').value)$('reportToDate').value=r.to;
 }
 
 function reportInDateRange(invoice){
@@ -14369,12 +14416,9 @@ async function deleteExpenseCategory(name){
 
 
 function ensureExpenseEntryDefaults(){
-  const now=new Date();
-  const yyyy=now.getFullYear();
-  const mm=String(now.getMonth()+1).padStart(2,'0');
-  const dd=String(now.getDate()).padStart(2,'0');
-  if($('expenseEntryFrom') && !$('expenseEntryFrom').value)$('expenseEntryFrom').value=`${yyyy}-${mm}-01`;
-  if($('expenseEntryTo') && !$('expenseEntryTo').value)$('expenseEntryTo').value=`${yyyy}-${mm}-${dd}`;
+  const r=currentMonthDateRange();
+  if($('expenseEntryFrom') && !$('expenseEntryFrom').value)$('expenseEntryFrom').value=r.from;
+  if($('expenseEntryTo') && !$('expenseEntryTo').value)$('expenseEntryTo').value=r.to;
 }
 
 function renderExpenseEntryPage(){
@@ -16539,6 +16583,120 @@ async function saveCustomer(){
   renderAll();
   toast('Đã thêm khách hàng '+c.name);
 }
+
+
+/* ===== V128: SỬA NHÀ CUNG CẤP ===== */
+function openEditSupplier(id){
+  if(!isManager){
+    return requireManager(()=>openEditSupplier(id),'Sửa Nhà cung cấp cần quyền Quản lý.');
+  }
+
+  const s=(db.suppliers||[]).find(x=>String(x.id)===String(id));
+  if(!s)return alert('Không tìm thấy Nhà cung cấp.');
+
+  showModal(`
+    <h3>Sửa Nhà cung cấp</h3>
+    <div class="form-grid">
+      <div>
+        <label>Mã NCC</label>
+        <input id="esid" value="${esc(s.id||'')}" readonly>
+      </div>
+      <div>
+        <label>Tên NCC</label>
+        <input id="esname" value="${esc(s.name||'')}">
+      </div>
+      <div>
+        <label>SĐT</label>
+        <input id="esphone" value="${esc(s.phone||'')}">
+      </div>
+      <div>
+        <label>Nợ cũ</label>
+        <input id="esdebt" type="number" value="${Number(s.oldDebt)||0}">
+      </div>
+      <div class="full">
+        <label>Địa chỉ</label>
+        <input id="esaddress" value="${esc(s.address||'')}">
+      </div>
+      <div class="full small">
+        Sửa Nợ cũ sẽ làm thay đổi Tổng công nợ Nhà cung cấp hiện tại.
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Hủy</button>
+      <button class="btn primary" onclick="saveEditedSupplier()">Lưu thay đổi</button>
+    </div>
+  `);
+
+  setTimeout(()=>$('esname')?.focus(),50);
+}
+
+async function saveEditedSupplier(){
+  if(!isManager){
+    return requireManager(()=>saveEditedSupplier(),'Sửa Nhà cung cấp cần quyền Quản lý.');
+  }
+
+  const id=String($('esid')?.value||'').trim();
+  const s=(db.suppliers||[]).find(x=>String(x.id)===id);
+  if(!s)return alert('Không tìm thấy Nhà cung cấp.');
+
+  const name=String($('esname')?.value||'').trim();
+  const phone=String($('esphone')?.value||'').trim();
+  const address=String($('esaddress')?.value||'').trim();
+  const oldDebt=Math.max(0,Number($('esdebt')?.value)||0);
+
+  if(!name || !phone)return alert('Nhập tên và SĐT.');
+
+  const duplicate=(db.suppliers||[]).find(x=>
+    String(x.id)!==id &&
+    (
+      norm(x.name||'')===norm(name) ||
+      String(x.phone||'').trim()===phone
+    )
+  );
+  if(duplicate)return alert('Tên hoặc SĐT Nhà cung cấp đã tồn tại.');
+
+  const backup={
+    supplier:{...s},
+    products:(db.products||[]).map(p=>({
+      id:p.id,
+      supplierName:p.supplierName
+    }))
+  };
+
+  const oldName=String(s.name||'');
+
+  s.name=name;
+  s.phone=phone;
+  s.address=address;
+  s.oldDebt=oldDebt;
+
+  /* Sản phẩm đang gắn NCC theo ID phải hiển thị tên NCC mới ngay.
+     Không đổi supplierId, không thay dữ liệu phiếu nhập cũ. */
+  (db.products||[]).forEach(p=>{
+    if(String(p.supplierId||'')===id){
+      p.supplierName=name;
+    }
+  });
+
+  const ok=await saveDB();
+
+  if(!ok){
+    Object.assign(s,backup.supplier);
+    backup.products.forEach(x=>{
+      const p=(db.products||[]).find(v=>String(v.id)===String(x.id));
+      if(p)p.supplierName=x.supplierName;
+    });
+    return;
+  }
+
+  closeModal();
+  renderAll();
+  toast(oldName!==name
+    ? `Đã cập nhật NCC ${oldName} → ${name}`
+    : `Đã cập nhật NCC ${name}`);
+}
+
 
 function openSupplier(){
  showModal(`<h3>Thêm nhà cung cấp</h3><div class="form-grid"><div><label>Mã</label><input id="msid" value="${code('NCC')}"></div><div><label>Tên NCC</label><input id="msname"></div><div><label>SĐT</label><input id="msphone"></div><div><label>Nợ cũ</label><input id="msdebt" type="number"></div><div class="full"><label>Địa chỉ</label><input id="msaddress"></div></div><div class="modal-actions"><button class="btn" onclick="closeModal()">Hủy</button><button class="btn primary" onclick="saveSupplier()">Lưu</button></div>`);
@@ -20858,7 +21016,7 @@ async function saveStockinStable(doPrint=false){
 <script id="pwa-register">
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   window.addEventListener('load', function(){
-    navigator.serviceWorker.register('./sw.js?v=ab123-v127-stock-value-settings-compact').catch(function(err){ console.warn('Service worker:', err); });
+    navigator.serviceWorker.register('./sw.js?v=ab123-v129-month-date-defaults-supplier-zero').catch(function(err){ console.warn('Service worker:', err); });
   });
 }
 
