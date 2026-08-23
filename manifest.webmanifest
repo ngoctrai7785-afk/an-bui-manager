@@ -1,30 +1,10 @@
 {
-  "id": "./",
   "name": "AN BÙI Manager",
   "short_name": "AN BÙI",
-  "description": "Ứng dụng quản lý nội bộ NPP AN BÙI",
-  "lang": "vi",
-  "start_url": "./index.html",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "display_override": [
-    "standalone",
-    "minimal-ui"
-  ],
   "background_color": "#ffffff",
-  "theme_color": "#0b6674",
-  "icons": [
-    {
-      "src": "./icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "./icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ]
+  "theme_color": "#0f766e",
+  "description": "AN BÙI Manager"
 }
