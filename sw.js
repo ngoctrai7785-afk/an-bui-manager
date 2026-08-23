@@ -1,14 +1,8 @@
-const CACHE_NAME = 'an-bui-manager-v138';
-const APP_SHELL = [
-  './',
-  './index.html',
-  './manifest.webmanifest'
-];
+const CACHE_NAME = 'an-bui-manager-v139';
+const APP_SHELL = ['./', './index.html', './manifest.webmanifest'];
 
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL))
-  );
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)));
   self.skipWaiting();
 });
 
