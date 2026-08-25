@@ -1,10 +1,9 @@
 {
-  "name": "AN BÙI Manager",
-  "short_name": "AN BÙI",
-  "start_url": "./",
-  "scope": "./",
+  "name": "MASTER MANAGER",
+  "short_name": "MASTER",
+  "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#0f766e",
-  "description": "AN BÙI Manager V141 FULL - module controlled by Master"
+  "background_color": "#eef2f5",
+  "theme_color": "#123b5d",
+  "description": "Master Manager - quản trị và xuất app con AN BÙI V173"
 }
