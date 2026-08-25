@@ -1,9 +1,21 @@
 {
-  "name": "MASTER MANAGER",
-  "short_name": "MASTER",
+  "name": "AN BÙI - Quản lý nội bộ",
+  "short_name": "AN BÙI",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#eef2f5",
   "theme_color": "#123b5d",
-  "description": "Master Manager - quản trị và xuất app con AN BÙI V173"
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
 }
