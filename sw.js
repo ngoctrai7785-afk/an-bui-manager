@@ -1,4 +1,4 @@
-const CACHE_NAME='an-bui-manager-v179';
+const CACHE_NAME='an-bui-manager-v192';
 const APP_SHELL=['./','./index.html','./manifest.webmanifest'];
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(APP_SHELL)));
