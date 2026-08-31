@@ -1,7 +1,7 @@
 {
-  "name": "AN BÙI MANAGER",
+  "name": "AN BÙI Manager",
   "short_name": "AN BÙI",
-  "start_url": "./index.html",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#eef2f5",
   "theme_color": "#123b5d",
