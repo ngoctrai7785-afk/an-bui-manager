@@ -1,9 +1,10 @@
 {
-  "name": "N-TRAI MANAGER",
-  "short_name": "N-TRAI",
+  "name": "AN BÙI Manager",
+  "short_name": "AN BÙI",
   "start_url": "./",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#eef2f5",
-  "theme_color": "#123b5d",
+  "background_color": "#eef3f3",
+  "theme_color": "#147a73",
   "icons": []
 }
