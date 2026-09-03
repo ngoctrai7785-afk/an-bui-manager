@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="./icon-192.png">
 
 <meta charset="utf-8">
-<meta name="app-version" content="257">
+<meta name="app-version" content="259">
 <title>AN BÙI - Quản lý nội bộ</title>
 <style>
 :root{
@@ -9389,9 +9389,7 @@ body:has(#payments.page.active) .topbar{
 <style id="v212-payment-tight-css">
 /* ===== V212: BỎ KHỐI/NÚT XANH + KÉO PHIẾU THU SÁT TIÊU ĐỀ ===== */
 
-/* Ẩn mọi nút/tab xanh trung gian còn sót ở trang Thanh toán */
-#payments .btn.primary.payment-tab,
-#payments .payment-tab.active,
+/* Ẩn các nút xanh trung gian cũ; giữ hai tab Khách hàng/NCC để không mất luồng thanh toán. */
 #payments .payment-switch-btn,
 #payments .payment-customer-tab,
 #payments .payment-mode-btn,
@@ -9401,8 +9399,7 @@ body:has(#payments.page.active) .topbar{
   display:none!important;
 }
 
-/* Nếu wrapper chỉ còn nút/tab xanh thì không chiếm chỗ */
-#payments .payment-tabs,
+/* Các wrapper cũ không còn sử dụng. */
 #payments .payment-switch,
 #payments .payment-mode-switch,
 #payments .payment-main-tabs{
@@ -9410,6 +9407,28 @@ body:has(#payments.page.active) .topbar{
   margin:0!important;
   padding:0!important;
   min-height:0!important;
+}
+
+#payments .payment-tabs{
+  display:flex!important;
+  gap:8px!important;
+  margin:0 0 8px!important;
+  padding:0!important;
+  min-height:36px!important;
+}
+#payments .payment-tabs .payment-tab{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+}
+#payments .payment-tabs .payment-tab.manager-hidden{
+  display:none!important;
+}
+#payments .payment-tabs .payment-tab.active{
+  display:inline-flex!important;
+  background:#176b59!important;
+  color:#fff!important;
+  border-color:#176b59!important;
 }
 
 /* Kéo card phiếu thu lên sát dưới topbar */
@@ -11122,6 +11141,20 @@ body:has(#payments.page.active) .topbar #paymentTopbarFilterHost{
       <div id="customerDebtPeriodText" class="customer-debt-period-note"></div>
       <div id="customerDebtTable"></div>
     </div>
+
+    <div id="supplierDebtCardV258" class="card" style="margin-top:12px">
+      <div class="customer-debt-head">
+        <div>
+          <h3 class="debt-card-title">Công nợ Nhà cung cấp</h3>
+          <div class="small">Quản lý nợ NCC theo Nợ cũ + Phiếu nhập − tiền đã trả.</div>
+        </div>
+      </div>
+      <div class="toolbar" style="margin-top:10px">
+        <input id="supplierDebtSearchV258" type="search" placeholder="Tìm Nhà cung cấp..." oninput="renderSupplierDebtsV258()" onfocus="this.select()">
+      </div>
+      <div id="supplierDebtSummaryV258" class="small" style="margin-bottom:8px"></div>
+      <div id="supplierDebtTableV258"></div>
+    </div>
   </section>
 
   
@@ -11135,8 +11168,8 @@ body:has(#payments.page.active) .topbar #paymentTopbarFilterHost{
       </div>
 
       <div class="payment-tabs">
-        <button id="payCustomerTab" type="button" class="btn payment-tab active" onclick="openCustomerPayment()"></button>
-        <button id="paySupplierTab" type="button" class="btn payment-tab" data-manager-only="1" onclick="setPaymentTab('supplier')">Trả nợ Nhà cung cấp</button>
+        <button id="payCustomerTab" type="button" class="btn payment-tab active" onclick="setPaymentTab('customer')">Khách hàng thanh toán</button>
+        <button id="paySupplierTab" type="button" class="btn payment-tab" data-manager-only="1" onclick="setPaymentTab('supplier')">Thanh toán NCC</button>
       </div>
 
       <div id="paymentCustomerPanel" class="payment-box">
@@ -13413,8 +13446,13 @@ function loadStockinIntoForm(invoice){
   stockinViewingHistory=true;
   stockinEditingHistory=false;
 
-  const s=(db.suppliers||[]).find(x=>x.id===invoice.supplierId);
-  selectedSupplierId=invoice.supplierId||'';
+  const supplierById=(db.suppliers||[]).find(x=>String(x.id||'')===String(invoice.supplierId||''));
+  const snapshotKey=supplierCanonicalKeyV257(invoice.supplierName||'');
+  const supplierByName=snapshotKey
+    ? (db.suppliers||[]).find(x=>supplierCanonicalKeyV257(x.name)===snapshotKey)
+    : null;
+  const s=supplierByName||supplierById;
+  selectedSupplierId=s?.id||invoice.supplierId||'';
 
   $('siNo').textContent=invoice.id||'';
   $('siDateText').textContent=invoice.dateText||'';
@@ -13441,13 +13479,17 @@ function loadStockinIntoForm(invoice){
   $('siNote').value=invoice.note||'';
   $('siPaid').value=invoice.paid||'';
 
-  siRows=(invoice.items||[]).map(r=>({
+  siRows=(invoice.items||[]).map(r=>{
+    const savedPrice=Number(r.price)||0;
+    const recoveredCost=savedPrice>0?savedPrice:stockinCostNetV249(r);
+    const recoveredFromNetOrCatalog=savedPrice<=0 && recoveredCost>0;
+    return ({
     productId:r.productId||'',
     productText:r.productText||db.products.find(p=>p.id===r.productId)?.name||'',
     qty:r.qty??'',
-    price:r.price??'',
-    ck:r.ck??'',
-    km:r.km??'',
+    price:recoveredCost||'',
+    ck:recoveredFromNetOrCatalog?'':(r.ck??''),
+    km:recoveredFromNetOrCatalog?'':(r.km??''),
     net:r.net??'',
     staffSalePrice:r.salePriceAtReceive!==undefined && r.salePriceAtReceive!==null
       ? Number(r.salePriceAtReceive)||0
@@ -13465,7 +13507,7 @@ function loadStockinIntoForm(invoice){
         ? Number(r.staffKM)||0
         : '',
     note:r.note||''
-  }));
+  });});
 
   if(!siRows.length){
     siRows=[{productId:'',productText:'',qty:'',price:'',ck:'',km:'',note:''}];
@@ -13473,7 +13515,7 @@ function loadStockinIntoForm(invoice){
 
   renderSIRows();
 
-  const histCostTotal=Number(invoice.total)||0;
+  const histCostTotal=reportStockinInvoiceValueV245(invoice);
   const histSaleTotal=stockinLegacySaleTotalV249(invoice);
   $('siTotal').textContent=money(histCostTotal);
 
@@ -13489,12 +13531,9 @@ function loadStockinIntoForm(invoice){
     updateStockinRoleTotal(histCostTotal);
   }
   const histOld=Number(invoice.oldDebtAtPurchase)||0;
-  const histPayable=invoice.totalPayable!==undefined
-    ? Number(invoice.totalPayable)||0
-    : histOld+Number(invoice.total||0);
-  const histRemain=invoice.remainingSupplierDebt!==undefined
-    ? Number(invoice.remainingSupplierDebt)||0
-    : Math.max(histOld+Number(invoice.debt||0),0);
+  const histInvoiceDebt=histCostTotal-reportMoneyNumberV248(invoice.paid);
+  const histPayable=histOld+histCostTotal;
+  const histRemain=Math.max(histOld+histInvoiceDebt,0);
 
   $('siOldDebt').textContent=invoice.oldDebtAtPurchase!==undefined
     ? money(histOld)
@@ -13542,8 +13581,8 @@ function searchStockinInvoices(){
           <div><b>${esc(o.id)}</b></div>
           <div>${esc(o.dateText||'')}</div>
           <div><b>${esc(s?.name||o.supplierName||'')}</b><div class="muted">${esc(s?.phone||o.supplierPhone||'')}</div></div>
-          <div class="right">${money(o.total||0)}</div>
-          <div class="right">${money(o.debt||0)}</div>
+          <div class="right">${money(reportStockinInvoiceValueV245(o))}</div>
+          <div class="right">${money(reportStockinInvoiceValueV245(o)-reportMoneyNumberV248(o.paid))}</div>
           <div><button class="btn" onclick="openStockinInvoice('${o.id}')">Xem phiếu</button></div>
         </div>`;
       }).join('')
@@ -13640,7 +13679,11 @@ async function saveEditedStockin(doPrint=false){
   for(const pid of ids){const p=(db.products||[]).find(x=>x.id===pid);if(!p)continue;const after=Number(p.stock||0)-Number(oldMap[pid]||0)+Number(newMap[pid]||0);if(after<0)return alert('Không thể sửa phiếu vì “'+p.name+'” đã xuất/bán một phần.\n\nSau khi sửa tồn sẽ âm '+after+'. Hãy kiểm tra các phiếu xuất liên quan trước.')}
   const total=rows.reduce((s,r)=>s+(Number(r.qty)||0)*stockinCostNetV249(r),0);
   const saleTotalAtReceive=stockinSaleTotalV249(rows);
-  let baseDebt=supplierDebt(selectedSupplierId);if(String(original.supplierId)===String(selectedSupplierId))baseDebt-=Number(original.debt||0);baseDebt=Math.max(0,baseDebt);
+  let baseDebt=supplierDebt(selectedSupplierId);
+  if(stockinBelongsToSupplierV257(original,supplier)){
+    baseDebt-=reportStockinInvoiceValueV245(original)-reportMoneyNumberV248(original.paid);
+  }
+  baseDebt=Math.max(0,baseDebt);
   const totalPayable=Math.max(baseDebt+total,0);const paid=Math.min(Math.max(Number($('siPaid')?.value)||0,0),totalPayable);const debt=total-paid;
   const saved={...original,supplierId:selectedSupplierId,supplierName:supplier.name||'',supplierPhone:supplier.phone||'',supplierAddress:supplier.address||'',oldDebtAtPurchase:baseDebt,totalPayable,remainingSupplierDebt:Math.max(baseDebt+debt,0),items:stockinSavedItems(rows),total,saleTotalAtReceive,paid,debt,content:$('siContent')?.value||'',note:$('siNote')?.value||'',invoiceRef:$('siInvoiceRef')?.value||'',...stockinVatSnapshot(total)};
   const before=JSON.stringify(db),expected=Number(syncRevision||0);
@@ -13914,14 +13957,10 @@ function loadStockoutIntoForm(invoice){
   /* Chỉ vẽ lại bảng của phiếu xuất, không render toàn bộ ứng dụng */
   renderSORows();
 
-  $('soTotal').textContent=money(invoice.total||0);
+  $('soTotal').textContent=money(stockoutInvoiceValueV257(invoice));
   const histOld=invoice.oldDebtAtSale!==undefined?Number(invoice.oldDebtAtSale)||0:historicalOldDebtForInvoice(invoice);
-  const histReceivable=invoice.totalReceivable!==undefined
-    ? Number(invoice.totalReceivable)||0
-    : histOld+Number(invoice.total||0);
-  const histRemain=invoice.remainingCustomerDebt!==undefined
-    ? Number(invoice.remainingCustomerDebt)||0
-    : Math.max(histOld+Number(invoice.debt||0),0);
+  const histReceivable=histOld+stockoutInvoiceValueV257(invoice);
+  const histRemain=Math.max(histOld+stockoutDebtDeltaV257(invoice),0);
 
   $('soPaid').value=invoice.paid||'';
   $('soDebt').textContent=money(histRemain);
@@ -14049,13 +14088,9 @@ function stockoutWarrantyPanelHtml(data,label='BẢO HÀNH'){
 function stockoutSummaryHtml(data,labels={}){
   const oldDebt=historicalOldDebtForInvoice(data);
   const oldDebtDate=historicalOldDebtDateForInvoice(data);
-  const paid=Number(data.paid||0);
-  const totalReceivable=data.totalReceivable!==undefined
-    ? Number(data.totalReceivable)||0
-    : oldDebt+Number(data.total||0);
-  const customerDebtAfter=data.remainingCustomerDebt!==undefined
-    ? Number(data.remainingCustomerDebt)||0
-    : Math.max(oldDebt+Number(data.debt||0),0);
+  const paid=reportMoneyNumberV248(data.paid);
+  const totalReceivable=oldDebt+stockoutInvoiceValueV257(data);
+  const customerDebtAfter=Math.max(oldDebt+stockoutDebtDeltaV257(data),0);
 
   const L={
     current:labels.current||'Tiền hàng phiếu này',
@@ -14598,8 +14633,15 @@ function stockinCostNetV249(r){
   if(price>0 || Number(r?.ck)||0 || Number(r?.km)||0){
     return calcNet(r);
   }
+  const costAtReceive=Number(r?.costAtReceive ?? r?.buyNetAtReceive ?? r?.purchaseNet)||0;
+  if(costAtReceive>0)return costAtReceive;
   const savedNet=Number(r?.net)||0;
-  return savedNet>0?savedNet:0;
+  if(savedNet>0)return savedNet;
+
+  /* Phiếu cũ do Nhân viên lập có thể không lưu giá vốn. Khi đó lấy giá vốn
+     của đúng mã hàng trong Danh mục, tuyệt đối không lấy Giá bán thay Giá vốn. */
+  const product=(db.products||[]).find(p=>String(p.id)===String(r?.productId||''));
+  return Math.max(0,Number(product?.cost)||0);
 }
 
 function stockinLegacySaleTotalV249(invoice){
@@ -14618,7 +14660,9 @@ function stockinSavedItems(rows){
       ...r,
       productText:String(r.productText||p?.name||''),
       unitAtTxn:String(r.unitAtTxn||p?.unit||''),
-      net:calcNet(r)
+      net:stockinCostNetV249(r),
+      costAtReceive:stockinCostNetV249(r),
+      lineCostTotalAtReceive:(Number(r.qty)||0)*stockinCostNetV249(r)
     };
     let hasSaleTerms=false;
 
@@ -15320,23 +15364,154 @@ $('nav').onclick=async e=>{
 }
 
 
+function stockoutLineValueV257(i){
+  if(!i)return 0;
+  const q=reportLooseNumberV248(i.qty ?? i.quantity ?? i.sl);
+  if(q<=0)return 0;
+  const savedNet=reportMoneyNumberV248(i.net ?? i.unitNet ?? i.netPrice);
+  const net=savedNet>0?savedNet:Math.max(0,Number(calcNet(i))||0);
+  return q*net;
+}
+function stockoutInvoiceValueV257(o){
+  if(!o)return 0;
+  const saved=reportMoneyNumberV248(o.total);
+  if(saved>0)return saved;
+  return (o.items||[]).reduce((sum,i)=>sum+stockoutLineValueV257(i),0);
+}
+function stockoutDebtDeltaV257(o){
+  /* Công nợ phát sinh thật của phiếu = tổng hàng - tiền thu ngay tại phiếu.
+     Dựng lại như vậy để sửa dữ liệu cũ có trường debt bị lưu thiếu hoặc bằng 0. */
+  return stockoutInvoiceValueV257(o)-reportMoneyNumberV248(o?.paid);
+}
+function customerBalanceRawV257(id){
+  const cid=String(id||'');
+  const c=(db.customers||[]).find(x=>String(x.id||'')===cid);
+  const due=reportMoneyNumberV248(c?.oldDebt)+(db.stockout||[])
+    .filter(o=>String(o.customerId||'')===cid)
+    .reduce((sum,o)=>sum+stockoutDebtDeltaV257(o),0);
+  const paid=(db.customerPayments||[])
+    .filter(p=>String(p.customerId||'')===cid)
+    .reduce((sum,p)=>sum+reportMoneyNumberV248(p.amount),0);
+  return due-paid;
+}
 function customerDebt(id){
-  let c=db.customers.find(x=>x.id===id);
-  const due=(c?.oldDebt||0)+db.stockout.filter(o=>o.customerId===id).reduce((s,o)=>s+Number(o.debt||0),0);
-  const paid=(db.customerPayments||[]).filter(p=>p.customerId===id).reduce((s,p)=>s+Number(p.amount||0),0);
-  return Math.max(0,due-paid);
+  return Math.max(0,customerBalanceRawV257(id));
 }
 function customerCredit(id){
-  let c=db.customers.find(x=>x.id===id);
-  const due=(c?.oldDebt||0)+db.stockout.filter(o=>o.customerId===id).reduce((s,o)=>s+Number(o.debt||0),0);
-  const paid=(db.customerPayments||[]).filter(p=>p.customerId===id).reduce((s,p)=>s+Number(p.amount||0),0);
-  return Math.max(0,paid-due);
+  return Math.max(0,-customerBalanceRawV257(id));
+}
+function supplierCanonicalKeyV257(name){
+  let key=reportSupplierCanonicalNameV246(name);
+  /* Các bản cũ có thể lưu cùng một NCC dưới dạng "Cty Vi Long",
+     "Công ty Vi Long" hoặc chỉ "Vi Long". */
+  key=key.replace(/\b(cong ty|cty|trach nhiem huu han|tnhh|mot thanh vien|mtv)\b/g,' ');
+  /* Tên NCC trong dữ liệu cũ có cả hai cách gõ VI LONG và VY LONG. */
+  key=key.replace(/\bvy\s+long\b/g,'vi long');
+  return key.replace(/\s+/g,' ').trim();
+}
+function supplierNameByIdV257(id){
+  const item=(db.suppliers||[]).find(s=>String(s.id||'')===String(id||''));
+  return String(item?.name||'').trim();
+}
+function stockinBelongsToSupplierV257(o,supplier){
+  if(!o||!supplier)return false;
+  /* Tên chụp tại lúc lập phiếu là bằng chứng chính xác hơn mã cũ.
+     Một số phiếu Vi Long cũ bị lưu nhầm supplierId của Vinta. */
+  const snapshotName=String(o.supplierName||'').trim();
+  if(snapshotName){
+    const invoiceKey=supplierCanonicalKeyV257(snapshotName);
+    const supplierKey=supplierCanonicalKeyV257(supplier.name);
+    return !!invoiceKey && invoiceKey===supplierKey;
+  }
+  if(String(o.supplierId||'')===String(supplier.id||''))return true;
+  const invoiceName=supplierNameByIdV257(o.supplierId);
+  const supplierName=String(supplier.name||'').trim();
+  const invoiceKey=supplierCanonicalKeyV257(invoiceName);
+  const supplierKey=supplierCanonicalKeyV257(supplierName);
+  return !!invoiceKey && invoiceKey===supplierKey;
+}
+function supplierPaymentBelongsV257(p,supplier){
+  if(!p||!supplier)return false;
+  const snapshotName=String(p.supplierName||'').trim();
+  if(snapshotName){
+    const paymentKey=supplierCanonicalKeyV257(snapshotName);
+    const supplierKey=supplierCanonicalKeyV257(supplier.name);
+    return !!paymentKey && paymentKey===supplierKey;
+  }
+  if(String(p.supplierId||'')===String(supplier.id||''))return true;
+  const paymentName=supplierNameByIdV257(p.supplierId);
+  const supplierName=String(supplier.name||'').trim();
+  const paymentKey=supplierCanonicalKeyV257(paymentName);
+  const supplierKey=supplierCanonicalKeyV257(supplierName);
+  return !!paymentKey && paymentKey===supplierKey;
+}
+function isViLongSupplierV259(supplier){
+  return supplierCanonicalKeyV257(supplier?.name||'')==='vi long';
+}
+function isViLongLegacyInvoiceV259(o,supplier){
+  if(!o||!supplier||!isViLongSupplierV259(supplier))return false;
+  const txt=String(o.dateText||'').trim();
+  /* Hai phiếu Vi Long mà dữ liệu cũ đã sửa giá vốn: ngày 02/03 và 03/03.
+     Chỉ khoanh đúng hai ngày này, không đụng các phiếu Vi Long mới về sau. */
+  return /(^|\D)0?2[\/\-.]0?3([\/\-.]\d{2,4})?(\D|$)/.test(txt) ||
+         /(^|\D)0?3[\/\-.]0?3([\/\-.]\d{2,4})?(\D|$)/.test(txt);
+}
+function supplierInvoicePaidForDebtV259(o,supplier){
+  const raw=Math.max(0,reportMoneyNumberV248(o?.paid));
+  /* V259: hai phiếu Vi Long 02/03 và 03/03 là phiếu nhập công nợ cũ.
+     Trường paid cũ của hai phiếu này từng làm tổng công nợ bị triệt tiêu về 0.
+     Vì anh chưa ghi giao dịch trả NCC cho hai phiếu này, công nợ phải lấy đủ
+     Thành tiền vốn và chỉ giảm khi có giao dịch ở mục Thanh toán NCC. */
+  if(isViLongLegacyInvoiceV259(o,supplier))return 0;
+  return raw;
+}
+function supplierDebtBreakdownV258(id){
+  const s=(db.suppliers||[]).find(x=>String(x.id||'')===String(id||''));
+  if(!s)return {supplier:null,oldDebt:0,purchases:0,paidAtInvoices:0,separatePayments:0,balance:0,invoices:[],payments:[],legacyViLongFix:0};
+  const supplierKey=supplierCanonicalKeyV257(s.name);
+  const aliases=(db.suppliers||[]).filter(x=>
+    String(x.id||'')===String(s.id||'') ||
+    (!!supplierKey && supplierCanonicalKeyV257(x.name)===supplierKey)
+  );
+
+  /* Không cộng lặp Nợ cũ nếu dữ liệu từng có nhiều tên Cty Vi Long / Vi Long. */
+  const oldDebt=aliases.reduce((m,x)=>Math.max(m,reportMoneyNumberV248(x.oldDebt)),0);
+  const invoices=(db.stockin||[]).filter(o=>stockinBelongsToSupplierV257(o,s));
+  const purchases=invoices.reduce((a,o)=>a+reportStockinInvoiceValueV245(o),0);
+  const paidAtInvoices=invoices.reduce((a,o)=>a+supplierInvoicePaidForDebtV259(o,s),0);
+  const legacyViLongFix=invoices.reduce((a,o)=>a+Math.max(0,reportMoneyNumberV248(o.paid)-supplierInvoicePaidForDebtV259(o,s)),0);
+  const payments=(db.supplierPayments||[]).filter(p=>supplierPaymentBelongsV257(p,s));
+  const separatePayments=payments.reduce((a,p)=>a+reportMoneyNumberV248(p.amount),0);
+  const balance=Math.max(0,oldDebt+purchases-paidAtInvoices-separatePayments);
+  return {supplier:s,oldDebt,purchases,paidAtInvoices,separatePayments,balance,invoices,payments,legacyViLongFix};
 }
 function supplierDebt(id){
-  let s=db.suppliers.find(x=>x.id===id);
-  const due=(s?.oldDebt||0)+db.stockin.filter(o=>o.supplierId===id).reduce((a,o)=>a+Number(o.debt||0),0);
-  const paid=(db.supplierPayments||[]).filter(p=>p.supplierId===id).reduce((a,p)=>a+Number(p.amount||0),0);
-  return Math.max(0,due-paid);
+  return supplierDebtBreakdownV258(id).balance;
+}
+function openSupplierDebtDetailV258(supplierId){
+  if(!isManager)return requireManager(()=>openSupplierDebtDetailV258(supplierId),'Công nợ Nhà cung cấp chỉ dành cho Quản lý.');
+  const d=supplierDebtBreakdownV258(supplierId);
+  if(!d.supplier)return alert('Không tìm thấy Nhà cung cấp.');
+  const rows=[...d.invoices].sort((a,b)=>(stockoutDateTimeValue(b.dateText||'')||0)-(stockoutDateTimeValue(a.dateText||'')||0)).map(o=>{
+    const total=reportStockinInvoiceValueV245(o);
+    const rawPaid=reportMoneyNumberV248(o.paid);
+    const paid=supplierInvoicePaidForDebtV259(o,d.supplier);
+    const repaired=isViLongLegacyInvoiceV259(o,d.supplier) && rawPaid!==paid;
+    return `<tr><td>${esc(o.dateText||'')}</td><td><b>${esc(o.id||'')}</b>${repaired?'<div class="small" style="color:#9a6500">V259: bỏ số đã trả cũ sai</div>':''}</td><td class="right">${money(total)}</td><td class="right">${money(paid)}</td><td class="right"><b>${money(total-paid)}</b></td></tr>`;
+  });
+  showModal(`
+    <h3 style="margin-top:0">Công nợ NCC • ${esc(d.supplier.name||'')}</h3>
+    <div class="grid cards" style="grid-template-columns:repeat(5,minmax(0,1fr));margin-bottom:12px">
+      <div class="card kpi"><div class="label">Nợ cũ</div><div class="value">${money(d.oldDebt)}</div></div>
+      <div class="card kpi"><div class="label">Tổng nhập</div><div class="value">${money(d.purchases)}</div></div>
+      <div class="card kpi"><div class="label">Đã trả tại phiếu</div><div class="value">${money(d.paidAtInvoices)}</div></div>
+      <div class="card kpi"><div class="label">Đã trả riêng</div><div class="value">${money(d.separatePayments)}</div></div>
+      <div class="card kpi"><div class="label">Còn nợ</div><div class="value">${money(d.balance)}</div></div>
+    </div>
+    <div class="small" style="margin-bottom:8px">Công thức: Nợ cũ + Tổng nhập theo Thành tiền vốn − Đã trả tại phiếu − Thanh toán NCC.${d.legacyViLongFix>0?' <b style="color:#9a6500">V259 đã loại '+money(d.legacyViLongFix)+' “đã trả” cũ sai của 2 phiếu Vi Long 02/03 & 03/03.</b>':''}</div>
+    ${table(['Ngày','Phiếu nhập','Tiền nhập','Đã trả tại phiếu','Phát sinh nợ'],rows)}
+    <div class="modal-actions"><button class="btn" onclick="closeModal()">Đóng</button><button class="btn primary" onclick="closeModal();openSupplierPayment('${esc(d.supplier.id)}')">💵 Thanh toán NCC</button></div>
+  `);
 }
 
 function ensureExpenseData(){
@@ -16805,8 +16980,10 @@ function normalizeDB(){
 }
 
 function renderDashboard(){
-  let rev=db.stockout.reduce((s,o)=>s+o.total,0);
-  let purch=db.stockin.reduce((s,o)=>s+o.total,0);
+  let rev=db.stockout.reduce((s,o)=>s+(Number(o.total)||0),0);
+  let purch=db.stockin.reduce((s,o)=>s+reportStockinInvoiceValueV245(o),0);
+  const missingStockinCost=(db.stockin||[]).filter(o=>(o.items||[]).length && reportStockinInvoiceValueV245(o)<=0).length;
+  const purchaseHint=db.stockin.length+' phiếu nhập'+(missingStockinCost?' • '+missingStockinCost+' phiếu thiếu giá vốn':'');
 
   const today=currentISODate();
   const expenseToday=(db.expenses||[])
@@ -16816,7 +16993,7 @@ function renderDashboard(){
   let cards=isManager
     ? [
         ['Doanh thu',money(rev),db.stockout.length+' phiếu xuất'],
-        ['Nhập hàng',money(purch),db.stockin.length+' phiếu nhập'],
+        ['Nhập hàng',money(purch),purchaseHint],
         ['Giá trị tồn',money(db.products.reduce((s,p)=>s+p.stock*p.cost,0)),'Theo giá vốn'],
         ['Công nợ KH',money(db.customers.reduce((s,c)=>s+customerDebt(c.id),0)),'Tổng còn nợ'],
         ['Chi phí hôm nay',money(expenseToday),'Tự cộng từ sổ Chi phí']
@@ -17605,12 +17782,10 @@ function customerOutstandingDebtLots(customerId,asOf=Date.now()){
     if(o.customerId!==customerId)return;
     const t=stockoutDateTimeValue(o.dateText);
     if(!t || t>asOf)return;
-    const delta=Number(o.debt||0);
-    if(delta>0){
-      events.push({t,type:'debit',amount:delta,ref:o.id||'',dateText:o.dateText||''});
-    }else if(delta<0){
-      events.push({t,type:'credit',amount:Math.abs(delta),ref:o.id||'',dateText:o.dateText||''});
-    }
+    const total=stockoutInvoiceValueV257(o);
+    const paidAtInvoice=Math.max(0,reportMoneyNumberV248(o.paid));
+    if(total>0)events.push({t,type:'debit',amount:total,ref:o.id||'',dateText:o.dateText||''});
+    if(paidAtInvoice>0)events.push({t,type:'credit',amount:paidAtInvoice,ref:o.id||'',dateText:o.dateText||''});
   });
 
   (db.customerPayments||[]).forEach(p=>{
@@ -18101,7 +18276,7 @@ function customerDebtOpeningRaw(customerId,startTs){
   (db.stockout||[]).forEach(o=>{
     if(o.customerId!==customerId)return;
     const t=stockoutDateTimeValue(o.dateText);
-    if(t && t<startTs)raw+=Number(o.debt||0);
+    if(t && t<startTs)raw+=stockoutDebtDeltaV257(o);
   });
 
   (db.customerPayments||[]).forEach(p=>{
@@ -18127,9 +18302,8 @@ function customerDebtPeriodSummary(customerId,bounds=customerDebtPeriodBounds())
     const t=stockoutDateTimeValue(o.dateText);
     if(!t || t<start || t>end)return;
 
-    const delta=Number(o.debt||0);
-    if(delta>0)incurred+=delta;
-    else if(delta<0)paid+=Math.abs(delta);
+    incurred+=Math.max(0,stockoutInvoiceValueV257(o));
+    paid+=Math.max(0,reportMoneyNumberV248(o.paid));
   });
 
   (db.customerPayments||[]).forEach(p=>{
@@ -18162,26 +18336,17 @@ function customerDebtPeriodTransactions(customerId,bounds=customerDebtPeriodBoun
     if(o.customerId!==customerId)return;
     const t=stockoutDateTimeValue(o.dateText);
     if(!t || t<bounds.start || t>bounds.end)return;
-    const delta=Number(o.debt||0);
+    const invoiceTotal=Math.max(0,stockoutInvoiceValueV257(o));
+    const paidAtInvoice=Math.max(0,reportMoneyNumberV248(o.paid));
 
-    if(delta>0){
+    if(invoiceTotal>0 || paidAtInvoice>0){
       rows.push({
         t,
         dateText:o.dateText||'',
         ref:o.id||'',
-        content:o.content||'Phiếu xuất hàng',
-        debit:delta,
-        credit:0,
-        auto:false
-      });
-    }else if(delta<0){
-      rows.push({
-        t,
-        dateText:o.dateText||'',
-        ref:o.id||'',
-        content:'Khách thanh toán thêm tại Phiếu xuất',
-        debit:0,
-        credit:Math.abs(delta),
+        content:(o.content||'Phiếu xuất hàng')+(paidAtInvoice>0?' • Có thu tiền tại phiếu':''),
+        debit:invoiceTotal,
+        credit:paidAtInvoice,
         auto:false
       });
     }
@@ -18290,6 +18455,37 @@ function customerLastPaymentDateV198(customerId,bounds=customerDebtPeriodBounds(
   return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
 }
 
+function renderSupplierDebtsV258(){
+  const card=$('supplierDebtCardV258');
+  if(!card)return;
+  if(!isManager){card.style.display='none';return;}
+  card.style.display='';
+  const q=norm($('supplierDebtSearchV258')?.value||'');
+  const seen=new Set(), rows=[], entries=[];
+  (db.suppliers||[]).forEach(s=>{
+    const key=supplierCanonicalKeyV257(s.name)||('ID:'+String(s.id||''));
+    if(seen.has(key))return;
+    seen.add(key);
+    if(q && !norm((s.name||'')+' '+(s.phone||'')+' '+(s.address||'')).includes(q))return;
+    const d=supplierDebtBreakdownV258(s.id);
+    entries.push(d);
+  });
+  entries.sort((a,b)=>b.balance-a.balance||String(a.supplier?.name||'').localeCompare(String(b.supplier?.name||''),'vi'));
+  entries.forEach(d=>rows.push(`<tr>
+    <td><button class="customer-debt-name" onclick="openSupplierDebtDetailV258('${esc(d.supplier.id)}')">${esc(d.supplier.name||'')}</button></td>
+    <td class="right">${money(d.oldDebt)}</td>
+    <td class="right"><b>${money(d.purchases)}</b></td>
+    <td class="right">${money(d.paidAtInvoices+d.separatePayments)}</td>
+    <td class="right"><b>${money(d.balance)}</b></td>
+    <td class="center"><button class="btn primary" onclick="openSupplierPayment('${esc(d.supplier.id)}')">Thanh toán NCC</button></td>
+  </tr>`));
+  if($('supplierDebtTableV258'))$('supplierDebtTableV258').innerHTML=table(['Nhà cung cấp','Nợ cũ','Tổng nhập','Đã thanh toán','Còn nợ','Thao tác'],rows);
+  if($('supplierDebtSummaryV258')){
+    const total=entries.reduce((s,d)=>s+d.balance,0);
+    $('supplierDebtSummaryV258').innerHTML=`Hiển thị <b>${entries.length}</b> NCC • Tổng công nợ phải trả <b>${money(total)}</b>`;
+  }
+}
+
 function renderDebts(){
   setTimeout(applyUnifiedDateFiltersV223,0);
   ensureExpenseData();
@@ -18360,6 +18556,7 @@ function renderDebts(){
       (overdueCount?` • <span style="color:#c31f15"><b>${overdueCount}</b> khách quá hạn</span>`:'')+
       (autoTotal>0?` • Đã tự giảm <b>${money(autoTotal)}</b> từ trả hàng/BH`:'');
   }
+  renderSupplierDebtsV258();
 }
 
 
@@ -19272,16 +19469,10 @@ function reportStockoutRevenueForFilter(invoice){
 }
 
 function reportStockinValueForFilter(invoice){
-  const itemValue=(items)=> (items||[]).reduce((s,i)=>{
-    const q=Number(i.qty)||0;
-    const net=Number(i.net!==undefined?i.net:calcNet(i))||0;
-    return s+q*net;
-  },0);
+  const itemValue=(items)=> (items||[]).reduce((s,i)=>s+reportStockinLineValueV245(i),0);
 
   if(reportUnifiedFilter.type==='all'){
-    const total=Number(invoice?.total);
-    if(Number.isFinite(total) && total>0)return total;
-    return itemValue(invoice?.items);
+    return reportStockinInvoiceValueV245(invoice);
   }
 
   return itemValue(reportInvoiceFilteredItems(invoice));
@@ -19695,7 +19886,10 @@ function reportStockinSupplierNameV244(o){
 }
 
 function reportSupplierCanonicalNameV246(name){
-  return norm(String(name||'').replace(/\s*-\s*\d[\d\s.]*$/,'').trim());
+  let key=norm(String(name||'').replace(/\s*-\s*\d[\d\s.]*$/,'').trim());
+  key=key.replace(/\b(cong ty|cty|trach nhiem huu han|tnhh|mot thanh vien|mtv)\b/g,' ');
+  key=key.replace(/\bvy\s+long\b/g,'vi long');
+  return key.replace(/\s+/g,' ').trim();
 }
 
 function reportSelectedSupplierNameV244(){
@@ -19775,7 +19969,7 @@ function reportStockinLineValueV245(i){
 
   /* Nếu dòng cũ đã lưu Thành tiền thì ưu tiên dùng thẳng. */
   const directFields=[
-    'amount','total','lineTotal','subtotal','netTotal','value',
+    'lineCostTotalAtReceive','costTotalAtReceive','amount','total','lineTotal','subtotal','netTotal','value',
     'thanhTien','thanh_tien','lineAmount'
   ];
   for(const k of directFields){
@@ -19790,14 +19984,20 @@ function reportStockinLineValueV245(i){
   const net=reportMoneyNumberV248(i.net);
   if(net>0)return q*net;
 
+  const costSnapshot=reportMoneyNumberV248(i.costAtReceive ?? i.buyNetAtReceive ?? i.purchaseNet);
+  if(costSnapshot>0)return q*costSnapshot;
+
   let price=0;
   const priceFields=[
-    'price','salePrice','unitPrice','sellPrice','giaBan','gia_ban',
-    'cost','buyPrice','purchasePrice'
+    'price','cost','buyPrice','purchasePrice','unitCost','giaVon','gia_von'
   ];
   for(const k of priceFields){
     const v=reportMoneyNumberV248(i[k]);
     if(v>0){price=v;break;}
+  }
+  if(price<=0){
+    const product=(db.products||[]).find(p=>String(p.id)===String(i.productId||''));
+    price=reportMoneyNumberV248(product?.cost);
   }
   if(price<=0)return 0;
 
@@ -19817,13 +20017,19 @@ function reportStockinLineValueV245(i){
 function reportStockinInvoiceValueV245(o){
   if(!o)return 0;
 
-  /* Đây chính là trường saveStockin/saveStockinStable đang lưu. */
+  /* V258: ưu tiên cộng Thành tiền vốn theo từng dòng.
+     Lý do: các phiếu cũ (đặc biệt Vi Long 2/3, 3/3) có thể đã sửa Giá vốn TT /
+     Thành tiền vốn nhưng trường total của phiếu vẫn còn giá cũ. */
+  const items=Array.isArray(o.items)?o.items:[];
+  const costFromLines=items.reduce((s,i)=>s+reportStockinLineValueV245(i),0);
+  if(items.length && costFromLines>0)return costFromLines;
+
+  /* Dự phòng khi phiếu cũ không có đủ dữ liệu dòng. */
   const total=reportMoneyNumberV248(o.total);
   if(total>0)return total;
 
-  /* Dự phòng cho các bản cũ từng dùng tên trường khác. */
   const invoiceFields=[
-    'grandTotal','amount','totalAmount','value','totalSale',
+    'grandTotal','amount','totalAmount','value',
     'tongTien','tong_tien','totalValue'
   ];
   for(const k of invoiceFields){
@@ -19831,14 +20037,8 @@ function reportStockinInvoiceValueV245(o){
     if(v>0)return v;
   }
 
-  /* Cuối cùng cộng trực tiếp Thành tiền vốn của từng dòng. */
-  const costFromLines=(Array.isArray(o.items)?o.items:[])
-    .reduce((s,i)=>s+reportStockinLineValueV245(i),0);
-  if(costFromLines>0)return costFromLines;
-
-  /* Phiếu cũ do Nhân viên tạo có thể chỉ lưu điều kiện Giá bán/CK/KM.
-     Dùng tổng giá bán tham chiếu để phiếu không biến mất khỏi báo cáo. */
-  return stockinLegacySaleTotalV249(o);
+  /* Không dùng Giá bán thay Giá vốn vì sẽ làm sai Tổng nhập, công nợ NCC và lợi nhuận. */
+  return 0;
 }
 
 function reportSupplierPurchasesV242(stockins){
@@ -19919,7 +20119,13 @@ function reportCurrentCustomerDebtV247(){
 }
 
 function reportCurrentSupplierDebtV247(){
-  return (db.suppliers||[]).reduce((s,n)=>s+Math.max(0,Number(supplierDebt(n.id))||0),0);
+  const seen=new Set();
+  return (db.suppliers||[]).reduce((sum,n)=>{
+    const key=supplierCanonicalKeyV257(n.name)||('ID:'+String(n.id||''));
+    if(seen.has(key))return sum;
+    seen.add(key);
+    return sum+Math.max(0,Number(supplierDebt(n.id))||0);
+  },0);
 }
 
 function reportTopSalesV247(stockouts){
@@ -25118,7 +25324,7 @@ function recalcSO(){
     let currentId=$('soNo')?.textContent?.trim()||'';
     let original=(db.stockout||[]).find(o=>o.id===currentId);
     if(original && original.customerId===selectedCustomerId){
-      old=Math.max(0,old-Number(original.debt||0));
+      old=Math.max(0,old-stockoutDebtDeltaV257(original));
       oldDate=original.oldDebtDateAtSale
         ? debtDateOnly(original.oldDebtDateAtSale)
         : historicalOldDebtDateForInvoice(original);
@@ -25319,7 +25525,7 @@ async function saveStockin(doPrint=false){
     const oldStock=Number(p.stock||0);
     const oldCost=Number(p.cost||0);
     const q=Number(r.qty)||0;
-    const net=calcNet(r);
+    const net=stockinCostNetV249(r);
     const newStock=oldStock+q;
 
     if(isManager){
@@ -25407,12 +25613,8 @@ function buildStockinPreview(data){
   }).join('');
 
   const oldDebt=Number(data.oldDebtAtPurchase||0);
-  const totalPayable=data.totalPayable!==undefined
-    ? Number(data.totalPayable)||0
-    : oldDebt+Number(data.total||0);
-  const debtAfter=data.remainingSupplierDebt!==undefined
-    ? Number(data.remainingSupplierDebt)||0
-    : Math.max(oldDebt+Number(data.debt||0),0);
+  const totalPayable=oldDebt+reportStockinInvoiceValueV245(data);
+  const debtAfter=Math.max(totalPayable-reportMoneyNumberV248(data.paid),0);
 
   $('stockinPreviewPaper').innerHTML=`
     <div class="pv-head">
@@ -25671,8 +25873,8 @@ function searchStockoutInvoices(){
           <div><b>${esc(o.id)}</b></div>
           <div>${esc(o.dateText||'')}</div>
           <div><b>${esc(c?.name||'')}</b><div class="muted">${esc(c?.phone||'')}</div></div>
-          <div class="right">${money(o.total||0)}</div>
-          <div class="right">${money(o.debt||0)}</div>
+          <div class="right">${money(stockoutInvoiceValueV257(o))}</div>
+          <div class="right">${money(stockoutDebtDeltaV257(o))}</div>
           <div><button class="btn" onclick="openStockoutInvoice('${o.id}')">Xem phiếu</button></div>
         </div>`;
       }).join('')
@@ -25725,7 +25927,7 @@ function historicalOldDebtDateForInvoice(data){
     .filter(o=>
       o.customerId===data.customerId &&
       o.id!==data.id &&
-      Number(o.debt||0)>0 &&
+      stockoutDebtDeltaV257(o)>0 &&
       (!targetTime || stockoutDateTimeValue(o.dateText)<targetTime)
     )
     .sort((a,b)=>stockoutDateTimeValue(b.dateText)-stockoutDateTimeValue(a.dateText));
@@ -25735,7 +25937,7 @@ function historicalOldDebtDateForInvoice(data){
 
 function latestDebtDateForCustomer(customerId,excludeId=''){
   const rows=(db.stockout||[])
-    .filter(o=>o.customerId===customerId && o.id!==excludeId && Number(o.debt||0)>0)
+    .filter(o=>o.customerId===customerId && o.id!==excludeId && stockoutDebtDeltaV257(o)>0)
     .sort((a,b)=>stockoutDateTimeValue(b.dateText)-stockoutDateTimeValue(a.dateText));
   return rows.length ? debtDateOnly(rows[0].dateText) : '';
 }
@@ -25756,7 +25958,7 @@ function historicalOldDebtForInvoice(data){
   for(const o of sameCustomer){
     const t=stockoutDateTimeValue(o.dateText);
     if(targetTime && t && t<targetTime){
-      old+=Number(o.debt||0);
+      old+=stockoutDebtDeltaV257(o);
     }
   }
 
@@ -25770,14 +25972,10 @@ function buildInvoicePreview(data){
   let warrantyText=invoiceWarrantyText(data);
   let oldDebt=historicalOldDebtForInvoice(data);
   let oldDebtDate=historicalOldDebtDateForInvoice(data);
-  let paid=Number(data.paid||0);
-  let invoiceDebt=Number(data.debt||0);
-  let totalReceivable=data.totalReceivable!==undefined
-    ? Number(data.totalReceivable)||0
-    : oldDebt+Number(data.total||0);
-  let customerDebtAfter=data.remainingCustomerDebt!==undefined
-    ? Number(data.remainingCustomerDebt)||0
-    : Math.max(oldDebt+invoiceDebt,0);
+  let paid=reportMoneyNumberV248(data.paid);
+  let invoiceDebt=stockoutDebtDeltaV257(data);
+  let totalReceivable=oldDebt+stockoutInvoiceValueV257(data);
+  let customerDebtAfter=Math.max(oldDebt+invoiceDebt,0);
 
   let rowsHtml=rows.map((r,i)=>{
     let p=db.products.find(x=>x.id===r.productId);
@@ -26041,11 +26239,12 @@ async function saveStockout(doPrint=false){
   let total=validRows.reduce((s,r)=>s+Number(r.qty)*calcNet(r),0);
   let stockoutId=editing?original.id:currentId;
   let returnTime=editing?stockoutEditedDateTextV185(original.dateText):nowText();
+  const customerSnapshot=(db.customers||[]).find(c=>String(c.id||'')===String(selectedCustomerId||''));
 
   let oldDebtAtSale=editing
     ? (original.oldDebtAtSale!==undefined
         ? original.oldDebtAtSale
-        : Math.max(0,customerDebt(selectedCustomerId)-Number(original.debt||0)))
+        : Math.max(0,customerDebt(selectedCustomerId)-stockoutDebtDeltaV257(original)))
     : customerDebt(selectedCustomerId);
 
   const totalReceivable=Math.max(Number(oldDebtAtSale||0)+total,0);
@@ -26103,6 +26302,8 @@ async function saveStockout(doPrint=false){
     id:stockoutId,
     dateText:returnTime,
     customerId:selectedCustomerId,
+    customerName:String(customerSnapshot?.name||original?.customerName||''),
+    customerPhone:String(customerSnapshot?.phone||original?.customerPhone||''),
     oldDebtAtSale,
     totalReceivable,
     remainingCustomerDebt,
@@ -27476,13 +27677,9 @@ function buildBillPreview(data){
   /* Công nợ trên Bill phải giống phiếu A4, kể cả khi in lại phiếu cũ. */
   const oldDebt=historicalOldDebtForInvoice(data);
   const oldDebtDate=historicalOldDebtDateForInvoice(data);
-  const totalReceivable=data.totalReceivable!==undefined
-    ? Number(data.totalReceivable)||0
-    : oldDebt+Number(data.total||0);
-  const paid=Number(data.paid||0);
-  const customerDebtAfter=data.remainingCustomerDebt!==undefined
-    ? Number(data.remainingCustomerDebt)||0
-    : Math.max(oldDebt+Number(data.debt||0),0);
+  const totalReceivable=oldDebt+stockoutInvoiceValueV257(data);
+  const paid=reportMoneyNumberV248(data.paid);
+  const customerDebtAfter=Math.max(oldDebt+stockoutDebtDeltaV257(data),0);
 
   const warrantyItems=invoiceWarrantyItems(data);
     const warrantyText=invoiceWarrantyText(data);
@@ -27818,7 +28015,7 @@ function customerPaymentBalanceAfterMap(customerId){
   const c=(db.customers||[]).find(x=>String(x.id||'')===cid);
   let balance=Math.max(0,Number(c?.oldDebt)||0);
   const ev=[];
-  (db.stockout||[]).forEach((o,idx)=>{if(String(o.customerId||'')===cid)ev.push({t:stockoutDateTimeValue(o.dateText||'')||idx,order:idx*10,key:'SO:'+String(o.id||idx),delta:Number(o.debt)||0})});
+  (db.stockout||[]).forEach((o,idx)=>{if(String(o.customerId||'')===cid)ev.push({t:stockoutDateTimeValue(o.dateText||'')||idx,order:idx*10,key:'SO:'+String(o.id||idx),delta:stockoutDebtDeltaV257(o)})});
   (db.customerPayments||[]).forEach((p,idx)=>{if(String(p.customerId||'')===cid)ev.push({t:customerDebtPaymentTime(p)||1000000000+idx,order:1000000+idx,key:'PAY:'+String(p.id||idx),delta:-Math.max(0,Number(p.amount)||0)})});
   ev.sort((a,b)=>a.t-b.t||a.order-b.order);
   const map=new Map();
@@ -27851,7 +28048,7 @@ function customerReceiptNumberV206(){
 function customerUnpaidInvoicesV206(customerId){
   const cid=String(customerId||'');
   return (db.stockout||[])
-    .filter(o=>String(o.customerId||'')===cid && Math.max(0,Number(o.debt)||0)>0)
+    .filter(o=>String(o.customerId||'')===cid && Math.max(0,stockoutDebtDeltaV257(o))>0)
     .sort((a,b)=>(stockoutDateTimeValue(b.dateText||'')||0)-(stockoutDateTimeValue(a.dateText||'')||0));
 }
 function renderCustomerInvoiceOptionsV206(){ return; }
@@ -27909,7 +28106,8 @@ function printCustomerPaymentReceiptV206(id){
     <div class="sign"><div>Người nộp tiền<br><br><br><br>(Ký, ghi rõ họ tên)</div><div>Người thu tiền<br><br><br><br>${esc(p.collector||p.operator||'')}</div></div>
     <div class="note">Phiếu được lập từ AN BÙI Manager</div>
     <div style="text-align:center;margin-top:20px"><button onclick="window.print()">In phiếu thu</button></div>
-  </body></html>`);
+  <!-- V259: giữ Thanh toán NCC + Công nợ NCC; sửa dứt điểm 2 phiếu Vi Long 02/03 & 03/03 không bị trường paid cũ triệt tiêu công nợ -->
+</body></html>`);
   w.document.close();
   w.focus();
 }
@@ -27998,8 +28196,8 @@ function renderPayments(){
   if($('supplierPaymentHistory')){
     if(isManager){
       const sRows=[...(db.supplierPayments||[])].sort((a,b)=>Number(b.ts||0)-Number(a.ts||0)).map(p=>{
-        const s=(db.suppliers||[]).find(x=>x.id===p.supplierId);
-        return `<tr><td>${esc(p.dateText||'')}</td><td><b>${esc(s?.name||'')}</b></td><td class="right"><b>${money(p.amount)}</b></td><td>${esc(p.operator||'Quản lý')}</td><td class="center"><button class="btn payment-edit-v193" onclick="editSupplierPayment('${p.id}')">Sửa phiếu</button></td></tr>`;
+        const s=(db.suppliers||[]).find(x=>String(x.id||'')===String(p.supplierId||'')) || (db.suppliers||[]).find(x=>supplierCanonicalKeyV257(x.name)===supplierCanonicalKeyV257(p.supplierName||''));
+        return `<tr><td>${esc(p.dateText||'')}</td><td><b>${esc(s?.name||p.supplierName||'')}</b></td><td class="right"><b>${money(p.amount)}</b></td><td>${esc(p.operator||'Quản lý')}</td><td class="center"><button class="btn payment-edit-v193" onclick="editSupplierPayment('${p.id}')">Sửa phiếu</button></td></tr>`;
       });
       $('supplierPaymentHistory').innerHTML=table(['Ngày giờ','Nhà cung cấp','Đã trả','Người thao tác','Thao tác'],sRows);
     }else $('supplierPaymentHistory').innerHTML='';
@@ -28066,7 +28264,7 @@ async function saveCustomerPaymentFromDebt(customerId){
   if(amount>debt && debt>0 && !confirm('Số tiền lớn hơn công nợ hiện tại '+money(debt)+'. Vẫn ghi nhận?'))return;
   const before=JSON.stringify(db);
   const btn=$('debtCustomerPayBtn');
-  const p={id:'TTKH'+Date.now(),customerId:c.id,amount,dateText:paymentNowText(),ts:Date.now(),operator:isManager?'Quản lý':'Nhân viên',note:String($('debtCustomerPayNote')?.value||'').trim()};
+  const p={id:'TTKH'+Date.now(),customerId:c.id,customerName:c.name||'',customerPhone:c.phone||'',amount,dateText:paymentNowText(),ts:Date.now(),operator:isManager?'Quản lý':'Nhân viên',note:String($('debtCustomerPayNote')?.value||'').trim()};
   customerPaymentSaving=true;if(btn)btn.disabled=true;
   if(!Array.isArray(db.customerPayments))db.customerPayments=[];db.customerPayments.push(p);
   try{
@@ -28104,7 +28302,7 @@ async function saveSupplierPaymentFromDebt(supplierId){
   if(amount>debt && debt>0 && !confirm('Số tiền lớn hơn công nợ hiện tại '+money(debt)+'. Vẫn ghi nhận?'))return;
   const before=JSON.stringify(db);
   const btn=$('debtSupplierPayBtn');
-  const p={id:'TTNCC'+Date.now(),supplierId:s.id,amount,dateText:paymentNowText(),ts:Date.now(),operator:'Quản lý',note:String($('debtSupplierPayNote')?.value||'').trim()};
+  const p={id:'TTNCC'+Date.now(),supplierId:s.id,supplierName:s.name||'',amount,dateText:paymentNowText(),ts:Date.now(),operator:'Quản lý',note:String($('debtSupplierPayNote')?.value||'').trim()};
   supplierPaymentSaving=true;if(btn)btn.disabled=true;
   if(!Array.isArray(db.supplierPayments))db.supplierPayments=[];db.supplierPayments.push(p);
   try{
@@ -28198,6 +28396,8 @@ async function saveCustomerPayment(){
     id:'TTKH'+Date.now(),
     receiptNo:customerReceiptNumberV206(),
     customerId:c.id,
+    customerName:c.name||'',
+    customerPhone:c.phone||'',
     amount,
     dateText:payDate.dateText,
     ts:payDate.ts,
@@ -28259,7 +28459,7 @@ async function saveSupplierPayment(){
   if(amount>debt && debt>0 && !confirm('Số tiền lớn hơn công nợ hiện tại '+money(debt)+'. Vẫn ghi nhận thanh toán?'))return;
 
   const payDate=paymentDateRecordV193('paySupplierDate');
-  const p={id:'TTNCC'+Date.now(),supplierId:s.id,amount,dateText:payDate.dateText,ts:payDate.ts,operator:'Quản lý'};
+  const p={id:'TTNCC'+Date.now(),supplierId:s.id,supplierName:s.name||'',amount,dateText:payDate.dateText,ts:payDate.ts,operator:'Quản lý'};
   supplierPaymentSaving=true;
   db.supplierPayments.push(p);
   try{
@@ -28270,6 +28470,7 @@ async function saveSupplierPayment(){
     }
     if($('paySupplierAmount'))$('paySupplierAmount').value='';
     refreshPaymentRelatedViews();
+    renderSupplierDebtsV258();
     selectedPaySupplierId=s.id;
     updatePaymentDebtDisplays();
     toast('✓ Đã trả NCC '+money(amount)+' • Còn nợ '+money(supplierDebt(s.id)));
@@ -29346,6 +29547,8 @@ async function confirmWarrantyCustomerReturn(id){
   const payment={
     id:'TLBH'+Date.now(),
     customerId:w.customerId,
+    customerName:c.name||'',
+    customerPhone:c.phone||'',
     amount,
     dateText:nowText(),
     ts:Date.now(),
@@ -29465,7 +29668,7 @@ async function saveStockinStableOriginal(doPrint=false){
       return false;
     }
 
-    const total=validRows.reduce((s,r)=>s+(Number(r.qty)||0)*calcNet(r),0);
+    const total=validRows.reduce((s,r)=>s+(Number(r.qty)||0)*stockinCostNetV249(r),0);
     const oldDebtAtPurchase=supplierDebt(selectedSupplierId);
     const totalPayable=Math.max(oldDebtAtPurchase+total,0);
     const paidRaw=Math.max(Number($('siPaid')?.value)||0,0);
@@ -29506,7 +29709,7 @@ async function saveStockinStableOriginal(doPrint=false){
       const oldStock=Number(p.stock||0);
       const oldCost=Number(p.cost||0);
       const qty=Number(r.qty)||0;
-      const net=calcNet(r);
+      const net=stockinCostNetV249(r);
       const newStock=oldStock+qty;
 
       if(isManager){
@@ -30361,9 +30564,9 @@ buildInvoicePreview=function(data){
     const customer=(db.customers||[]).find(c=>c.id===data.customerId);
     const rows=data.items||[];
     const oldDebt=historicalOldDebtForInvoice(data),oldDebtDate=historicalOldDebtDateForInvoice(data);
-    const paid=Number(data.paid||0),invoiceDebt=Number(data.debt||0);
-    const totalReceivable=data.totalReceivable!==undefined?Number(data.totalReceivable)||0:oldDebt+Number(data.total||0);
-    const customerDebtAfter=data.remainingCustomerDebt!==undefined?Number(data.remainingCustomerDebt)||0:Math.max(oldDebt+invoiceDebt,0);
+    const paid=reportMoneyNumberV248(data.paid),invoiceDebt=stockoutDebtDeltaV257(data);
+    const totalReceivable=oldDebt+stockoutInvoiceValueV257(data);
+    const customerDebtAfter=Math.max(oldDebt+invoiceDebt,0);
 
     const paper=$('invoicePreviewPaper');
     if(!paper)return _v59OriginalBuildInvoicePreview(data);
@@ -30430,8 +30633,8 @@ buildStockinPreview=function(data){
     const supplier=(db.suppliers||[]).find(s=>s.id===data.supplierId)||{name:data.supplierName||'',phone:data.supplierPhone||'',address:data.supplierAddress||''};
     const rows=data.items||[];
     const oldDebt=Number(data.oldDebtAtPurchase||0);
-    const totalPayable=data.totalPayable!==undefined?Number(data.totalPayable)||0:oldDebt+Number(data.total||0);
-    const debtAfter=data.remainingSupplierDebt!==undefined?Number(data.remainingSupplierDebt)||0:Math.max(oldDebt+Number(data.debt||0),0);
+    const totalPayable=oldDebt+reportStockinInvoiceValueV245(data);
+    const debtAfter=Math.max(totalPayable-reportMoneyNumberV248(data.paid),0);
     const paper=$('stockinPreviewPaper');if(!paper)return _v59OriginalBuildStockinPreview(data);
     paper.classList.add('pd-designed');
     paper.style.setProperty('--pd-base-font',(Number(design.baseFont)||13)+'px');
