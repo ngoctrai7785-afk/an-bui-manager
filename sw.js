@@ -1,4 +1,4 @@
-const CACHE='an-bui-app-con-v249';
+const CACHE='an-bui-manager-v257';
 self.addEventListener('install',event=>{
   self.skipWaiting();
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(['./','./index.html','./manifest.webmanifest'])));
