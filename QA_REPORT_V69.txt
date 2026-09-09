@@ -1,0 +1,10 @@
+AN BUI V259 V69 FINAL GITHUB CLEAN - FINAL QA
+File size: 2,853,019 chars
+JavaScript syntax: 0 errors (checked all script blocks during build)
+Static HTML duplicate IDs: 0
+Old appended patch markers V59-V68 remaining: 0
+Final feature presence: {"Customer 10-history": true, "Supplier 10-history": true, "Stockin direct product search": true, "Warranty customer search": true, "Hide warranty debt summary": true, "Hide stockin invoice ref": true, "Hide VAT summary": true, "Warehouse stock filter": true}
+Pre-existing/global wrapper assignment counts (includes older base V43 code): {"renderPayments": 7, "setPaymentTab": 6, "renderSIRows": 2, "openSuggestions": 1, "openWarranty": 1, "renderWarehouse": 1, "renderCustomerPaymentHistoryOnly": 5}
+
+Note: wrapper counts above include older built-in V43-era compatibility layers. V69 removed only the appended V59-V68 patch blocks to avoid risky rewrites of older stable business logic.
+Static duplicate IDs: []
