@@ -40372,3 +40372,101 @@ body.warehouse-page-active .main>.topbar>.actions{
 </script>
 
 <!-- AN BUI V82 warehouse toolbar 3 rows -->
+
+
+<script id="v83-enter-next-global">
+(function(){
+  'use strict';
+
+  function isVisibleV83(el){
+    if(!el || el.disabled || el.readOnly)return false;
+    if(el.type==='hidden')return false;
+    const st=window.getComputedStyle(el);
+    if(st.display==='none' || st.visibility==='hidden')return false;
+    if(el.closest('[hidden],[aria-hidden="true"]'))return false;
+    const page=el.closest('.page');
+    if(page && !page.classList.contains('active'))return false;
+    return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+  }
+
+  function isEditableV83(el){
+    if(!el)return false;
+    if(el.matches('input,select,textarea'))return true;
+    return el.isContentEditable===true;
+  }
+
+  function scopeV83(el){
+    return el.closest(
+      'form,.modal-box,.modal-content,.pin-box,.login-box,.login-card,.card,.paper,.info-box,.settings-card,.page'
+    ) || document;
+  }
+
+  function fieldsV83(scope){
+    const all=[...scope.querySelectorAll('input,select,textarea,[contenteditable="true"]')];
+    return all.filter(isVisibleV83);
+  }
+
+  function moveV83(current,dir){
+    const scope=scopeV83(current);
+    let list=fieldsV83(scope);
+    let idx=list.indexOf(current);
+
+    /* Nếu scope quá nhỏ chỉ có 1 ô, mở rộng lên page/modal để tìm ô kế tiếp */
+    if((idx<0 || list.length<=1) && scope!==document){
+      const wider=current.closest('.modal,.page') || document;
+      list=fieldsV83(wider);
+      idx=list.indexOf(current);
+    }
+
+    if(idx<0)return false;
+    const next=list[idx+dir];
+    if(!next)return false;
+
+    try{
+      next.focus({preventScroll:true});
+    }catch(_){
+      next.focus();
+    }
+
+    if(next.matches('input:not([type="date"]):not([type="time"]):not([type="checkbox"]):not([type="radio"]),textarea')){
+      try{next.select()}catch(_){}
+    }
+    try{next.scrollIntoView({block:'nearest',inline:'nearest'})}catch(_){}
+    return true;
+  }
+
+  document.addEventListener('keydown',function(ev){
+    if(ev.key!=='Enter')return;
+    if(ev.ctrlKey || ev.metaKey || ev.altKey)return;
+
+    const el=ev.target;
+    if(!isEditableV83(el) || !isVisibleV83(el))return;
+
+    /* Cho phép xuống dòng thật sự bằng Shift+Enter trong textarea/contenteditable */
+    if((el.matches('textarea') || el.isContentEditable) && ev.shiftKey)return;
+
+    /* Khi danh sách gợi ý đang mở, Enter phải ưu tiên chọn gợi ý hiện tại */
+    const suggestionOpen=
+      document.querySelector('.suggestions.show,.warehouse-product-list.show,.supplier-picker-list.show,'+
+                             '.customer-picker-list.show,#v73StockinProductList.show,#v74StockinProductList.show,'+
+                             '#stockinProductList.show,.autocomplete-list.show');
+    if(suggestionOpen && !ev.shiftKey)return;
+
+    const dir=ev.shiftKey?-1:1;
+    if(moveV83(el,dir)){
+      ev.preventDefault();
+      ev.stopPropagation();
+      ev.stopImmediatePropagation();
+    }
+    /* Nếu là ô cuối, không chặn: handler cũ có thể Lưu/Đăng nhập như trước */
+  },true);
+
+  window.enterNextFieldV83=function(el,reverse){
+    return moveV83(el,reverse?-1:1);
+  };
+})();
+</script>
+
+<!-- AN BUI V83: Enter moves to next editable field globally -->
+
+<!-- AN BUI RELEASE V83 • ENTER NEXT FIELD GLOBAL • CORE 259 -->
