@@ -10824,6 +10824,68 @@ body:has(#payments.page.active) .topbar #paymentTopbarFilterHost{
   @media(max-width:980px){#payments .v206-payment-grid{grid-template-columns:1fr 1fr!important}#payments .v208-customer-cell,#payments .v208-save-cell{grid-column:1/-1!important}}
   @media(max-width:760px){#payments .v207-debt-pair{grid-template-columns:1fr!important}.payment-edit-summary-v10{grid-template-columns:1fr 1fr!important}}
 </style>
+
+
+<style id="v80-catalog-toolbar-patch">
+/* V80: Danh mục hàng hóa - đưa tiêu đề lên trên, bộ lọc xuống dưới */
+#products .toolbar{
+  align-items:flex-start!important;
+}
+#products .toolbar > div:first-child{
+  width:100%!important;
+}
+#products .toolbar > div:first-child > div:first-child{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:flex-start!important;
+  gap:12px!important;
+}
+#products .toolbar > div:first-child > div:first-child > h2{
+  order:1!important;
+  margin:0!important;
+}
+#products .toolbar > div:first-child > div:first-child > div{
+  order:2!important;
+}
+#products .toolbar > div:first-child > div:nth-child(2){
+  margin-top:10px!important;
+}
+#products .toolbar > div:first-child > div:nth-child(2) > div{
+  display:flex!important;
+  flex-wrap:wrap!important;
+  align-items:center!important;
+  gap:10px 12px!important;
+}
+#products .toolbar > div:first-child > div:nth-child(2) input[type="search"],
+#products .toolbar > div:first-child > div:nth-child(2) select{
+  height:48px!important;
+}
+#products .toolbar > div:first-child > div:nth-child(2) input[type="search"]{
+  min-width:320px!important;
+  flex:1 1 380px!important;
+}
+#products .toolbar > div:first-child > div:nth-child(2) > div > label{
+  margin-right:2px!important;
+  font-weight:700!important;
+  color:#5b7080!important;
+}
+#products .toolbar > div:first-child > div:nth-child(2) > div > label:first-of-type{
+  margin-left:0!important;
+}
+#products .toolbar > div:first-child > div:nth-child(3){
+  margin-top:14px!important;
+}
+@media (max-width: 900px){
+  #products .toolbar > div:first-child > div:nth-child(2) > div{
+    gap:8px!important;
+  }
+  #products .toolbar > div:first-child > div:nth-child(2) input[type="search"]{
+    min-width:220px!important;
+    flex:1 1 220px!important;
+  }
+}
+</style>
+
 </head>
 <body>
 <div id="startupSafetyGate" class="startup-safety-gate show" aria-modal="true" role="dialog">
@@ -11108,8 +11170,9 @@ body:has(#payments.page.active) .topbar #paymentTopbarFilterHost{
           </div>
         </div>
       </div>
-      <table class="invoice-table">
-        <thead><tr id="siHeadRow"><th style="width:34px">STT</th><th>Tên hàng</th><th style="width:48px">ĐVT</th><th style="width:55px">SL</th><th class="si-source-col">Nguồn</th><th style="width:86px">Giá vốn</th><th style="width:52px">CK %</th><th style="width:60px">KM</th><th style="width:92px">Giá TT</th><th class="si-total-col" style="width:116px">Thành tiền</th><th style="width:95px">Ghi chú</th></tr></thead>
+      <table class="invoice-table" id="stockinFixedTableV78">
+        <colgroup id="stockinPermanentColsV79"><col style="width:4%"><col style="width:29%"><col style="width:5%"><col style="width:5%"><col style="width:7%"><col style="width:7%"><col style="width:9%"><col style="width:5%"><col style="width:5%"><col style="width:9%"><col style="width:15%"><col style="width:0%"></colgroup>
+        <thead><tr id="siHeadRow"><th>STT</th><th>Tên hàng</th><th>ĐVT</th><th>SL</th><th class="si-source-col">Nguồn</th><th>Giá vốn</th><th>Giá bán</th><th>CK %</th><th>KM</th><th>Giá TT</th><th class="si-total-col">Thành tiền vốn</th><th>Ghi chú</th></tr></thead>
         <tbody id="siBody"></tbody>
       </table>
       
@@ -11119,7 +11182,7 @@ body:has(#payments.page.active) .topbar #paymentTopbarFilterHost{
       </div>
 
       <div id="siOrderTotalBox" class="sum-box stockin-debt-summary-v6">
-        <div class="sum-row"><div>Tổng tiền phiếu nhập</div><div id="siTotal">0 đ</div></div>
+        <div class="sum-row stockin-total-row"><div id="siTotalLabel">Tổng tiền phiếu nhập</div><div id="siTotal">0 đ</div></div>
         <div class="sum-row"><div>Còn nợ NCC đến ngày <b id="siDebtAsOfDate"></b></div><div id="siOldDebt">0 đ</div></div>
         <div class="sum-row"><div><b>Đã thanh toán NCC</b></div><div><input id="siPaid" type="number" min="0" value="0" oninput="recalcSI()" placeholder="Nhập số tiền đã trả NCC"></div></div>
         <div class="sum-row"><div><b>Tổng nợ NCC</b></div><div id="siDebt">0 đ</div></div>
@@ -14953,10 +15016,7 @@ function applyStockinPrivacyUI(){
 
   if($('siSavePrintBtn'))$('siSavePrintBtn').style.display=staffMode?'none':'';
 
-  /* Khi chuyển quyền ngay tại màn Nhập hàng, dựng lại bảng để giá không còn trong DOM. */
-  if(document.querySelector('.page.active')?.id==='stockin' && typeof renderSIRows==='function'){
-    renderSIRows();
-  }
+  /* V76: không render lại Phiếu nhập ở đây; renderSIRows tự dựng đúng quyền ngay từ đầu. */
 }
 
 function ensureInvoiceProductSnapshots(){
@@ -25437,92 +25497,141 @@ function fieldKey(e,mode,i,role){
     invoiceNextRowV260(mode,i);
   }
 }
-function renderSIRows(){
+
+/* ===== V76: BỐ CỤC PHIẾU NHẬP DUY NHẤT ===== */
+function stockinApplyFixedLayoutV76(){
+  const page=$('stockin');
+  if(!page)return;
   const staffMode=!isManager && staffModuleEnabled('stockin');
+  page.classList.toggle('staff-stockin-private',staffMode);
+
+  const table=page.querySelector('table.invoice-table');
+  /* V78: giữ colgroup cố định vĩnh viễn, không xóa/khởi tạo lại. */
+  if(table && !table.querySelector('#stockinPermanentColsV79')){
+    const cg=document.createElement('colgroup');
+    cg.id='stockinPermanentColsV79';
+    [4,29,5,5,7,7,9,5,5,9,15,0].forEach(w=>{
+      const c=document.createElement('col');c.style.width=w+'%';cg.appendChild(c);
+    });
+    table.insertBefore(cg,table.firstChild);
+  }
+
+  const head=$('siHeadRow');
+  if(head){
+    [...head.children].forEach((th,i)=>{
+      th.style.removeProperty('width');
+      th.style.removeProperty('min-width');
+      th.style.removeProperty('max-width');
+      th.style.removeProperty('display');
+    });
+  }
+
+  document.querySelectorAll('#siBody tr').forEach(tr=>{
+    [...tr.children].forEach(td=>td.style.removeProperty('display'));
+  });
+}
+function renderSIRows(){
+  /* V77: Quản lý và Nhân viên dùng CÙNG 1 cấu trúc 12 cột.
+     Chỉ khác dữ liệu được phép nhìn, tuyệt đối không đổi số cột/vị trí cột. */
+  const staffMode=!isManager && staffModuleEnabled('stockin');
+  const page=$('stockin');
+  if(page)page.classList.toggle('staff-stockin-private',staffMode);
+
   const siSource=currentStockinVatType();
   const siSourceLocked=!!(stockinViewingHistory&&!stockinEditingHistory);
   const head=$('siHeadRow');
+
   if(head){
-    head.innerHTML=staffMode
-      ? '<th style="width:34px">STT</th><th>Tên hàng</th><th style="width:48px">ĐVT</th><th style="width:55px">SL</th><th class="si-source-col">Nguồn</th><th style="width:88px">Giá bán</th><th style="width:52px">CK %</th><th style="width:60px">KM</th><th class="si-total-col" style="width:116px">Thành tiền</th><th style="width:120px">Ghi chú</th>'
-      : '<th style="width:34px">STT</th><th>Tên hàng</th><th style="width:48px">ĐVT</th><th style="width:55px">SL</th><th class="si-source-col">Nguồn</th><th style="width:82px">Giá vốn</th><th style="width:88px">Giá bán</th><th style="width:48px">CK %</th><th style="width:56px">KM</th><th style="width:86px">Giá TT</th><th class="si-total-col" style="width:116px">Thành tiền vốn</th><th style="width:90px">Ghi chú</th>';
+    head.innerHTML=
+      '<th>STT</th>'+
+      '<th>Tên hàng</th>'+
+      '<th>ĐVT</th>'+
+      '<th>SL</th>'+
+      '<th class="si-source-col">Nguồn</th>'+
+      '<th class="si-cost-col">Giá vốn</th>'+
+      '<th>Giá bán</th>'+
+      '<th>CK %</th>'+
+      '<th>KM</th>'+
+      '<th>Giá TT</th>'+
+      '<th class="si-total-col">Thành tiền</th>'+
+      '<th>Ghi chú</th>';
   }
 
   $('siBody').innerHTML=siRows.map((r,i)=>{
     const p=db.products.find(x=>x.id===r.productId);
     const unit=r.unitAtTxn||p?.unit||'';
 
-    if(staffMode){
-      const salePrice=staffStockinSalesValue(r,p,'salePrice');
-      const saleCK=staffStockinSalesValue(r,p,'ck');
-      const saleKM=staffStockinSalesValue(r,p,'km');
-      const saleNet=Math.max(Math.round((Number(salePrice)||0)*(1-(Number(saleCK)||0)/100)-(Number(saleKM)||0)),0);
-      const saleTotal=saleNet*(Number(r.qty)||0);
-      return `<tr data-line="si${i}">
-        <td class="center">${i+1}</td>
-        <td class="product-cell">
-          <input data-mode="si" data-role="product" data-row="${i}"
-            value="${esc(r.productText||(p?.name||''))}" placeholder="Gõ tên hàng..."
-            oninput="siRows[${i}].productText=this.value;siRows[${i}].productId='';openSuggestions('si',${i},this)"
-            onfocus="this.select();openSuggestions('si',${i},this,true)"
-            onclick="event.stopPropagation();this.select();openSuggestions('si',${i},this,true)"
-            onkeydown="productKey(event,'si',${i},this)">
-          <div class="suggestions" id="sisg${i}"></div>
-        </td>
-        <td class="center">${unit}</td>
-        <td><input data-mode="si" data-role="qty" data-row="${i}" type="number" value="${r.qty}" oninput="changeQtyWithStockLock('stockin',${i},this)" onkeydown="fieldKey(event,'si',${i},'qty')"></td>
-        <td class="si-source-col">
-          <select id="siVatLine${i}"
-                  class="si-line-vat-source ${siSource==='vat'?'source-vat':siSource==='nonvat'?'source-nonvat':'source-missing'}"
-                  data-mode="si" data-role="vatSource" data-row="${i}"
-                  title="Nguồn áp dụng chung cho toàn phiếu nhập"
-                  ${siSourceLocked?'disabled':''}
-                  onchange="changeStockinVatSourceFromLineV263(this.value)">
-            ${!['vat','nonvat'].includes(siSource)?'<option value="" selected>CHƯA PL</option>':''}
-            <option value="nonvat" ${siSource==='nonvat'?'selected':''}>KG VAT</option>
-            <option value="vat" ${siSource==='vat'?'selected':''}>CÓ VAT</option>
-          </select>
-        </td>
-        <td><input class="staff-sale-price" data-mode="si" data-role="salePrice" data-row="${i}" type="number" min="0" value="${salePrice}" oninput="changeStaffStockinSaleField(${i},'salePrice',this.value)" onkeydown="fieldKey(event,'si',${i},'salePrice')"></td>
-        <td><input class="staff-sale-meta" data-mode="si" data-role="saleCK" data-row="${i}" type="number" min="0" value="${saleCK}" oninput="changeStaffStockinSaleField(${i},'ck',this.value)" onkeydown="fieldKey(event,'si',${i},'saleCK')"></td>
-        <td><input class="staff-sale-meta" data-mode="si" data-role="saleKM" data-row="${i}" type="number" min="0" value="${saleKM}" oninput="changeStaffStockinSaleField(${i},'km',this.value)" onkeydown="fieldKey(event,'si',${i},'saleKM')"></td>
-        <td class="right staff-sale-total" data-calc="staff-sale-total">${money(saleTotal).replace(' đ','')}</td>
-        <td><input data-mode="si" data-role="note" data-row="${i}" value="${esc(r.note)}" oninput="changeField('si',${i},'note',this.value)" onkeydown="fieldKey(event,'si',${i},'note')"></td>
-      </tr>`;
-    }
-
-    const net=stockinCostNetV249(r);
-    const total=net*(Number(r.qty)||0);
     const salePrice=staffStockinSalesValue(r,p,'salePrice');
+    const saleCK=staffStockinSalesValue(r,p,'ck');
+    const saleKM=staffStockinSalesValue(r,p,'km');
+    const saleNet=Math.max(
+      Math.round((Number(salePrice)||0)*(1-(Number(saleCK)||0)/100)-(Number(saleKM)||0)),
+      0
+    );
+    const saleTotal=saleNet*(Number(r.qty)||0);
+
+    const costNet=stockinCostNetV249(r);
+    const costTotal=costNet*(Number(r.qty)||0);
+
+    const costCell=staffMode
+      ? '<td class="si-cost-col staff-hidden-cost"><span aria-hidden="true">—</span></td>'
+      : `<td class="si-cost-col"><input data-mode="si" data-role="price" data-row="${i}" type="number" value="${r.price}" oninput="changeField('si',${i},'price',this.value)" onkeydown="fieldKey(event,'si',${i},'price')"></td>`;
+
+    const salePriceCell=`<td><input class="staff-sale-price" data-mode="si" data-role="salePrice" data-row="${i}" type="number" min="0" value="${salePrice}" oninput="changeStaffStockinSaleField(${i},'salePrice',this.value)" onkeydown="fieldKey(event,'si',${i},'salePrice')"></td>`;
+
+    const ckCell=staffMode
+      ? `<td><input class="staff-sale-meta" data-mode="si" data-role="saleCK" data-row="${i}" type="number" min="0" value="${saleCK}" oninput="changeStaffStockinSaleField(${i},'ck',this.value)" onkeydown="fieldKey(event,'si',${i},'saleCK')"></td>`
+      : `<td><input data-mode="si" data-role="ck" data-row="${i}" type="number" value="${r.ck}" oninput="changeField('si',${i},'ck',this.value)" onkeydown="fieldKey(event,'si',${i},'ck')"></td>`;
+
+    const kmCell=staffMode
+      ? `<td><input class="staff-sale-meta" data-mode="si" data-role="saleKM" data-row="${i}" type="number" min="0" value="${saleKM}" oninput="changeStaffStockinSaleField(${i},'km',this.value)" onkeydown="fieldKey(event,'si',${i},'saleKM')"></td>`
+      : `<td><input data-mode="si" data-role="km" data-row="${i}" type="number" value="${r.km}" oninput="changeField('si',${i},'km',this.value)" onkeydown="fieldKey(event,'si',${i},'km')"></td>`;
+
+    const netDisplay=staffMode?saleNet:costNet;
+    const totalDisplay=staffMode?saleTotal:costTotal;
+
     return `<tr data-line="si${i}">
       <td class="center">${i+1}</td>
-      <td class="product-cell"><input data-mode="si" data-role="product" data-row="${i}" value="${esc(r.productText||(p?.name||''))}" placeholder="Gõ tên hàng..." oninput="siRows[${i}].productText=this.value;siRows[${i}].productId='';openSuggestions('si',${i},this)" onfocus="this.select();openSuggestions('si',${i},this,true)" onclick="event.stopPropagation();this.select();openSuggestions('si',${i},this,true)" onkeydown="productKey(event,'si',${i},this)"><div class="suggestions" id="sisg${i}"></div></td>
+      <td class="product-cell">
+        <input data-mode="si" data-role="product" data-row="${i}"
+          value="${esc(r.productText||(p?.name||''))}" placeholder="Gõ tên hàng..."
+          oninput="siRows[${i}].productText=this.value;siRows[${i}].productId='';openSuggestions('si',${i},this)"
+          onfocus="this.select()"
+          onclick="event.stopPropagation();this.select();openSuggestions('si',${i},this,true)"
+          onkeydown="productKey(event,'si',${i},this)">
+        <div class="suggestions" id="sisg${i}"></div>
+      </td>
       <td class="center">${unit}</td>
       <td><input data-mode="si" data-role="qty" data-row="${i}" type="number" value="${r.qty}" oninput="changeQtyWithStockLock('stockin',${i},this)" onkeydown="fieldKey(event,'si',${i},'qty')"></td>
-        <td class="si-source-col">
-          <select id="siVatLine${i}"
-                  class="si-line-vat-source ${siSource==='vat'?'source-vat':siSource==='nonvat'?'source-nonvat':'source-missing'}"
-                  data-mode="si" data-role="vatSource" data-row="${i}"
-                  title="Nguồn áp dụng chung cho toàn phiếu nhập"
-                  ${siSourceLocked?'disabled':''}
-                  onchange="changeStockinVatSourceFromLineV263(this.value)">
-            ${!['vat','nonvat'].includes(siSource)?'<option value="" selected>CHƯA PL</option>':''}
-            <option value="nonvat" ${siSource==='nonvat'?'selected':''}>KG VAT</option>
-            <option value="vat" ${siSource==='vat'?'selected':''}>CÓ VAT</option>
-          </select>
-        </td>
-      <td><input data-mode="si" data-role="price" data-row="${i}" type="number" value="${r.price}" oninput="changeField('si',${i},'price',this.value)" onkeydown="fieldKey(event,'si',${i},'price')"></td>
-      <td><input class="staff-sale-price" data-mode="si" data-role="salePrice" data-row="${i}" type="number" min="0" value="${salePrice}" oninput="changeStaffStockinSaleField(${i},'salePrice',this.value)" onkeydown="fieldKey(event,'si',${i},'salePrice')"></td>
-      <td><input data-mode="si" data-role="ck" data-row="${i}" type="number" value="${r.ck}" oninput="changeField('si',${i},'ck',this.value)" onkeydown="fieldKey(event,'si',${i},'ck')"></td>
-      <td><input data-mode="si" data-role="km" data-row="${i}" type="number" value="${r.km}" oninput="changeField('si',${i},'km',this.value)" onkeydown="fieldKey(event,'si',${i},'km')"></td>
-      <td class="right" data-calc="net">${money(net).replace(' đ','')}</td>
-      <td class="right" data-calc="total">${money(total).replace(' đ','')}</td>
+      <td class="si-source-col">
+        <select id="siVatLine${i}"
+                class="si-line-vat-source ${siSource==='vat'?'source-vat':siSource==='nonvat'?'source-nonvat':'source-missing'}"
+                data-mode="si" data-role="vatSource" data-row="${i}"
+                title="Nguồn áp dụng chung cho toàn phiếu nhập"
+                ${siSourceLocked?'disabled':''}
+                onchange="changeStockinVatSourceFromLineV263(this.value)">
+          ${!['vat','nonvat'].includes(siSource)?'<option value="" selected>CHƯA PL</option>':''}
+          <option value="nonvat" ${siSource==='nonvat'?'selected':''}>KG VAT</option>
+          <option value="vat" ${siSource==='vat'?'selected':''}>CÓ VAT</option>
+        </select>
+      </td>
+      ${costCell}
+      ${salePriceCell}
+      ${ckCell}
+      ${kmCell}
+      <td class="right" data-calc="net">${money(netDisplay).replace(' đ','')}</td>
+      <td class="right" data-calc="total">${money(totalDisplay).replace(' đ','')}</td>
       <td><input data-mode="si" data-role="note" data-row="${i}" value="${esc(r.note)}" oninput="changeField('si',${i},'note',this.value)" onkeydown="fieldKey(event,'si',${i},'note')"></td>
     </tr>`;
   }).join('');
+
+  stockinApplyFixedLayoutV76();
+  try{taxStockinPriceModeV259()}catch(_){}
+  try{bindVoucherSttHeadersV183()}catch(_){}
   recalcSI();
   syncVoucherEditDeleteButton();
 }
+
 function renderSORows(){
   $('soBody').innerHTML=soRows.map((r,i)=>{
     if(!r.vatSource)r.vatSource='nonvat';
@@ -25589,7 +25698,23 @@ function stockinStaffSaleTotal(){
 }
 function updateStockinRoleTotal(totalImport){
   const box=$('siOrderTotalBox');
-  if(box)box.style.display='block';
+  if(!box)return;
+
+  const staffMode=!isManager && staffModuleEnabled('stockin');
+  const label=$('siTotalLabel');
+
+  if(staffMode){
+    const saleTotal=stockinSaleTotalV249(siRows);
+    if(label)label.textContent='TỔNG ĐƠN HÀNG';
+    if($('siTotal'))$('siTotal').textContent=money(saleTotal);
+    box.classList.add('staff-order-only');
+  }else{
+    if(label)label.textContent='Tổng tiền phiếu nhập';
+    if($('siTotal'))$('siTotal').textContent=money(totalImport);
+    box.classList.remove('staff-order-only');
+  }
+
+  box.style.display='block';
 }
 function recalcSI(){
   const total=siRows.reduce((s,r)=>s+(Number(r.qty)||0)*stockinCostNetV249(r),0);
@@ -28536,11 +28661,6 @@ const saveEditedExpenseBaseV259=saveEditedExpense;
 saveEditedExpense=async function(id){const e=(db.expenses||[]).find(x=>x.id===id);if(e){e.taxVatMode=$('editExpenseTaxModeV259')?.value||e.taxVatMode||'nonvat';e.taxVatRate=taxNumV259($('editExpenseTaxRateV259')?.value||e.taxVatRate||0);e.taxVatDeductible=($('editExpenseVatDeductV259')?.value||String(e.taxVatDeductible!==false?1:0))==='1';e.taxTndnDeductible=($('editExpenseTndnV259')?.value||String(e.taxTndnDeductible!==false?1:0))==='1';e.taxVatInclusive=true}return await saveEditedExpenseBaseV259(id)};
 
 /* V7: Giá hóa đơn được xử lý tại menu THUẾ VAT, không nhập tại dòng phiếu. */
-const renderSIRowsBaseTaxV259=renderSIRows;
-renderSIRows=function(){
-  renderSIRowsBaseTaxV259();
-  taxStockinPriceModeV259();
-};
 function taxStockinPriceModeV259(){$('stockin')?.classList.remove('tax-price-mode')}
 const toggleStockinVatFieldsBaseTaxV259=toggleStockinVatFields;toggleStockinVatFields=function(){const r=toggleStockinVatFieldsBaseTaxV259.apply(this,arguments);taxStockinPriceModeV259();renderSIRows();return r};
 const stockinVatSnapshotBaseTaxV259=stockinVatSnapshot;stockinVatSnapshot=function(total){return stockinVatSnapshotBaseTaxV259(total)};
@@ -32162,24 +32282,7 @@ setTimeout(()=>{try{ensurePrintDesignerSettings();applyStockoutRowHeightSetting(
     });
   }
 
-  try{
-    const oldRenderSI=window.renderSIRows;
-    if(typeof oldRenderSI==='function'){
-      window.renderSIRows=function(){
-        const r=oldRenderSI.apply(this,arguments);
-        try{bindVoucherSttHeadersV183()}catch(e){}
-        return r;
-      };
-    }
-    const oldRenderSO=window.renderSORows;
-    if(typeof oldRenderSO==='function'){
-      window.renderSORows=function(){
-        const r=oldRenderSO.apply(this,arguments);
-        try{bindVoucherSttHeadersV183()}catch(e){}
-        return r;
-      };
-    }
-  }catch(e){}
+  /* V76: bỏ wrapper render phiếu của V183; binder vẫn chạy qua load/click. */
 
   window.addEventListener('load',()=>setTimeout(bindVoucherSttHeadersV183,300));
   document.addEventListener('click',()=>{try{bindVoucherSttHeadersV183()}catch(e){}},{passive:true});
@@ -39795,7 +39898,7 @@ body.warehouse-page-active .topbar>.actions{
   function stockinSuggestions69(i,el,showAll){const box=q('sisg'+i);if(!box)return;const typed=String(el?.value||'').trim();let arr=[];if(showAll)arr=[...(db.products||[])].slice(0,30);else{if(!typed){box.classList.remove('show');box.innerHTML='';box.dataset.index='-1';return}const key=norm69(typed);arr=(db.products||[]).filter(p=>norm69((p.name||'')+' '+(p.id||'')).includes(key)).slice(0,20)}let html=arr.map((p,idx)=>`<div class="suggestion ${idx===0?'active':''}" data-product-id="${esc69(p.id)}" onmousedown="event.preventDefault();chooseProduct('si',${i},'${esc69(p.id)}')"><b>${esc69(p.name)}</b>${p.saleActive===false?'<span class="badge danger" style="margin-left:6px">Ngừng bán</span>':''}<small>${esc69(p.id)} • ${esc69(p.unit||'')} • Tồn ${Number(p.stock)||0}</small></div>`).join('');if(isManager&&typed&&!showAll){const exact=(db.products||[]).some(p=>norm69(p.name||'')===norm69(typed));if(!exact)html+=`<div class="suggestion create-new" onmousedown="event.preventDefault();openQuickProductFromStockin(${i},decodeURIComponent('${encodeURIComponent(typed)}'))">＋ Tạo hàng mới: <b>${esc69(typed)}</b><small>Tạo ngay, không cần qua menu Hàng hóa</small></div>`}box.innerHTML=html;box.classList.toggle('show',!!html);box.dataset.index='-1'}
   window.openSuggestions=function(mode,i,el,showAll=false){if(mode==='si')return stockinSuggestions69(i,el,!!showAll);return typeof baseOpenSuggestions69==='function'?baseOpenSuggestions69.apply(this,arguments):undefined};
   function syncStockin69(){const page=q('stockin');if(!page)return;let staff=false;try{staff=!isManager&&staffModuleEnabled('stockin')}catch(_){}page.classList.toggle('staff-stockin-private',!!staff);const head=q('siHeadRow');if(head)[...head.children].forEach(th=>{th.style.removeProperty('width');th.style.removeProperty('min-width');th.style.removeProperty('max-width')});document.querySelectorAll('#stockin input[data-mode="si"][data-role="product"]').forEach(el=>{el.onfocus=function(){try{this.select()}catch(_){}const i=Number(this.dataset.row||0),box=q('sisg'+i);if(box){box.classList.remove('show');box.innerHTML='';box.dataset.index='-1'}};el.onclick=function(ev){ev?.stopPropagation?.();try{this.select()}catch(_){}stockinSuggestions69(Number(this.dataset.row||0),this,true)};el.oninput=function(){const i=Number(this.dataset.row||0);if(Array.isArray(window.siRows)&&siRows[i]){siRows[i].productText=this.value;siRows[i].productId=''}stockinSuggestions69(i,this,false)}})}
-  const baseRenderSI69=window.renderSIRows;if(typeof baseRenderSI69==='function')window.renderSIRows=function(){syncStockin69();const r=baseRenderSI69.apply(this,arguments);syncStockin69();return r};
+  /* V76: renderSIRows không còn bị V69 bọc lại. */
 
   /* ================= WARRANTY CUSTOMER ================= */
   function warrantyMatches69(v){const s=norm69(v),arr=db.customers||[];return (!s?arr:arr.filter(c=>norm69([c.name,c.phone,c.address,c.id].join(' ')).includes(s))).slice(0,50)}
@@ -39819,3 +39922,453 @@ body.warehouse-page-active .topbar>.actions{
 </script>
 <!-- ===== /V69 FINAL GITHUB CLEAN ===== -->
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<style id="v79-stockin-full-block-css">
+html{overflow-y:scroll!important;scrollbar-gutter:stable!important}
+body{scrollbar-gutter:stable!important}
+
+#stockin table.invoice-table,
+#stockin table.invoice-table *,
+#stockin .table-wrap{
+  transition:none!important;
+  animation:none!important;
+}
+
+#stockin .table-wrap{
+  width:100%!important;
+  max-width:100%!important;
+  overflow-x:hidden!important;
+  contain:layout style!important;
+}
+#stockin table.invoice-table{
+  width:100%!important;
+  min-width:100%!important;
+  max-width:100%!important;
+  table-layout:fixed!important;
+  border-collapse:collapse!important;
+}
+
+/* 11 cột hiển thị chiếm đúng 100%; Ghi chú ẩn = 0% */
+#stockin table.invoice-table colgroup#stockinPermanentColsV79 col:nth-child(1){width:4%!important}
+#stockin table.invoice-table colgroup#stockinPermanentColsV79 col:nth-child(2){width:29%!important}
+#stockin table.invoice-table colgroup#stockinPermanentColsV79 col:nth-child(3){width:5%!important}
+#stockin table.invoice-table colgroup#stockinPermanentColsV79 col:nth-child(4){width:5%!important}
+#stockin table.invoice-table colgroup#stockinPermanentColsV79 col:nth-child(5){width:7%!important}
+#stockin table.invoice-table colgroup#stockinPermanentColsV79 col:nth-child(6){width:7%!important}
+#stockin table.invoice-table colgroup#stockinPermanentColsV79 col:nth-child(7){width:9%!important}
+#stockin table.invoice-table colgroup#stockinPermanentColsV79 col:nth-child(8){width:5%!important}
+#stockin table.invoice-table colgroup#stockinPermanentColsV79 col:nth-child(9){width:5%!important}
+#stockin table.invoice-table colgroup#stockinPermanentColsV79 col:nth-child(10){width:9%!important}
+#stockin table.invoice-table colgroup#stockinPermanentColsV79 col:nth-child(11){width:15%!important}
+#stockin table.invoice-table colgroup#stockinPermanentColsV79 col:nth-child(12){width:0!important;display:none!important}
+
+#stockin table.invoice-table th,
+#stockin table.invoice-table td{
+  box-sizing:border-box!important;
+  min-width:0!important;
+  max-width:none!important;
+  overflow:hidden!important;
+  vertical-align:middle!important;
+}
+#stockin table.invoice-table th{
+  text-align:center!important;
+  white-space:normal!important;
+}
+#stockin table.invoice-table input,
+#stockin table.invoice-table select{
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  box-sizing:border-box!important;
+}
+#stockin table.invoice-table td.product-cell{overflow:visible!important}
+
+/* Cột 12 Ghi chú ẩn hoàn toàn, không giữ chiều rộng */
+#stockin table.invoice-table th:nth-child(12),
+#stockin table.invoice-table td:nth-child(12){
+  display:none!important;
+  width:0!important;
+  min-width:0!important;
+  max-width:0!important;
+  padding:0!important;
+  border:0!important;
+}
+
+/* Nhân viên: giữ hình học Giá vốn, chỉ che dữ liệu */
+#stockin.staff-stockin-private th.si-cost-col{color:transparent!important;user-select:none!important}
+#stockin.staff-stockin-private td.si-cost-col{color:transparent!important}
+#stockin.staff-stockin-private td.si-cost-col input{display:none!important}
+#stockin.staff-stockin-private td.si-cost-col .staff-hidden-cost{visibility:hidden!important}
+</style>
+
+<!-- AN BUI RELEASE V79: stockin visible columns fill 100 percent block; hidden note uses zero width; core appVersion 259 -->
+
+
+<script id="v80-catalog-toolbar-script">
+(function(){
+  function v80ReorderProductsToolbar(){
+    const page=document.getElementById('products');
+    if(!page)return;
+    const toolbar=page.querySelector('.toolbar');
+    if(!toolbar)return;
+
+    const left=toolbar.children[0];
+    if(!left)return;
+
+    const headerRow=left.children[0];
+    const filterRow=left.children[1];
+    const buttonRow=left.children[2];
+    if(!headerRow || !filterRow)return;
+
+    const title=headerRow.querySelector('h2');
+    const stockWrap=[...headerRow.children].find(el=>el!==title);
+    const filterWrap=filterRow.firstElementChild || filterRow;
+
+    if(title && stockWrap){
+      const topWrap=document.createElement('div');
+      topWrap.className='v80-top-title-row';
+      topWrap.style.display='flex';
+      topWrap.style.alignItems='center';
+      topWrap.style.flexWrap='wrap';
+      topWrap.style.gap='12px';
+      topWrap.appendChild(title);
+      topWrap.appendChild(stockWrap);
+      left.insertBefore(topWrap, left.firstChild);
+    }
+
+    if(filterWrap){
+      const filterBlock=document.createElement('div');
+      filterBlock.className='v80-filter-block';
+      filterBlock.appendChild(filterWrap);
+      if(buttonRow){
+        left.insertBefore(filterBlock, buttonRow);
+      }else{
+        left.appendChild(filterBlock);
+      }
+    }
+
+    headerRow.remove();
+    filterRow.remove();
+  }
+
+  const oldShowPage = window.showPage;
+  if(typeof oldShowPage==='function'){
+    window.showPage=function(){
+      const r=oldShowPage.apply(this,arguments);
+      try{ setTimeout(v80ReorderProductsToolbar, 0); }catch(_){}
+      return r;
+    };
+  }
+
+  const oldRenderProducts = window.renderProducts;
+  if(typeof oldRenderProducts==='function'){
+    window.renderProducts=function(){
+      const r=oldRenderProducts.apply(this,arguments);
+      try{ setTimeout(v80ReorderProductsToolbar, 0); }catch(_){}
+      return r;
+    };
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded', ()=>setTimeout(v80ReorderProductsToolbar,0), {once:true});
+  }else{
+    setTimeout(v80ReorderProductsToolbar,0);
+  }
+  window.addEventListener('load', ()=>setTimeout(v80ReorderProductsToolbar,120));
+})();
+</script>
+
+<!-- AN BUI V80: product catalog header reordered -->
+
+
+<style id="v81-stockin-staff-debt-privacy">
+/* V81: Nhân viên Nhập hàng chỉ thấy Tổng đơn hàng; không thấy bất kỳ công nợ NCC nào */
+#stockin.staff-stockin-private #siOrderTotalBox{
+  display:block!important;
+  width:100%!important;
+}
+
+/* Dòng 1 = Tổng đơn hàng được giữ lại */
+#stockin.staff-stockin-private #siOrderTotalBox .sum-row.stockin-total-row{
+  display:grid!important;
+}
+
+/* Các dòng 2,3,4 = công nợ NCC ẩn tuyệt đối với Nhân viên */
+#stockin.staff-stockin-private #siOrderTotalBox .sum-row:not(.stockin-total-row){
+  display:none!important;
+}
+
+/* Không để các trường nợ NCC lộ do CSS cũ hoặc thao tác DOM */
+#stockin.staff-stockin-private #siOldDebt,
+#stockin.staff-stockin-private #siDebt,
+#stockin.staff-stockin-private #siDebtAsOfDate,
+#stockin.staff-stockin-private #siPaid,
+#stockin.staff-stockin-private #siPayable{
+  visibility:hidden!important;
+}
+
+/* Tổng đơn hàng nhân viên nhấn mạnh, không mang nghĩa công nợ */
+#stockin.staff-stockin-private #siOrderTotalBox .stockin-total-row{
+  border-bottom:0!important;
+  min-height:48px!important;
+  align-items:center!important;
+}
+#stockin.staff-stockin-private #siOrderTotalBox .stockin-total-row>div:first-child{
+  font-weight:900!important;
+  color:#17324d!important;
+}
+#stockin.staff-stockin-private #siOrderTotalBox .stockin-total-row>div:last-child{
+  font-weight:900!important;
+  color:#176847!important;
+  font-size:18px!important;
+}
+</style>
+
+<!-- AN BUI V81: staff stockin sees order total only; supplier debt manager-only -->
+
+<!-- AN BUI RELEASE V81 • PHAN QUYEN CONG NO NCC TRONG NHAP HANG • CORE 259 -->
+
+
+<style id="v82-warehouse-toolbar-layout">
+/* V82: Danh mục hàng hóa - tiêu đề trên, bộ lọc dưới, nút hàng 3 */
+body.warehouse-page-active .main>.topbar{
+  align-items:flex-start!important;
+  flex-wrap:nowrap!important;
+  overflow:visible!important;
+  padding:10px 12px!important;
+}
+body.warehouse-page-active .topbar-title-wrap{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  gap:8px!important;
+  flex:1 1 auto!important;
+  min-width:0!important;
+  overflow:visible!important;
+}
+body.warehouse-page-active .topbar-title-wrap>div:first-child{
+  display:flex!important;
+  align-items:center!important;
+  gap:14px!important;
+  flex-wrap:wrap!important;
+  width:100%!important;
+}
+body.warehouse-page-active #pageTitle{
+  order:1!important;
+  margin:0!important;
+  font-size:20px!important;
+  line-height:34px!important;
+  white-space:nowrap!important;
+}
+body.warehouse-page-active #warehouseStockTopHostV82{
+  order:2!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:7px!important;
+  margin:0!important;
+}
+body.warehouse-page-active #warehouseStockTopHostV82 .warehouse-view-control{
+  display:flex!important;
+  align-items:center!important;
+  gap:7px!important;
+  margin:0!important;
+}
+body.warehouse-page-active #warehouseStockTopHostV82 .warehouse-view-label{
+  font-size:12px!important;
+  font-weight:800!important;
+  color:#5b7080!important;
+}
+body.warehouse-page-active #warehouseStockTopHostV82 select{
+  height:38px!important;
+  min-width:130px!important;
+  padding:0 10px!important;
+  font-size:12px!important;
+}
+
+body.warehouse-page-active #warehouseTopNav{
+  display:flex!important;
+  width:100%!important;
+  margin:0!important;
+  padding:0!important;
+  flex:0 0 auto!important;
+  overflow:visible!important;
+}
+body.warehouse-page-active #warehouseTopNav .warehouse-compactbar{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  gap:8px!important;
+  width:100%!important;
+  margin:0!important;
+  overflow:visible!important;
+}
+body.warehouse-page-active #v69WarehouseFilterRow{
+  display:flex!important;
+  align-items:center!important;
+  flex-wrap:wrap!important;
+  gap:8px 12px!important;
+  width:100%!important;
+  order:1!important;
+}
+body.warehouse-page-active #v69WarehouseActionRow{
+  display:flex!important;
+  align-items:center!important;
+  flex-wrap:wrap!important;
+  gap:8px!important;
+  width:100%!important;
+  order:2!important;
+}
+body.warehouse-page-active #warehouseProductPicker{
+  flex:1 1 420px!important;
+  min-width:320px!important;
+  max-width:620px!important;
+}
+body.warehouse-page-active #warehouseSearch{
+  height:38px!important;
+  font-size:12.5px!important;
+}
+body.warehouse-page-active #warehouseProductPicker .warehouse-product-drop{
+  height:38px!important;
+}
+body.warehouse-page-active #v69WarehouseFilterRow>.warehouse-view-control{
+  display:flex!important;
+  align-items:center!important;
+  gap:7px!important;
+  margin:0!important;
+}
+body.warehouse-page-active #v69WarehouseFilterRow>.warehouse-view-control .warehouse-view-label{
+  font-size:12px!important;
+  font-weight:800!important;
+  color:#5b7080!important;
+}
+body.warehouse-page-active #v69WarehouseFilterRow>.warehouse-view-control select{
+  height:38px!important;
+  min-width:135px!important;
+  max-width:170px!important;
+  padding:0 10px!important;
+  font-size:12px!important;
+}
+body.warehouse-page-active #v69WarehouseActionRow .btn{
+  height:38px!important;
+  min-height:38px!important;
+  max-height:38px!important;
+  padding:0 14px!important;
+  font-size:12px!important;
+  width:auto!important;
+  min-width:82px!important;
+}
+body.warehouse-page-active #v69WarehouseActionRow #warehouseAddProductBtn{
+  min-width:105px!important;
+}
+body.warehouse-page-active #v69WarehouseActionRow .warehouse-print-btn{
+  min-width:70px!important;
+}
+
+/* 3 nút hệ thống bên phải vẫn đứng yên */
+body.warehouse-page-active .main>.topbar>.actions{
+  flex:0 0 auto!important;
+  align-self:flex-start!important;
+  margin-top:0!important;
+}
+
+@media(max-width:900px){
+  body.warehouse-page-active #warehouseProductPicker{
+    flex-basis:100%!important;
+    max-width:none!important;
+  }
+  body.warehouse-page-active #v69WarehouseFilterRow{
+    gap:7px!important;
+  }
+}
+</style>
+
+
+<script id="v82-warehouse-toolbar-layout-js">
+(function(){
+  function layoutWarehouseV82(){
+    const page=document.getElementById('warehouse');
+    if(!page)return;
+
+    /* Chờ V69 tạo đủ FilterRow/ActionRow/Tồn kho */
+    try{ if(typeof installWarehouse69==='function') installWarehouse69(); }catch(_){}
+
+    const title=document.getElementById('pageTitle');
+    const titleWrap=title?.parentElement;
+    const stock=document.getElementById('v69WarehouseStockFilter');
+
+    if(titleWrap && !document.getElementById('warehouseStockTopHostV82')){
+      const host=document.createElement('div');
+      host.id='warehouseStockTopHostV82';
+      titleWrap.appendChild(host);
+    }
+    const host=document.getElementById('warehouseStockTopHostV82');
+    if(host && stock && stock.parentElement!==host){
+      host.appendChild(stock);
+    }
+
+    /* Đảm bảo 3 bộ lọc còn lại nằm đúng hàng 2 */
+    const fr=document.getElementById('v69WarehouseFilterRow');
+    const picker=document.getElementById('warehouseProductPicker');
+    const group=document.getElementById('warehouseGroup')?.closest('.warehouse-view-control');
+    const source=document.getElementById('warehouseVatFilter')?.closest('.warehouse-view-control');
+    [picker,group,source].forEach(el=>{
+      if(fr && el && el.parentElement!==fr)fr.appendChild(el);
+    });
+
+    /* Nút nằm đúng hàng 3 */
+    const ar=document.getElementById('v69WarehouseActionRow');
+    ['warehouseManageGroupBtn','warehouseAddProductBtn','warehouseInlineEditBtn',
+     'warehouseDeleteProductBtn','warehouseInlineSaveBtn','warehouseInlineCancelBtn']
+      .forEach(id=>{
+        const el=document.getElementById(id);
+        if(ar && el && el.parentElement!==ar)ar.appendChild(el);
+      });
+    const print=document.querySelector('#warehouseCompactBar .warehouse-print-btn');
+    if(ar && print && print.parentElement!==ar)ar.appendChild(print);
+  }
+
+  /* Sau mỗi lần chuyển vào Kho, sắp lại đúng 3 hàng */
+  document.addEventListener('click',function(e){
+    const b=e.target?.closest?.('[data-page="warehouse"]');
+    if(b)setTimeout(layoutWarehouseV82,0);
+  },true);
+
+  const oldRender=window.renderWarehouse;
+  if(typeof oldRender==='function'){
+    window.renderWarehouse=function(){
+      const r=oldRender.apply(this,arguments);
+      setTimeout(layoutWarehouseV82,0);
+      return r;
+    };
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',()=>setTimeout(layoutWarehouseV82,250),{once:true});
+  }else{
+    setTimeout(layoutWarehouseV82,250);
+  }
+  window.addEventListener('load',()=>setTimeout(layoutWarehouseV82,700));
+  window.layoutWarehouseV82=layoutWarehouseV82;
+})();
+</script>
+
+<!-- AN BUI V82 warehouse toolbar 3 rows -->
