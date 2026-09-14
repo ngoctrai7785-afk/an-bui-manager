@@ -13,7 +13,7 @@
 
 <meta charset="utf-8">
 <meta name="app-version" content="259">
-<meta name="app-build" content="an-bui-v259-v16-payment-enter-flow">
+<meta name="app-build" content="an-bui-v259-v84-warehouse-delete-row-github">
 <title>AN BÙI - Quản lý nội bộ</title>
 <style>
 :root{
@@ -10886,6 +10886,23 @@ body:has(#payments.page.active) .topbar #paymentTopbarFilterHost{
 }
 </style>
 
+
+<style id="v84-warehouse-row-delete-select-style">
+#warehouseTable tbody tr.warehouse-product-row:not(.warehouse-excel-editing){cursor:pointer}
+#warehouseTable tbody tr.warehouse-delete-selected>td{
+  background:#fff4d8!important;
+  box-shadow:inset 0 1px 0 #e2aa3e,inset 0 -1px 0 #e2aa3e;
+}
+#warehouseTable tbody tr.warehouse-delete-selected>td:first-child{
+  box-shadow:inset 4px 0 0 #c78300,inset 0 1px 0 #e2aa3e,inset 0 -1px 0 #e2aa3e;
+}
+</style>
+
+<script id="v84-github-build-marker">
+window.AN_BUI_PATCH_VERSION=84;
+window.AN_BUI_BUILD='an-bui-v259-v84-warehouse-delete-row-github';
+</script>
+
 </head>
 <body>
 <div id="startupSafetyGate" class="startup-safety-gate show" aria-modal="true" role="dialog">
@@ -12410,6 +12427,8 @@ let stockinViewingHistory=false;
 let stockinEditingHistory=false;
 let warehouseMode='all';
 let selectedWarehouseProductId='';
+/* V84: dòng được chọn trực tiếp trong bảng để Xóa; tách khỏi bộ lọc/tìm kiếm kho. */
+let selectedWarehouseDeleteProductId='';
 let warehouseProductIndex=-1;
 let reportProductIndex=-1;
 let isManager=false;
@@ -17436,6 +17455,7 @@ function warehouseProductsForCurrentGroup(){
 
 function warehouseGroupChanged(){
   selectedWarehouseProductId='';
+  selectedWarehouseDeleteProductId='';
   if($('warehouseSearch'))$('warehouseSearch').value='';
   if($('warehouseProductList'))$('warehouseProductList').classList.remove('show');
   warehouseProductIndex=-1;
@@ -17499,6 +17519,7 @@ function toggleWarehouseProductList(){
 
 function filterWarehouseProducts(){
   selectedWarehouseProductId='';
+  selectedWarehouseDeleteProductId='';
   renderWarehouseProductList(false);
   renderWarehouse();
 }
@@ -17508,6 +17529,7 @@ function chooseWarehouseProduct(id){
   if(!p)return;
 
   selectedWarehouseProductId=p.id;
+  selectedWarehouseDeleteProductId='';
   $('warehouseSearch').value=p.name;
   $('warehouseProductList').classList.remove('show');
   warehouseProductIndex=-1;
@@ -17601,6 +17623,21 @@ function warehouseInlineSet(id,key,value){
   if(key==='cost'||key==='salePrice'||key==='min')d[key]=Math.max(0,Number(String(value||'').replace(/[^\d.-]/g,''))||0);
   else d[key]=String(value??'');
 }
+/* ===== V84: CHỌN DÒNG TRỰC TIẾP ĐỂ XÓA HÀNG HÓA ===== */
+function selectWarehouseDeleteRowV84(id,tr,event){
+  if(warehouseInlineEditMode)return;
+  const target=event?.target;
+  if(target?.closest?.('button,input,select,textarea,a,[contenteditable="true"]'))return;
+  id=String(id||'').trim();
+  if(!id)return;
+  selectedWarehouseDeleteProductId=(String(selectedWarehouseDeleteProductId||'')===id)?'':id;
+  const selected=String(selectedWarehouseDeleteProductId||'');
+  document.querySelectorAll('#warehouseTable tbody tr[data-product-id]').forEach(row=>{
+    row.classList.toggle('warehouse-delete-selected',String(row.dataset.productId||'')===selected);
+  });
+  warehouseInlineUpdateUI();
+}
+
 function warehouseInlineUpdateUI(){
   const editing=warehouseInlineEditMode;
   if($('warehouseInlineEditBtn'))$('warehouseInlineEditBtn').style.display=editing?'none':'';
@@ -17608,11 +17645,12 @@ function warehouseInlineUpdateUI(){
   if($('warehouseInlineCancelBtn'))$('warehouseInlineCancelBtn').style.display=editing?'':'none';
   if($('warehouseInlineEditNote'))$('warehouseInlineEditNote').style.display=editing?'flex':'none';
   if($('warehouseDeleteProductBtn')){
+    const deleteId=String(selectedWarehouseDeleteProductId||selectedWarehouseProductId||'').trim();
     $('warehouseDeleteProductBtn').style.display=editing?'none':'';
-    $('warehouseDeleteProductBtn').disabled=editing || !selectedWarehouseProductId || !warehouseCanDeleteProductV193();
+    $('warehouseDeleteProductBtn').disabled=editing || !deleteId || !warehouseCanDeleteProductV193();
     $('warehouseDeleteProductBtn').title=!warehouseCanDeleteProductV193()
       ? 'Quản lý chưa cấp quyền Xóa hàng hóa'
-      : (!selectedWarehouseProductId?'Chọn một mặt hàng rồi bấm Xóa':'Xóa mặt hàng đang chọn');
+      : (!deleteId?'Bấm chọn một dòng hàng rồi bấm Xóa':'Xóa mặt hàng đang chọn');
   }
   ['warehouseSearch','warehouseGroup','warehouseVatFilter'].forEach(id=>{
     const el=$(id);if(el)el.disabled=editing;
@@ -17878,7 +17916,8 @@ function renderWarehouse(){
       </tr>`;
     }
 
-    return `<tr class="warehouse-product-row" data-product-id="${esc(p.id)}"
+    return `<tr class="warehouse-product-row${String(selectedWarehouseDeleteProductId||'')===String(p.id)?' warehouse-delete-selected':''}" data-product-id="${esc(p.id)}"
+      onclick="selectWarehouseDeleteRowV84('${esc(p.id)}',this,event)"
       oncontextmenu="return openProductContextMenu(event,'${esc(p.id)}',this)"
       ontouchstart="productContextTouchStart(event,'${esc(p.id)}',this)"
       ontouchend="productContextTouchEnd()" ontouchcancel="productContextTouchEnd()">
@@ -21276,7 +21315,7 @@ function clearTransientStateAfterFullReset(){
   stockoutHistoryList=[]; stockoutHistoryIndex=-1;
   stockoutViewingHistory=false; stockoutEditingHistory=false;
   stockinHistoryList=[]; stockinHistoryIndex=-1; stockinViewingHistory=false; stockinEditingHistory=false;
-  warehouseMode='all'; selectedWarehouseProductId=''; warehouseProductIndex=-1; reportProductIndex=-1;
+  warehouseMode='all'; selectedWarehouseProductId=''; selectedWarehouseDeleteProductId=''; warehouseProductIndex=-1; reportProductIndex=-1;
   warehouseInlineEditMode=false; warehouseInlineDraft={};
   warrantyDraftItems=[]; warrantyPickerIndex=-1; warrantySelectedProductId='';
   if(typeof warehouseMovementProductId!=='undefined')warehouseMovementProductId='';
@@ -23744,14 +23783,14 @@ async function deleteProductSafe(id){
   if(!confirm('Xóa hẳn hàng hóa “'+p.name+'”?\n\nSản phẩm chưa có lịch sử và tồn = 0 nên có thể xóa an toàn.'))return;
   const before=JSON.stringify(db);db.products=(db.products||[]).filter(x=>String(x.id)!==String(id));
   if(!(await saveDB())){db=JSON.parse(before);return}
-  selectedWarehouseProductId='';renderWarehouse();refreshLists();toast('Đã xóa hàng hóa '+p.name);
+  selectedWarehouseProductId='';selectedWarehouseDeleteProductId='';renderWarehouse();refreshLists();toast('Đã xóa hàng hóa '+p.name);
 }
 
 async function deleteWarehouseSelectedProductV193(){
   if(!warehouseCanDeleteProductV193())return alert('Quản lý chưa cấp quyền Xóa hàng hóa.');
   if(warehouseInlineEditMode)return alert('Đang ở chế độ Sửa. Hãy Lưu hoặc Hủy trước khi Xóa.');
 
-  let id=String(selectedWarehouseProductId||'').trim();
+  let id=String(selectedWarehouseDeleteProductId||selectedWarehouseProductId||'').trim();
 
   /* Nếu chưa chọn từ danh sách nhưng ô tìm đang khớp đúng 1 mặt hàng thì dùng mặt hàng đó. */
   if(!id){
@@ -23761,6 +23800,7 @@ async function deleteWarehouseSelectedProductV193(){
       if(hits.length===1){
         id=String(hits[0].id||'');
         selectedWarehouseProductId=id;
+        selectedWarehouseDeleteProductId=id;
       }
     }
   }
@@ -31255,7 +31295,7 @@ window.addEventListener('load',()=>{
 <script id="pwa-register">
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   window.addEventListener('load', function(){
-    navigator.serviceWorker.register('./sw.js?v=an-bui-v259-v14-payment-customer-flow').then(function(reg){
+    navigator.serviceWorker.register('./sw.js?v=an-bui-v259-v84-warehouse-delete-row-github').then(function(reg){
       return reg.update();
     }).catch(function(err){ console.warn('Service worker:', err); });
   });
@@ -35982,7 +36022,9 @@ async function saveCustomerDebtEditUnifiedV193(id){
     const w=window.open('','_blank','width=950,height=900');
     if(!w)return alert('Trình duyệt đang chặn cửa sổ in/PDF.');
     w.document.open();
-    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${name}</title><style>body{font-family:Arial,sans-serif;margin:24px;color:#111}h2{text-align:center}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #222;padding:7px}.c{text-align:center}.r{text-align:right}.meta{display:grid;grid-template-columns:1fr 1fr;gap:8px 18px;margin:12px 0}.sum{width:430px;margin:12px 0 0 auto}.blue{color:#0b3f91;font-weight:900}.red{color:#c62828;font-weight:900}@media print{body{margin:10mm}}</style></head><body>${html}<script>window.onload=()=>setTimeout(()=>window.print(),180)<\/script></body></html>`);
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${name}</title><style>body{font-family:Arial,sans-serif;margin:24px;color:#111}h2{text-align:center}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #222;padding:7px}.c{text-align:center}.r{text-align:right}.meta{display:grid;grid-template-columns:1fr 1fr;gap:8px 18px;margin:12px 0}.sum{width:430px;margin:12px 0 0 auto}.blue{color:#0b3f91;font-weight:900}.red{color:#c62828;font-weight:900}@media print{body{margin:10mm}}</style></head><body>${html}<script>window.onload=()=>setTimeout(()=>window.print(),180)<\/script>
+<!-- V84 FIX: click row to select warehouse product for delete; safe-delete rules retained -->
+</body></html>`);
     w.document.close();
   };
 
