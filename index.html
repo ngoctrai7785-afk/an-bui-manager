@@ -13362,6 +13362,12 @@ async function syncPoll(){
       db=remote.data;
       normalizeDB();
       ensureSecuritySettings();
+
+      /* B12: nếu lần dọn trước chưa đẩy Online được thì không cho dữ liệu cũ từ server quay trở lại. */
+      if(localStorage.getItem(B12_PENDING_KEY)==='1'){
+        await cleanupB12KeepProductsSuppliers({forcePending:true,pushRemote:true});
+      }
+
       syncApplyingRemote=true;
       try{await idbWrite(db)}finally{syncApplyingRemote=false}
       if(typeof renderAll==='function')renderAll();
@@ -28381,6 +28387,125 @@ async function initUI(){
  renderAll();
  if(typeof initStockoutHistoryNav==='function')initStockoutHistoryNav();
 }
+
+/* ===== B12: DỌN SẠCH DỮ LIỆU - CHỈ GIỮ HÀNG HÓA + NCC ===== */
+const B12_CLEAN_MARK='b12_keep_products_suppliers_done';
+const B12_PENDING_KEY='an_bui_b12_cleanup_pending_'+APP_ID.toLowerCase();
+const B12_BACKUP_KEY='b12_backup_before_cleanup';
+
+async function writeB12BackupSnapshot(snapshot){
+  try{
+    const idb=await openAppDB();
+    await new Promise((resolve,reject)=>{
+      const tx=idb.transaction(IDB_STORE,'readwrite');
+      tx.objectStore(IDB_STORE).put({
+        savedAt:new Date().toISOString(),
+        appId:APP_ID,
+        data:snapshot
+      },B12_BACKUP_KEY);
+      tx.oncomplete=()=>{idb.close();resolve(true)};
+      tx.onerror=()=>{const e=tx.error||new Error('Không lưu được bản sao trước khi dọn');idb.close();reject(e)};
+      tx.onabort=()=>{const e=tx.error||new Error('Sao lưu trước khi dọn bị hủy');idb.close();reject(e)};
+    });
+    return true;
+  }catch(err){
+    console.warn('B12: chưa tạo được bản sao cục bộ trước khi dọn:',err);
+    return false;
+  }
+}
+
+function cleanCurrentDbB12(){
+  if(!db || typeof db!=='object')return false;
+  db.settings=db.settings||{};
+
+  /* Giữ danh mục hàng hóa, nhưng tồn phải về 0 vì toàn bộ lịch sử Nhập/Xuất sẽ xóa. */
+  db.products=(db.products||[]).map(p=>({
+    ...p,
+    stock:0
+  }));
+
+  /* Giữ danh mục NCC, nhưng bỏ nợ cũ để app bắt đầu sạch. */
+  db.suppliers=(db.suppliers||[]).map(s=>({
+    ...s,
+    oldDebt:0
+  }));
+
+  /* Giữ nhóm hàng để danh mục hàng hóa không mất cấu trúc. */
+  if(!Array.isArray(db.productGroups))db.productGroups=[];
+
+  /* Xóa toàn bộ dữ liệu nghiệp vụ. */
+  db.customers=[];
+  db.stockin=[];
+  db.stockout=[];
+  db.warranty=[];
+  db.warrantyNccBatchesB6=[];
+  db.customerPayments=[];
+  db.supplierPayments=[];
+  db.expenses=[];
+  db.expenseCategories=[];
+  db.expensePrivateCategories=[];
+  db.archives=[];
+  db.deletedProducts=[];
+  db.taxVatInvoices=[];
+  db.employees=[];
+  db.employeeAbsences=[];
+  db.salaryPayments=[];
+  db.employeeSundayOvertime=[];
+  db.employeeAttendanceConfirmations=[];
+
+  db.settings[B12_CLEAN_MARK]=true;
+  db.settings.b12CleanedAt=new Date().toISOString();
+  db.settings.b12CleanMode='KEEP_PRODUCTS_SUPPLIERS_RESET_STOCK_DEBT';
+  return true;
+}
+
+async function cleanupB12KeepProductsSuppliers({forcePending=false,pushRemote=true}={}){
+  const pending=forcePending || localStorage.getItem(B12_PENDING_KEY)==='1';
+  const already=!!db?.settings?.[B12_CLEAN_MARK];
+
+  if(already && !pending)return false;
+
+  try{localStorage.setItem(B12_PENDING_KEY,'1')}catch(_){}
+
+  /* Chỉ sao lưu snapshot gốc một lần trước khi dọn. */
+  try{
+    if(!already){
+      const snapshot=JSON.parse(JSON.stringify(db));
+      await writeB12BackupSnapshot(snapshot);
+    }
+  }catch(_){}
+
+  cleanCurrentDbB12();
+  normalizeDB();
+  ensureSecuritySettings();
+
+  /* Lưu cục bộ trước. */
+  try{await idbWrite(db)}catch(err){console.error('B12 lưu dữ liệu sạch cục bộ lỗi:',err);throw err}
+
+  /* Nếu đang Online, đẩy bản sạch lên vùng dữ liệu chung của app. */
+  if(pushRemote && syncPin){
+    try{
+      const saved=await remoteSaveState(JSON.parse(JSON.stringify(db)));
+      syncRevision=Number(saved?.revision||syncRevision);
+      try{localStorage.removeItem(B12_PENDING_KEY)}catch(_){}
+      syncStatus('☁ Online','online');
+      return true;
+    }catch(err){
+      console.warn('B12 chưa đẩy được dữ liệu sạch lên Online, sẽ thử lại khi có mạng:',err);
+      syncStatus('⚠ Chưa đồng bộ','offline');
+      return true;
+    }
+  }
+
+  /* App cục bộ thì xem như hoàn tất. */
+  if(!syncPin){
+    try{localStorage.removeItem(B12_PENDING_KEY)}catch(_){}
+  }
+  return true;
+}
+
+window.cleanupB12KeepProductsSuppliers=cleanupB12KeepProductsSuppliers;
+
 async function init(){
  await seed();
  normalizeDB();
@@ -28396,6 +28521,15 @@ async function init(){
 
  normalizeDB();
  ensureSecuritySettings();
+
+ /* B12: dọn dữ liệu một lần sau khi đã lấy dữ liệu Online mới nhất. */
+ try{
+   await cleanupB12KeepProductsSuppliers({forcePending:false,pushRemote:true});
+ }catch(e){
+   console.error('B12 dọn dữ liệu lỗi:',e);
+   alert('Chưa dọn được dữ liệu. Hệ thống giữ nguyên để tránh mất dữ liệu ngoài ý muốn.');
+ }
+
  try{await idbWrite(db)}catch(e){console.warn('Không lưu cache cục bộ:',e)}
 
  isManager=false;
@@ -32253,237 +32387,6 @@ setTimeout(()=>{try{ensurePrintDesignerSettings();applyStockoutRowHeightSetting(
 })();
 </script>
 
-
-<style id="v191-stt-delete-clean-style">
-#voucherDeletePopupV191{
-  position:fixed;z-index:2147483647;display:none;
-  width:260px;max-width:calc(100vw - 18px);
-  background:#fff;border:1px solid #e1e6eb;border-radius:11px;
-  box-shadow:0 16px 42px rgba(15,23,42,.28);
-  padding:11px;font-family:Arial,Helvetica,sans-serif;
-}
-#voucherDeletePopupV191.show{display:block}
-#voucherDeletePopupV191 .q{
-  font-size:13px;font-weight:800;color:#263442;
-  text-align:center;line-height:1.4;padding:2px 3px 9px;
-}
-#voucherDeletePopupV191 .trash{
-  display:flex;align-items:center;justify-content:center;
-  width:50px;height:44px;margin:0 auto;
-  border:1px solid #efb7b1;border-radius:9px;
-  background:#fff1f0;color:#b42318;
-  font-size:23px;cursor:pointer;
-}
-#voucherDeletePopupV191 .trash:hover{background:#ffe2df}
-</style>
-
-<script id="v191-stt-delete-clean-js">
-(function(){
-  let popup=null, deleteMode='';
-
-  function eventThV191(e){
-    const path=(typeof e.composedPath==='function')?e.composedPath():[];
-    for(const n of path){
-      if(n && n.nodeType===1 && n.tagName==='TH')return n;
-    }
-    const t=e.target;
-    if(t && t.nodeType===1 && t.closest)return t.closest('th');
-    if(t && t.parentElement && t.parentElement.closest)return t.parentElement.closest('th');
-    return null;
-  }
-
-  function headerModeV191(e){
-    const th=eventThV191(e);
-    if(!th || th.cellIndex!==0 || !th.closest('thead'))return '';
-    const table=th.closest('table.invoice-table');
-    if(!table)return '';
-    if(table.querySelector('#soBody'))return 'so';
-    if(table.querySelector('#siBody'))return 'si';
-    return '';
-  }
-
-  function oldVoucherOpenV191(mode){
-    return mode==='so' ? !!stockoutViewingHistory : !!stockinViewingHistory;
-  }
-
-  function hideV191(){
-    if(popup)popup.classList.remove('show');
-    deleteMode='';
-  }
-
-  function ensurePopupV191(){
-    if(popup)return popup;
-    popup=document.createElement('div');
-    popup.id='voucherDeletePopupV191';
-    popup.innerHTML=
-      '<div class="q">Bạn muốn xóa phiếu này không?</div>'+
-      '<button type="button" class="trash" title="Xóa phiếu" aria-label="Xóa phiếu">🗑</button>';
-    document.body.appendChild(popup);
-
-    popup.querySelector('.trash').addEventListener('click',async function(e){
-      e.preventDefault();
-      e.stopPropagation();
-      const mode=deleteMode;
-      hideV191();
-
-      if(!isManager)return alert('Xóa phiếu chỉ dành cho Quản lý.');
-      if(!oldVoucherOpenV191(mode))return alert('Anh cần mở phiếu cũ trước khi xóa.');
-
-      try{
-        if(mode==='so')await deleteStockoutV191();
-        else if(mode==='si')await deleteStockinV191();
-      }catch(err){
-        console.error('V191 xóa phiếu:',err);
-        alert('Chưa xóa được phiếu. Vui lòng thử lại.');
-      }
-    });
-    return popup;
-  }
-
-  function showV191(mode,x,y){
-    const m=ensurePopupV191();
-    deleteMode=mode;
-    m.style.left='0px';
-    m.style.top='0px';
-    m.classList.add('show');
-    const r=m.getBoundingClientRect(),gap=9;
-    m.style.left=Math.max(gap,Math.min(Number(x)||gap,window.innerWidth-r.width-gap))+'px';
-    m.style.top=Math.max(gap,Math.min(Number(y)||gap,window.innerHeight-r.height-gap))+'px';
-  }
-
-  async function deleteStockoutV191(){
-    const id=String($('soNo')?.textContent||'').trim();
-    if(!id)return alert('Không xác định được phiếu xuất cần xóa.');
-
-    if(!(await ensureStockOperationLock('stockout')))return;
-    if(!(await stockOperationRefreshBase('stockout',{quiet:false}))){
-      await releaseStockOperationLock('stockout',{silent:true});
-      return;
-    }
-
-    const idx=(db.stockout||[]).findIndex(x=>String(x.id)===id);
-    const invoice=idx>=0?db.stockout[idx]:null;
-    const vatCheck=window.vatDeleteStockoutCheckV16?window.vatDeleteStockoutCheckV16(invoice):{ok:true};
-    if(!vatCheck.ok){await releaseStockOperationLock('stockout',{silent:true});return alert(vatCheck.message);}
-    if(!invoice){
-      await releaseStockOperationLock('stockout',{silent:true});
-      return alert('Không tìm thấy phiếu xuất.');
-    }
-
-    const before=JSON.stringify(db);
-    const expected=Number(syncRevision||0);
-
-    (invoice.items||[]).forEach(r=>{
-      const p=(db.products||[]).find(x=>x.id===r.productId);
-      if(p)p.stock=Number(p.stock||0)+(Number(r.qty)||0);
-    });
-
-    (invoice.warrantyIds||[]).forEach(wid=>{
-      const w=(db.warranty||[]).find(x=>String(x.id)===String(wid));
-      if(w && String(w.stockoutId||'')===String(invoice.id)){
-        w.status='Đang xử lý';
-        w.returnedDate='';
-        w.stockoutId='';
-        w.returnedByInvoice=false;
-        w.closedAt='';
-      }
-    });
-
-    db.stockout.splice(idx,1);
-    const result=await saveStockOperationAtomic(expected);
-    if(!result?.ok){
-      await recoverStockOperationSaveFailure(result,before);
-      await releaseStockOperationLock('stockout',{silent:true});
-      return;
-    }
-
-    await releaseStockOperationLock('stockout',{silent:true});
-    stockoutViewingHistory=false;
-    stockoutEditingHistory=false;
-    renderAll();
-    newStockout();
-    toast('Đã xóa phiếu xuất '+id+' và hoàn lại tồn/công nợ');
-  }
-
-  async function deleteStockinV191(){
-    const id=String($('siNo')?.textContent||'').trim();
-    if(!id)return alert('Không xác định được phiếu nhập cần xóa.');
-
-    if(!(await ensureStockOperationLock('stockin')))return;
-    if(!(await stockOperationRefreshBase('stockin',{quiet:false}))){
-      await releaseStockOperationLock('stockin',{silent:true});
-      return;
-    }
-
-    const idx=(db.stockin||[]).findIndex(x=>String(x.id)===id);
-    const invoice=idx>=0?db.stockin[idx]:null;
-    const vatCheck=window.vatDeleteStockinCheckV16?window.vatDeleteStockinCheckV16(invoice):{ok:true};
-    if(!vatCheck.ok){await releaseStockOperationLock('stockin',{silent:true});return alert(vatCheck.message);}
-    if(!invoice){
-      await releaseStockOperationLock('stockin',{silent:true});
-      return alert('Không tìm thấy phiếu nhập.');
-    }
-
-    const qty=stockinQtyMap(invoice.items);
-    for(const [pid,q] of Object.entries(qty)){
-      const p=(db.products||[]).find(x=>x.id===pid);
-      if(p && Number(p.stock||0)<Number(q||0)){
-        await releaseStockOperationLock('stockin',{silent:true});
-        return alert(
-          'Chưa thể xóa phiếu. “'+p.name+'” hiện chỉ còn '+Number(p.stock||0)+
-          ' nhưng phiếu đã nhập '+Number(q||0)+
-          '.\n\nMột phần hàng đã được xuất/bán. Cần xử lý các phiếu xuất liên quan trước để tránh tồn âm.'
-        );
-      }
-    }
-
-    const before=JSON.stringify(db);
-    const expected=Number(syncRevision||0);
-
-    Object.entries(qty).forEach(([pid,q])=>{
-      const p=(db.products||[]).find(x=>x.id===pid);
-      if(p)p.stock=Number(p.stock||0)-Number(q||0);
-    });
-
-    db.stockin.splice(idx,1);
-    const result=await saveStockOperationAtomic(expected);
-    if(!result?.ok){
-      await recoverStockOperationSaveFailure(result,before);
-      await releaseStockOperationLock('stockin',{silent:true});
-      return;
-    }
-
-    await releaseStockOperationLock('stockin',{silent:true});
-    stockinViewingHistory=false;
-    stockinEditingHistory=false;
-    renderAll();
-    newStockin();
-    toast('Đã xóa phiếu nhập '+id+' và trừ lại tồn/công nợ');
-  }
-
-  /* Chạy trước toàn bộ handler STT cũ: chỉ xử lý ô tiêu đề STT. */
-  window.addEventListener('contextmenu',function(e){
-    const mode=headerModeV191(e);
-    if(!mode)return;
-    if(!isManager)return;
-
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
-    showV191(mode,e.clientX,e.clientY);
-  },true);
-
-  window.addEventListener('mousedown',function(e){
-    if(popup && popup.classList.contains('show') && !popup.contains(e.target))hideV191();
-  },true);
-  window.addEventListener('keydown',function(e){if(e.key==='Escape')hideV191();},true);
-  window.addEventListener('resize',hideV191);
-  window.addEventListener('scroll',hideV191,true);
-
-  window.hideVoucherDeletePopupV191=hideV191;
-})();
-</script>
-
 <script id="v182-stt-context-js">
 (function(){
   let v182Menu=null;
@@ -32743,84 +32646,6 @@ setTimeout(()=>{try{ensurePrintDesignerSettings();applyStockoutRowHeightSetting(
   document.addEventListener('keydown',function(e){if(e.key==='Escape')hideMenu();});
   window.addEventListener('resize',hideMenu);
   window.addEventListener('scroll',hideMenu,true);
-})();
-</script>
-
-
-<style id="v186-stt-header-force-style">
-#voucherSttHeaderMenuV186{
-  position:fixed!important;z-index:2147483647!important;display:none;
-  min-width:220px;background:#fff;border:1px solid #d8dee5;border-radius:9px;
-  box-shadow:0 14px 38px rgba(15,23,42,.28);padding:6px;font-family:Arial,Helvetica,sans-serif;
-}
-#voucherSttHeaderMenuV186.show{display:block!important}
-#voucherSttHeaderMenuV186 .note{padding:5px 8px 7px;font-size:11px;color:#607080;border-bottom:1px solid #eef1f4;margin-bottom:4px}
-#voucherSttHeaderMenuV186 button{width:100%;border:0;border-radius:7px;background:#fff1f0;color:#b42318;text-align:left;padding:10px 11px;font-weight:900;cursor:pointer}
-#voucherSttHeaderMenuV186 button:hover{background:#ffe2df}
-body.voucher-stt-delete-ready-so #soBody.closest-placeholder{}
-</style>
-<script id="v186-stt-header-force-js">
-(function(){
-  let menu=null, modeNow='';
-  function editing(mode){
-    return mode==='so'
-      ? !!(stockoutViewingHistory&&stockoutEditingHistory)
-      : !!(stockinViewingHistory&&stockinEditingHistory);
-  }
-  function getModeFromHeader(target){
-    const th=target&&target.closest?target.closest('th'):null;
-    if(!th||th.cellIndex!==0||!th.closest('thead'))return '';
-    const table=th.closest('table.invoice-table');
-    if(!table)return '';
-    if(table.querySelector('tbody#soBody'))return 'so';
-    if(table.querySelector('tbody#siBody'))return 'si';
-    return '';
-  }
-  function getMenu(){
-    if(menu)return menu;
-    menu=document.createElement('div');
-    menu.id='voucherSttHeaderMenuV186';
-    menu.innerHTML='<div class="note"></div><button type="button">🗑 Xóa toàn bộ phiếu</button>';
-    document.body.appendChild(menu);
-    menu.querySelector('button').onclick=async function(e){
-      e.preventDefault();e.stopPropagation();
-      const mode=modeNow; hide();
-      if(!isManager)return alert('Xóa toàn bộ phiếu chỉ dành cho Quản lý.');
-      if(!editing(mode))return alert('Anh cần mở phiếu cũ và bấm Sửa phiếu trước.');
-      try{
-        if(mode==='so')await deleteCurrentStockout();
-        else if(mode==='si')await deleteCurrentStockin();
-      }catch(err){console.error('V186 delete voucher:',err);alert('Chưa xóa được phiếu. Vui lòng thử lại.');}
-    };
-    return menu;
-  }
-  function show(mode,x,y){
-    const m=getMenu(); modeNow=mode;
-    m.querySelector('.note').textContent=(mode==='so'?'Phiếu xuất':'Phiếu nhập')+' • tiêu đề STT';
-    m.style.left='0px';m.style.top='0px';m.classList.add('show');
-    const r=m.getBoundingClientRect(),gap=8;
-    m.style.left=Math.max(gap,Math.min(Number(x)||gap,window.innerWidth-r.width-gap))+'px';
-    m.style.top=Math.max(gap,Math.min(Number(y)||gap,window.innerHeight-r.height-gap))+'px';
-  }
-  function hide(){if(menu)menu.classList.remove('show');modeNow='';}
-
-  /* V186: bắt ở WINDOW capture để chạy trước các handler V182/V183/V185. */
-  window.addEventListener('contextmenu',function(e){
-    const mode=getModeFromHeader(e.target);
-    if(!mode)return;
-    if(!isManager||!editing(mode))return;
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
-    show(mode,e.clientX,e.clientY);
-  },true);
-
-  window.addEventListener('mousedown',function(e){
-    if(menu&&menu.classList.contains('show')&&!menu.contains(e.target))hide();
-  },true);
-  window.addEventListener('keydown',function(e){if(e.key==='Escape')hide();},true);
-  window.addEventListener('resize',hide);
-  window.addEventListener('scroll',hide,true);
 })();
 </script>
 
@@ -33470,7 +33295,10 @@ body.voucher-stockin-active #stockinTopNav{min-width:0!important;}
   }
   async function deleteWarrantySafe(id){
     const x=(db.warranty||[]).find(v=>String(v.id)===String(id));if(!x)return;
-    if(warrantyNormalizedStatus(x.status)!=='Đang xử lý'||x.stockoutId)return alert('Dòng bảo hành này đã phát sinh trả hàng/phiếu xuất nên không thể xóa trực tiếp.');
+    const ws=warrantyNormalizedStatus(x.status);
+    const nccStarted=!!String(x.nccBatchIdB6||'').trim() || ['Đã gửi NCC','NCC đã trả'].includes(String(x.nccStatusB6||'').trim());
+    if(!['Chờ xử lý','Đang xử lý'].includes(ws) || x.stockoutId || x.customerReturned || nccStarted)
+      return alert('Không thể xóa dòng bảo hành này vì đã phát sinh trả khách / phiếu xuất / gửi NCC. Chỉ được xóa phiếu BH tạo nhầm và chưa phát sinh xử lý.');
     if(!confirm('Xóa dòng bảo hành “'+(x.item||x.id)+'”?'))return;const old=[...(db.warranty||[])];db.warranty=(db.warranty||[]).filter(v=>String(v.id)!==String(id));if(!(await saveDB()))db.warranty=old;renderAll();
   }
   async function deleteVoucherLine(type,id){
@@ -42405,4 +42233,434 @@ body:not(.warehouse-page-active) #warehouseTopNav{
 })();
 </script>
 <!-- B10: Rời Phiếu nhập/xuất thì bỏ thay đổi chưa lưu và về Phiếu mới -->
+
+
+
+<style id="v90-b11-delete-one-standard-css">
+/* ===== B11: MỘT CHUẨN XÓA DUY NHẤT ===== */
+#voucherDeletePopupV191,
+#voucherSttHeaderMenuV186,
+#voucherSttHeaderMenuV185,
+#voucherSttContextV182{
+  display:none!important;
+}
+
+#voucherDeleteMenuB11{
+  position:fixed;
+  z-index:2147483647;
+  display:none;
+  min-width:220px;
+  max-width:calc(100vw - 18px);
+  padding:6px;
+  background:#fff;
+  border:1px solid #d7e0e5;
+  border-radius:10px;
+  box-shadow:0 14px 36px rgba(15,35,50,.24);
+  font-family:Segoe UI,Arial,sans-serif;
+}
+#voucherDeleteMenuB11.show{display:block}
+#voucherDeleteMenuB11 .note{
+  padding:5px 8px 7px;
+  margin-bottom:4px;
+  border-bottom:1px solid #edf1f3;
+  color:#607582;
+  font-size:11px;
+}
+#voucherDeleteMenuB11 button{
+  width:100%;
+  border:0;
+  border-radius:7px;
+  padding:9px 10px;
+  text-align:left;
+  background:#fff;
+  color:#a51d1d;
+  font-weight:850;
+  cursor:pointer;
+}
+#voucherDeleteMenuB11 button:hover{background:#fff0f0}
+#stockout .invoice-table tbody td:first-child,
+#stockin .invoice-table tbody td:first-child{
+  cursor:context-menu!important;
+}
+#stockout .invoice-table thead th:first-child,
+#stockin .invoice-table thead th:first-child{
+  user-select:none!important;
+}
+</style>
+
+<script id="v90-b11-delete-one-standard-js">
+(function(){
+  'use strict';
+
+  let menu=null;
+  let menuAction=null;
+
+  function q(id){return document.getElementById(id)}
+  function rows(mode){return mode==='so'?soRows:siRows}
+  function viewing(mode){return mode==='so'?!!stockoutViewingHistory:!!stockinViewingHistory}
+  function editing(mode){return mode==='so'?!!stockoutEditingHistory:!!stockinEditingHistory}
+  function renderRows(mode){
+    if(mode==='so'){
+      renderSORows();
+      try{recalcSO()}catch(_){}
+    }else{
+      renderSIRows();
+      try{recalcSI()}catch(_){}
+    }
+  }
+  function blankRow(mode){
+    return mode==='so'
+      ? {productId:'',productText:'',qty:'',price:'',ck:'',km:'',note:'',vatSource:'nonvat'}
+      : {productId:'',productText:'',qty:'',price:'',ck:'',km:'',note:''};
+  }
+
+  function getMenu(){
+    if(menu)return menu;
+    menu=document.createElement('div');
+    menu.id='voucherDeleteMenuB11';
+    menu.innerHTML='<div class="note"></div><button type="button"></button>';
+    document.body.appendChild(menu);
+    menu.querySelector('button').onclick=async function(e){
+      e.preventDefault();e.stopPropagation();
+      const fn=menuAction;
+      hide();
+      if(typeof fn==='function')await fn();
+    };
+    return menu;
+  }
+  function hide(){
+    if(menu)menu.classList.remove('show');
+    menuAction=null;
+  }
+  function show(note,label,x,y,fn){
+    const m=getMenu();
+    m.querySelector('.note').textContent=note;
+    m.querySelector('button').textContent=label;
+    menuAction=fn;
+    m.style.left='0px';m.style.top='0px';m.classList.add('show');
+    const r=m.getBoundingClientRect(),gap=8;
+    m.style.left=Math.max(gap,Math.min(Number(x)||gap,window.innerWidth-r.width-gap))+'px';
+    m.style.top=Math.max(gap,Math.min(Number(y)||gap,window.innerHeight-r.height-gap))+'px';
+  }
+
+  function voucherModeFromCell(cell){
+    const table=cell?.closest?.('table.invoice-table');
+    if(!table)return '';
+    if(table.querySelector('tbody#soBody'))return 'so';
+    if(table.querySelector('tbody#siBody'))return 'si';
+    return '';
+  }
+
+  async function ensureEditForRowDelete(mode){
+    if(!viewing(mode) || editing(mode))return true;
+    try{
+      if(mode==='so')await editCurrentStockout();
+      else await editCurrentStockin();
+    }catch(err){
+      console.error('B11 mở Sửa phiếu để xóa dòng lỗi:',err);
+      return false;
+    }
+    return editing(mode);
+  }
+
+  async function deleteRow(mode,index){
+    const wasSaved=viewing(mode);
+
+    if(!(await ensureEditForRowDelete(mode))){
+      return alert('Phiếu đã lưu. Anh cần có quyền Sửa phiếu để xóa dòng này.');
+    }
+
+    const list=rows(mode);
+    if(!Array.isArray(list)||index<0||index>=list.length)return;
+
+    const r=list[index]||{};
+    const p=(db.products||[]).find(x=>String(x.id)===String(r.productId||''));
+    const name=String(r.productText||p?.name||('dòng '+(index+1))).trim();
+    const qty=Math.max(0,Number(r.qty)||0);
+
+    if(!confirm('Xóa dòng “'+name+'” khỏi '+(mode==='so'?'Phiếu xuất':'Phiếu nhập')+'?'))return;
+
+    list.splice(index,1);
+    if(!list.length)list.push(blankRow(mode));
+    renderRows(mode);
+
+    if(wasSaved){
+      toast(mode==='so'
+        ? 'Đã xóa dòng khỏi bản sửa • bấm Lưu để hoàn lại '+qty+' vào kho và cập nhật công nợ'
+        : 'Đã xóa dòng khỏi bản sửa • bấm Lưu để trừ lại '+qty+' khỏi kho và cập nhật công nợ NCC');
+    }else{
+      toast('Đã xóa dòng khỏi phiếu đang làm • chưa ảnh hưởng kho/công nợ');
+    }
+  }
+
+  async function deleteWhole(mode){
+    if(!isManager)return alert('Xóa toàn bộ phiếu chỉ dành cho Quản lý.');
+    if(!viewing(mode))return alert('Chỉ xóa được phiếu đã lưu đang mở.');
+    try{
+      if(mode==='so')await deleteCurrentStockout();
+      else await deleteCurrentStockin();
+    }catch(err){
+      console.error('B11 xóa toàn phiếu lỗi:',err);
+      alert('Chưa xóa được phiếu. Vui lòng thử lại.');
+    }
+  }
+
+  /* Một điểm bắt duy nhất cho chuột phải STT.
+     - STT dòng: Xóa dòng.
+     - STT tiêu đề: Xóa toàn phiếu (Quản lý), không cần bấm Sửa trước.
+  */
+  window.addEventListener('contextmenu',function(e){
+    const cell=e.target?.closest?.('td,th');
+    if(!cell || cell.cellIndex!==0)return;
+
+    const mode=voucherModeFromCell(cell);
+    if(!mode)return;
+
+    if(cell.closest('thead')){
+      if(!isManager || !viewing(mode))return;
+      e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+      show(
+        (mode==='so'?'Phiếu xuất':'Phiếu nhập')+' • '+String(mode==='so'?q('soNo')?.textContent:q('siNo')?.textContent||''),
+        '🗑 Xóa toàn bộ phiếu',
+        e.clientX,e.clientY,
+        ()=>deleteWhole(mode)
+      );
+      return;
+    }
+
+    const tbody=cell.closest('tbody');
+    if(!tbody || (mode==='so'&&tbody.id!=='soBody') || (mode==='si'&&tbody.id!=='siBody'))return;
+    const tr=cell.closest('tr');
+    const index=Array.prototype.indexOf.call(tbody.children,tr);
+    if(index<0)return;
+
+    e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+    show(
+      (mode==='so'?'Phiếu xuất':'Phiếu nhập')+' • dòng '+(index+1),
+      '🗑 Xóa dòng sản phẩm',
+      e.clientX,e.clientY,
+      ()=>deleteRow(mode,index)
+    );
+  },true);
+
+  /* Nút Xóa phiếu trên góc phải: Quản lý nhìn thấy ngay khi đang xem phiếu đã lưu.
+     Không bắt buộc bấm Sửa trước. */
+  deleteEditingVoucher = async function(){
+    const so=document.body.classList.contains('voucher-stockout-active');
+    const si=document.body.classList.contains('voucher-stockin-active');
+    if(!isManager)return;
+    if(so && stockoutViewingHistory)return deleteWhole('so');
+    if(si && stockinViewingHistory)return deleteWhole('si');
+  };
+
+  syncVoucherEditDeleteButton = function(){
+    const btn=q('voucherEditDeleteBtn');
+    if(!btn)return;
+    const so=document.body.classList.contains('voucher-stockout-active');
+    const si=document.body.classList.contains('voucher-stockin-active');
+    const showBtn=!!isManager && ((so&&stockoutViewingHistory)||(si&&stockinViewingHistory));
+    btn.style.display=showBtn?'inline-flex':'none';
+    btn.disabled=!showBtn;
+    btn.textContent='Xóa phiếu';
+    btn.title=so?'Xóa toàn bộ Phiếu xuất đang mở':(si?'Xóa toàn bộ Phiếu nhập đang mở':'Xóa phiếu');
+  };
+
+  function refresh(){
+    try{syncVoucherEditDeleteButton()}catch(_){}
+  }
+
+  document.addEventListener('mousedown',function(e){
+    if(menu?.classList.contains('show')&&!menu.contains(e.target))hide();
+  },true);
+  window.addEventListener('keydown',function(e){if(e.key==='Escape')hide()},true);
+  window.addEventListener('resize',hide);
+  window.addEventListener('scroll',hide,true);
+
+  const oldRenderAll=window.renderAll;
+  if(typeof oldRenderAll==='function'){
+    window.renderAll=function(){
+      const r=oldRenderAll.apply(this,arguments);
+      setTimeout(refresh,0);
+      return r;
+    };
+  }
+  const oldGo=window.go;
+  if(typeof oldGo==='function'){
+    window.go=function(){
+      const r=oldGo.apply(this,arguments);
+      setTimeout(refresh,0);
+      return r;
+    };
+  }
+
+  document.addEventListener('click',()=>setTimeout(refresh,0),true);
+  window.addEventListener('load',()=>setTimeout(refresh,250));
+
+  window.deleteVoucherRowB11=deleteRow;
+  window.deleteWholeVoucherB11=deleteWhole;
+  window.refreshDeleteUIB11=refresh;
+})();
+</script>
+<!-- B11: gom tính năng Xóa về một chuẩn -->
+
+
+
+<script id="v90-b12-clean-message">
+(function(){
+  window.addEventListener('load',()=>{
+    setTimeout(()=>{
+      try{
+        if(db?.settings?.b12CleanMode==='KEEP_PRODUCTS_SUPPLIERS_RESET_STOCK_DEBT'){
+          toast('Dữ liệu đã được dọn sạch • chỉ giữ Hàng hóa và NCC');
+        }
+      }catch(_){}
+    },1400);
+  });
+})();
+</script>
+<!-- B12: CLEAN DATA KEEP PRODUCTS + SUPPLIERS -->
+<!-- B13: ENTER HET DONG -> THEM DONG MOI, AP DUNG PHIEU NHAP + PHIEU XUAT -->
+<!-- B14: ENTER UNLIMITED ROWS FOR STOCKIN + STOCKOUT -->
+
+
+
+<script id="v90-b15-enter-role-safe">
+/* ===== B15: ENTER NHẬP/XUẤT ỔN ĐỊNH CHO NHÂN VIÊN + QUẢN LÝ ===== */
+(function(){
+  'use strict';
+
+  function visibleB15(el){
+    if(!el || el.disabled || el.readOnly)return false;
+    const st=getComputedStyle(el), td=el.closest('td'), ts=td?getComputedStyle(td):null;
+    if(st.display==='none'||st.visibility==='hidden')return false;
+    if(ts && (ts.display==='none'||ts.visibility==='hidden'))return false;
+    const r=el.getBoundingClientRect();
+    return r.width>8 && r.height>8;
+  }
+
+  function modeAndIndexB15(el){
+    const tr=el?.closest?.('tr[data-line]');
+    if(!tr)return null;
+    const line=String(tr.dataset.line||'');
+    const mode=line.startsWith('si')?'si':(line.startsWith('so')?'so':'');
+    if(!mode)return null;
+    const index=Number(line.slice(2));
+    if(!Number.isFinite(index))return null;
+    return {mode,index,tr};
+  }
+
+  function stockinStaffModeB15(){
+    try{return !isManager && staffModuleEnabled('stockin')}catch(_){return !isManager}
+  }
+
+  function sequenceB15(mode){
+    if(mode==='si'){
+      if(stockinStaffModeB15()){
+        /* Nhân viên: không thấy Giá vốn. */
+        return ['qty','vatSource','salePrice','saleCK','saleKM'];
+      }
+      /* Quản lý: có đủ Giá vốn + Giá bán. */
+      return ['qty','vatSource','price','salePrice','ck','km'];
+    }
+    /* Phiếu xuất: cùng một luồng cho NV và Quản lý. */
+    return ['qty','vatSource','price','ck','km'];
+  }
+
+  function fieldB15(mode,index,role){
+    const el=document.querySelector(`[data-mode="${mode}"][data-row="${index}"][data-role="${role}"]`);
+    return visibleB15(el)?el:null;
+  }
+
+  function focusB15(el){
+    if(!el)return false;
+    setTimeout(()=>{
+      try{
+        el.focus();
+        if(el.tagName==='INPUT' && typeof el.select==='function')el.select();
+        el.scrollIntoView({block:'nearest',inline:'nearest'});
+      }catch(_){try{el.focus()}catch(__){}}
+    },15);
+    return true;
+  }
+
+  function focusProductB15(mode,index){
+    setTimeout(()=>{
+      const el=document.querySelector(`input[data-mode="${mode}"][data-row="${index}"][data-role="product"]`);
+      focusB15(el);
+    },35);
+  }
+
+  function appendRowB15(mode){
+    if(mode==='si'){
+      addSIRow(false);
+      return siRows.length-1;
+    }
+    addSORow(false);
+    return soRows.length-1;
+  }
+
+  function goNextB15(mode,index,currentRole){
+    const seq=sequenceB15(mode);
+    const pos=seq.indexOf(currentRole);
+    if(pos<0)return false;
+
+    /* Tìm ô hợp lệ kế tiếp theo đúng quyền hiện tại. */
+    for(let j=pos+1;j<seq.length;j++){
+      const next=fieldB15(mode,index,seq[j]);
+      if(next)return focusB15(next);
+    }
+
+    const rows=mode==='si'?siRows:soRows;
+    if(index<rows.length-1){
+      focusProductB15(mode,index+1);
+      return true;
+    }
+
+    /* Hết dòng cuối: luôn nối thêm dòng mới, không giới hạn số dòng. */
+    const newIndex=appendRowB15(mode);
+    focusProductB15(mode,newIndex);
+    return true;
+  }
+
+  /*
+    Bắt ở WINDOW capture để chạy trước Enter global V83.
+    Tên hàng vẫn giao cho productKey xử lý danh sách gợi ý.
+  */
+  window.addEventListener('keydown',function(e){
+    if(e.key!=='Enter')return;
+    if(e.shiftKey||e.ctrlKey||e.metaKey||e.altKey)return;
+
+    const el=e.target;
+    const info=modeAndIndexB15(el);
+    if(!info)return;
+
+    const role=String(el?.dataset?.role||'');
+    if(!role || role==='product')return;
+
+    const seq=sequenceB15(info.mode);
+    if(!seq.includes(role))return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    try{markEntryOk(el)}catch(_){}
+    goNextB15(info.mode,info.index,role);
+  },true);
+
+  /* Các luồng cũ gọi helper này cũng dùng cùng chuẩn B15. */
+  window.invoiceNextRowV260=function(mode,i){
+    const rows=mode==='si'?siRows:soRows;
+    if(i<rows.length-1){
+      focusProductB15(mode,i+1);
+      return;
+    }
+    const newIndex=appendRowB15(mode);
+    focusProductB15(mode,newIndex);
+  };
+
+  window.voucherEnterSequenceB15=sequenceB15;
+  window.voucherEnterNextB15=goNextB15;
+})();
+</script>
+<!-- B15: ENTER 4 CASES = SI STAFF / SI MANAGER / SO STAFF / SO MANAGER -->
 

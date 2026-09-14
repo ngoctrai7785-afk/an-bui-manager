@@ -1,17 +1,13 @@
-AN BUI V259 - B10
+AN BUI V259 - B15
 
-Thay đổi:
-- Phiếu xuất / Phiếu nhập đang thao tác mà bấm sang menu khác:
-  + KHÔNG tự lưu.
-  + Bỏ dữ liệu đang làm dở.
-  + Xóa nháp tạm.
-  + Giải phóng khóa sửa nếu có.
-  + Trả form về Phiếu mới sạch.
-- Phiếu đã lưu trong lịch sử không bị ảnh hưởng.
-- Giao diện B9 giữ nguyên.
+ENTER đã tách đúng theo 4 trường hợp:
+1) Phiếu nhập - Nhân viên: Tên hàng > SL > Nguồn > Giá bán > CK > KM > dòng mới.
+2) Phiếu nhập - Quản lý: Tên hàng > SL > Nguồn > Giá vốn > Giá bán > CK > KM > dòng mới.
+3) Phiếu xuất - Nhân viên: Tên hàng > SL > Nguồn > Đơn giá > CK > KM > dòng mới.
+4) Phiếu xuất - Quản lý: giống Phiếu xuất Nhân viên.
 
-GitHub:
-- thay index.html
-- thay sw.js
-- commit
-- Ctrl+F5 một lần
+Hết dòng cuối tự thêm dòng 2,3,4... không giới hạn.
+Không tự Lưu khi Enter.
+Đã bỏ hai patch Enter B13/B14 để tránh chồng luồng.
+
+GitHub: thay index.html + sw.js, commit, Ctrl+F5 một lần.
