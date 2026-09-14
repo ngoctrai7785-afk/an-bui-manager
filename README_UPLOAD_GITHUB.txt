@@ -1,16 +1,17 @@
-AN BUI V259 - PATCH V84 - GITHUB READY
+AN BUI V259 - V88 FIX NUT XOA
 
-Mục đích:
-- Sửa lỗi bấm trực tiếp dòng hàng hóa nhưng nút Xóa không nhận đúng dòng.
-- index.html đã là V84.
-- sw.js dùng cache V84 mới và tự xóa cache cũ khi activate.
+Lỗi V87:
+- Nút Xóa bị disabled theo quyền nên đôi khi đã chọn đúng dòng nhưng bấm không có phản ứng.
 
-Cách đưa lên GitHub Pages:
-1. Mở repo đang chạy An Bùi.
-2. Thay file index.html cũ bằng index.html trong ZIP này.
-3. Thay file sw.js cũ bằng sw.js trong ZIP này.
-4. Commit changes.
-5. Chờ GitHub Pages cập nhật.
-6. Mở app và nhấn Ctrl+F5 một lần.
+V88:
+- Chưa chọn dòng: nút Xóa mờ.
+- Đã chọn dòng: nút Xóa bấm được.
+- Nếu chưa mở quyền Quản lý: bấm Xóa sẽ hỏi PIN Quản lý.
+- Sau khi có quyền: nếu hàng đã từng xuất cho khách thì KHÔNG cho xóa.
+- Nếu chưa từng xuất cho khách: hiện "Bạn chắc chắn muốn xóa..." và OK mới xóa.
 
-Không cần xóa dữ liệu kho/công nợ.
+GitHub:
+1. Thay index.html.
+2. Thay sw.js.
+3. Commit.
+4. Ctrl+F5 một lần.

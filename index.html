@@ -13,7 +13,7 @@
 
 <meta charset="utf-8">
 <meta name="app-version" content="259">
-<meta name="app-build" content="an-bui-v259-v84-warehouse-delete-row-github">
+<meta name="app-build" content="an-bui-v259-v87-delete-if-never-sold">
 <title>AN BÙI - Quản lý nội bộ</title>
 <style>
 :root{
@@ -10898,11 +10898,27 @@ body:has(#payments.page.active) .topbar #paymentTopbarFilterHost{
 }
 </style>
 
-<script id="v84-github-build-marker">
-window.AN_BUI_PATCH_VERSION=84;
-window.AN_BUI_BUILD='an-bui-v259-v84-warehouse-delete-row-github';
-</script>
+<style id="v85-warehouse-search-code-edit">
+/* V85: ô tìm chỉ lọc trực tiếp bảng, không xổ danh sách phụ */
+#warehouseProductPicker .warehouse-product-drop,
+#warehouseProductList{display:none!important}
+#warehouseProductPicker{grid-template-columns:minmax(0,1fr)!important}
+#warehouseSearch{padding-right:12px!important}
+#warehouseTable tr.warehouse-search-hit-v85 td{background:#f1fbf7!important}
+#warehouseTable .warehouse-code-edit-v85{
+  display:inline;min-width:0;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;outline:none!important;
+}
+#warehouseTable .warehouse-code-edit-v85:hover,
+#warehouseTable .warehouse-code-edit-v85:focus{
+  border:0!important;background:transparent!important;box-shadow:none!important;outline:none!important;
+}
+</style>
 
+
+<script id="v87-build-marker">
+window.AN_BUI_PATCH_VERSION=87;
+window.AN_BUI_BUILD='an-bui-v259-v87-delete-if-never-sold';
+</script>
 </head>
 <body>
 <div id="startupSafetyGate" class="startup-safety-gate show" aria-modal="true" role="dialog">
@@ -11067,12 +11083,11 @@ window.AN_BUI_BUILD='an-bui-v259-v84-warehouse-delete-row-github';
       <div class="warehouse-product-picker" id="warehouseProductPicker">
         <input id="warehouseSearch"
                autocomplete="off"
-               placeholder="Tìm sản phẩm..."
-               oninput="filterWarehouseProducts()"
-               onkeydown="warehouseProductKey(event)"
-               onblur="warehouseProductBlur()"
-               onfocus="this.select()"
-               onclick="this.select()">
+               placeholder="Tìm mã / tên sản phẩm..."
+               oninput="warehouseSearchLiveV85()"
+               onkeydown="warehouseSearchKeyV85(event)"
+               onfocus="this.select();warehouseCloseLegacySearchV85()"
+               onclick="this.select();warehouseCloseLegacySearchV85()">
         <button type="button"
                 class="warehouse-product-drop"
                 title="Xổ danh sách sản phẩm"
@@ -11109,7 +11124,7 @@ window.AN_BUI_BUILD='an-bui-v259-v84-warehouse-delete-row-github';
     <div class="warehouse-summary-row">
       <div id="warehouseCount" class="badge info">0 mặt hàng</div>
       <div id="warehouseInlineEditNote" class="warehouse-inline-edit-note" style="display:none">
-        ✏️ Chế độ sửa kiểu Excel • bấm trực tiếp vào chữ/số để sửa • Mã hàng và Tồn kho được khóa
+        ✏️ Chế độ sửa kiểu Excel • Mã hàng sửa được an toàn • Tồn kho được khóa
       </div>
     </div>
 
@@ -17395,7 +17410,7 @@ function renderProducts(){
       <td class="right">${money(p.salePrice)}</td>
       <td class="right">${p.stock}</td>
       <td>${p.stock<=p.min?'<span class="badge danger">Sắp hết</span>':'<span class="badge ok">Ổn</span>'}</td>
-      <td class="center"><button class="btn action-more-btn" title="Ngừng bán / Bán lại / Lịch sử / Xóa" onclick="openProductContextMenu(event,'${p.id}',this)">⋮</button></td>
+      <td class="center"><button class="btn action-more-btn" title="Ngừng bán / Bán lại / Lịch sử / Xóa" onclick="openProductContextMenu(event,decodeURIComponent('${encodeURIComponent(p.id)}'),this)">⋮</button></td>
     </tr>`);
     $('productsTable').innerHTML=table(['Mã','Tên hàng','Nhóm','ĐVT','Giá vốn','Giá bán','Tồn','Trạng thái','Thao tác'],rows);
   }else{
@@ -17407,7 +17422,7 @@ function renderProducts(){
       <td class="right">${money(p.salePrice)}</td>
       <td class="right">${p.stock}</td>
       <td>${p.stock<=p.min?'<span class="badge danger">Sắp hết</span>':'<span class="badge ok">Ổn</span>'}</td>
-      <td class="center"><button class="btn action-more-btn" title="Ngừng bán / Bán lại / Lịch sử / Xóa" onclick="openProductContextMenu(event,'${p.id}',this)">⋮</button></td>
+      <td class="center"><button class="btn action-more-btn" title="Ngừng bán / Bán lại / Lịch sử / Xóa" onclick="openProductContextMenu(event,decodeURIComponent('${encodeURIComponent(p.id)}'),this)">⋮</button></td>
     </tr>`);
     $('productsTable').innerHTML=table(['Mã','Tên hàng','Nhóm','ĐVT','Giá bán','Tồn','Trạng thái','Sửa/Xóa'],rows);
   }
@@ -17489,7 +17504,7 @@ function renderWarehouseProductList(forceAll=false){
 
   box.innerHTML=arr.map((p,i)=>`
     <div class="warehouse-product-item"
-         onmousedown="event.preventDefault();chooseWarehouseProduct('${p.id}')">
+         onmousedown="event.preventDefault();chooseWarehouseProduct(decodeURIComponent('${encodeURIComponent(p.id)}'))">
       <div>
         <div class="name">${esc(p.name)}</div>
         <div class="meta">${esc(p.id)} • ${esc(p.group||'')} • ${esc(p.unit||'')}</div>
@@ -17591,7 +17606,7 @@ function productTotalExportedQty(productId){
 
 
 let warehouseInlineEditMode=false;
-let warehouseInlineDraft={};
+let warehouseInlineDraft=Object.create(null);
 let warehouseExcelPopup=null;
 
 function warehouseInlineCanEdit(){
@@ -17604,6 +17619,7 @@ function warehouseCanDeleteProductV193(){
 }
 function warehouseInlineCloneProduct(p){
   return {
+    id:String(p?.id||''),
     name:String(p?.name||''),
     group:String(p?.group||''),
     supplierId:String(p?.supplierId||''),
@@ -17630,7 +17646,7 @@ function selectWarehouseDeleteRowV84(id,tr,event){
   if(target?.closest?.('button,input,select,textarea,a,[contenteditable="true"]'))return;
   id=String(id||'').trim();
   if(!id)return;
-  selectedWarehouseDeleteProductId=(String(selectedWarehouseDeleteProductId||'')===id)?'':id;
+  selectedWarehouseDeleteProductId=id;
   const selected=String(selectedWarehouseDeleteProductId||'');
   document.querySelectorAll('#warehouseTable tbody tr[data-product-id]').forEach(row=>{
     row.classList.toggle('warehouse-delete-selected',String(row.dataset.productId||'')===selected);
@@ -17647,10 +17663,10 @@ function warehouseInlineUpdateUI(){
   if($('warehouseDeleteProductBtn')){
     const deleteId=String(selectedWarehouseDeleteProductId||selectedWarehouseProductId||'').trim();
     $('warehouseDeleteProductBtn').style.display=editing?'none':'';
-    $('warehouseDeleteProductBtn').disabled=editing || !deleteId || !warehouseCanDeleteProductV193();
-    $('warehouseDeleteProductBtn').title=!warehouseCanDeleteProductV193()
-      ? 'Quản lý chưa cấp quyền Xóa hàng hóa'
-      : (!deleteId?'Bấm chọn một dòng hàng rồi bấm Xóa':'Xóa mặt hàng đang chọn');
+    $('warehouseDeleteProductBtn').disabled=editing || !deleteId;
+    $('warehouseDeleteProductBtn').title=!deleteId
+      ? 'Bấm chọn một dòng hàng rồi bấm Xóa'
+      : 'Xóa mặt hàng đang chọn';
   }
   ['warehouseSearch','warehouseGroup','warehouseVatFilter'].forEach(id=>{
     const el=$(id);if(el)el.disabled=editing;
@@ -17660,7 +17676,7 @@ function warehouseInlineUpdateUI(){
 }
 function startWarehouseInlineEdit(){
   if(!warehouseInlineCanEdit())return requireManager(()=>startWarehouseInlineEdit(),'Nhân viên chưa có quyền Danh mục hàng hóa/Kho.');
-  warehouseInlineDraft={};
+  warehouseInlineDraft=Object.create(null);
   (db.products||[]).forEach(p=>warehouseInlineDraft[p.id]=warehouseInlineCloneProduct(p));
   warehouseInlineEditMode=true;
   warehouseInlineUpdateUI();
@@ -17671,12 +17687,102 @@ function cancelWarehouseInlineEdit(){
   if(!warehouseInlineEditMode)return;
   if(!confirm('Hủy các thay đổi đang sửa trên danh mục hàng hóa?'))return;
   closeWarehouseExcelPopup();
-  warehouseInlineDraft={};
+  warehouseInlineDraft=Object.create(null);
   warehouseInlineEditMode=false;
   warehouseInlineUpdateUI();
   renderWarehouse();
   toast('Đã hủy thay đổi');
 }
+/* ===== V85: ĐỔI MÃ HÀNG AN TOÀN + TÌM TRỰC TIẾP TRÊN BẢNG ===== */
+function warehouseCloseLegacySearchV85(){
+  const box=$('warehouseProductList');
+  if(box){box.classList.remove('show');box.innerHTML=''}
+  warehouseProductIndex=-1;
+}
+function warehouseSearchLiveV85(){
+  selectedWarehouseProductId='';
+  selectedWarehouseDeleteProductId='';
+  warehouseCloseLegacySearchV85();
+  renderWarehouse();
+  requestAnimationFrame(()=>{
+    const q=norm($('warehouseSearch')?.value||'');
+    document.querySelectorAll('#warehouseTable tbody tr').forEach(tr=>tr.classList.remove('warehouse-search-hit-v85'));
+    if(!q)return;
+    const first=$('warehouseTable')?.querySelector('tbody tr[data-product-id]');
+    if(first){
+      first.classList.add('warehouse-search-hit-v85');
+      try{first.scrollIntoView({block:'nearest',behavior:'smooth'})}catch(_){first.scrollIntoView({block:'nearest'})}
+    }
+  });
+}
+function warehouseSearchKeyV85(e){
+  if(e.key==='Escape'){
+    e.preventDefault();
+    const inp=$('warehouseSearch');if(inp)inp.value='';
+    selectedWarehouseProductId='';selectedWarehouseDeleteProductId='';
+    warehouseCloseLegacySearchV85();renderWarehouse();
+    return;
+  }
+  if(e.key==='Enter'){
+    e.preventDefault();
+    const arr=warehouseProductMatches($('warehouseSearch')?.value||'');
+    if(arr.length===1){
+      selectedWarehouseDeleteProductId=String(arr[0].id||'');
+      renderWarehouse();
+      requestAnimationFrame(()=>document.querySelector('#warehouseTable tbody tr[data-product-id]')?.scrollIntoView({block:'nearest'}));
+    }
+  }
+}
+function productCodeValidV85(v){
+  return String(v??'').trim().length>0;
+}
+function productCodeLabelV85(v){return String(v||'').trim()}
+function applyProductIdMapDeepV85(root,map,seen){
+  if(!root || typeof root!=='object')return;
+  seen=seen||new WeakSet();
+  if(seen.has(root))return;seen.add(root);
+  if(Array.isArray(root)){
+    root.forEach(x=>applyProductIdMapDeepV85(x,map,seen));
+    return;
+  }
+  Object.keys(root).forEach(k=>{
+    const v=root[k];
+    if(k==='productId' && map.has(String(v||''))){
+      root[k]=map.get(String(v||''));
+    }else if(v && typeof v==='object'){
+      applyProductIdMapDeepV85(v,map,seen);
+    }
+  });
+}
+function applyProductCodeMapV85(map){
+  if(!map || !map.size)return;
+  /* Đổi mã ở danh mục trước, sau đó đổi mọi khóa liên kết productId trong dữ liệu nghiệp vụ. */
+  (db.products||[]).forEach(p=>{
+    const old=String(p.id||'');
+    if(map.has(old))p.id=map.get(old);
+  });
+  applyProductIdMapDeepV85(db,map);
+}
+function syncLiveProductRefsV85(map){
+  if(!map || !map.size)return;
+  const cv=v=>map.has(String(v||''))?map.get(String(v||'')):v;
+  if(typeof selectedWarehouseProductId!=='undefined')selectedWarehouseProductId=String(cv(selectedWarehouseProductId)||'');
+  if(typeof selectedWarehouseDeleteProductId!=='undefined')selectedWarehouseDeleteProductId=String(cv(selectedWarehouseDeleteProductId)||'');
+  if(typeof warrantySelectedProductId!=='undefined')warrantySelectedProductId=String(cv(warrantySelectedProductId)||'');
+  if(typeof warehouseMovementProductId!=='undefined')warehouseMovementProductId=String(cv(warehouseMovementProductId)||'');
+  [typeof siRows!=='undefined'?siRows:null,typeof soRows!=='undefined'?soRows:null,typeof warrantyDraftItems!=='undefined'?warrantyDraftItems:null]
+    .filter(Array.isArray).forEach(arr=>arr.forEach(r=>{if(r&&map.has(String(r.productId||'')))r.productId=map.get(String(r.productId||''))}));
+}
+function validateProductCodeEditsV85(edits){
+  for(const e of edits){
+    if(!productCodeValidV85(e.newId))return 'Mã hàng không được để trống.';
+  }
+  const finalIds=edits.map(e=>String(e.newId));
+  const seen=new Set();
+  for(const id of finalIds){if(seen.has(id))return 'Mã hàng bị trùng: '+id;seen.add(id)}
+  return '';
+}
+
 async function saveWarehouseInlineEdit(){
   if(!warehouseInlineEditMode)return;
   if(!warehouseInlineCanEdit())return requireManager(()=>saveWarehouseInlineEdit(),'Nhân viên chưa có quyền Danh mục hàng hóa/Kho.');
@@ -17684,13 +17790,15 @@ async function saveWarehouseInlineEdit(){
   const edits=[];
   for(const p of (db.products||[])){
     const d=warehouseInlineDraft[p.id]; if(!d)continue;
+    const oldId=String(p.id||'').trim();
+    const newId=productCodeLabelV85(d.id||oldId);
     const name=String(d.name||'').trim();
     const group=String(d.group||'').trim();
     const unit=String(d.unit||'').trim()||'Cái';
-    if(!name)return alert('Tên hàng của mã '+p.id+' đang để trống.');
+    if(!name)return alert('Tên hàng của mã '+oldId+' đang để trống.');
     if(!group)return alert('Chưa chọn Nhóm hàng cho '+name+'.');
     edits.push({
-      id:p.id,name,group,unit,
+      oldId,newId,name,group,unit,
       supplierId:String(d.supplierId||''),
       cost:Math.max(0,Number(d.cost)||0),
       salePrice:Math.max(0,Number(d.salePrice)||0),
@@ -17698,28 +17806,33 @@ async function saveWarehouseInlineEdit(){
     });
   }
 
-  const before=JSON.stringify(db);
-  edits.forEach(e=>{
-    const p=(db.products||[]).find(x=>String(x.id)===String(e.id)); if(!p)return;
-    p.name=e.name;
-    p.group=e.group;
-    p.unit=e.unit;
-    p.cost=e.cost;
-    p.salePrice=e.salePrice;
-    p.min=e.min;
-    p.supplierId=e.supplierId;
-    p.supplierName=String((db.suppliers||[]).find(s=>String(s.id)===e.supplierId)?.name||'');
-  });
+  const bad=validateProductCodeEditsV85(edits);if(bad)return alert(bad);
+  const codeChanges=edits.filter(e=>e.oldId!==e.newId);
+  if(codeChanges.length){
+    const preview=codeChanges.slice(0,6).map(e=>e.oldId+' → '+e.newId).join('\n');
+    if(!confirm('Đổi '+codeChanges.length+' mã hàng?\n\n'+preview+(codeChanges.length>6?'\n...':'')+'\n\nHệ thống sẽ tự cập nhật liên kết trong Nhập/Xuất/Bảo hành/HĐ VAT để không đứt lịch sử.'))return;
+  }
 
+  const before=JSON.stringify(db);
+  const map=new Map(codeChanges.map(e=>[e.oldId,e.newId]));
   try{
+    applyProductCodeMapV85(map);
+    edits.forEach(e=>{
+      const p=(db.products||[]).find(x=>String(x.id)===String(e.newId)); if(!p)return;
+      p.name=e.name;p.group=e.group;p.unit=e.unit;p.cost=e.cost;p.salePrice=e.salePrice;p.min=e.min;
+      p.supplierId=e.supplierId;
+      p.supplierName=String((db.suppliers||[]).find(s=>String(s.id)===e.supplierId)?.name||'');
+    });
+
     const ok=await saveDB();
     if(!ok){db=JSON.parse(before);normalizeDB();return}
+    syncLiveProductRefsV85(map);
     closeWarehouseExcelPopup();
-    warehouseInlineDraft={};
+    warehouseInlineDraft=Object.create(null);
     warehouseInlineEditMode=false;
     warehouseInlineUpdateUI();
     renderAll();
-    toast('💾 Đã lưu thay đổi Danh mục hàng hóa');
+    toast(codeChanges.length?'💾 Đã lưu và đổi mã hàng an toàn':'💾 Đã lưu thay đổi Danh mục hàng hóa');
   }catch(err){
     db=JSON.parse(before);normalizeDB();
     alert('Chưa lưu được thay đổi.\n\n'+String(err?.message||err));
@@ -17871,44 +17984,50 @@ function renderWarehouse(){
       const d=warehouseInlineDraftFor(p);
       const supplierName=String((db.suppliers||[]).find(s=>String(s.id)===String(d.supplierId||''))?.name||'');
       return `<tr class="warehouse-product-row warehouse-excel-row warehouse-excel-editing" data-product-id="${esc(p.id)}">
-        <td class="warehouse-excel-locked">${esc(p.id)}</td>
+        <td>
+          <b class="warehouse-excel-cell warehouse-code-edit-v85" contenteditable="true" spellcheck="false"
+             onfocus="warehouseExcelTextFocus(this,decodeURIComponent('${encodeURIComponent(p.id)}'),'id')"
+             oninput="warehouseExcelTextInput(this,decodeURIComponent('${encodeURIComponent(p.id)}'),'id')"
+             onblur="warehouseExcelTextBlur(this,decodeURIComponent('${encodeURIComponent(p.id)}'),'id')"
+             onkeydown="warehouseExcelKey(event,this,decodeURIComponent('${encodeURIComponent(p.id)}'),'id')">${esc(d.id)}</b>
+        </td>
         <td>
           <b class="warehouse-excel-cell" contenteditable="true" spellcheck="false"
-             onfocus="warehouseExcelTextFocus(this,'${esc(p.id)}','name')"
-             oninput="warehouseExcelTextInput(this,'${esc(p.id)}','name')"
-             onblur="warehouseExcelTextBlur(this,'${esc(p.id)}','name')"
-             onkeydown="warehouseExcelKey(event,this,'${esc(p.id)}','name')">${esc(d.name)}</b>${p.saleActive===false?'<span class="badge danger" style="margin-left:6px">Ngừng bán</span>':''}
+             onfocus="warehouseExcelTextFocus(this,decodeURIComponent('${encodeURIComponent(p.id)}'),'name')"
+             oninput="warehouseExcelTextInput(this,decodeURIComponent('${encodeURIComponent(p.id)}'),'name')"
+             onblur="warehouseExcelTextBlur(this,decodeURIComponent('${encodeURIComponent(p.id)}'),'name')"
+             onkeydown="warehouseExcelKey(event,this,decodeURIComponent('${encodeURIComponent(p.id)}'),'name')">${esc(d.name)}</b>${p.saleActive===false?'<span class="badge danger" style="margin-left:6px">Ngừng bán</span>':''}
           <span class="product-supplier-note warehouse-excel-select"
-                onclick="warehouseExcelOpenSelect(this,'${esc(p.id)}','supplierId')">
+                onclick="warehouseExcelOpenSelect(this,decodeURIComponent('${encodeURIComponent(p.id)}'),'supplierId')">
             <span class="warehouse-excel-ncc">${supplierName?'NCC: '+esc(supplierName):'NCC: Chưa chọn'}</span>
           </span>
         </td>
         <td class="warehouse-group-edit-cell">
           <select class="warehouse-excel-select warehouse-group-native-select"
-                  onchange="warehouseInlineSet('${esc(p.id)}','group',this.value)">
+                  onchange="warehouseInlineSet(decodeURIComponent('${encodeURIComponent(p.id)}'),'group',this.value)">
             ${(db.productGroups||[]).map(g=>`<option value="${esc(g)}" ${String(g)===String(d.group)?'selected':''}>${esc(g)}</option>`).join('')}
           </select>
         </td>
         <td class="center">
           <span class="warehouse-excel-cell" contenteditable="true" spellcheck="false"
-             onfocus="warehouseExcelTextFocus(this,'${esc(p.id)}','unit')"
-             oninput="warehouseExcelTextInput(this,'${esc(p.id)}','unit')"
-             onblur="warehouseExcelTextBlur(this,'${esc(p.id)}','unit')"
-             onkeydown="warehouseExcelKey(event,this,'${esc(p.id)}','unit')">${esc(d.unit)}</span>
+             onfocus="warehouseExcelTextFocus(this,decodeURIComponent('${encodeURIComponent(p.id)}'),'unit')"
+             oninput="warehouseExcelTextInput(this,decodeURIComponent('${encodeURIComponent(p.id)}'),'unit')"
+             onblur="warehouseExcelTextBlur(this,decodeURIComponent('${encodeURIComponent(p.id)}'),'unit')"
+             onkeydown="warehouseExcelKey(event,this,decodeURIComponent('${encodeURIComponent(p.id)}'),'unit')">${esc(d.unit)}</span>
         </td>
         ${isManager?`<td class="right warehouse-cost-cell">
           <b class="warehouse-excel-cell" contenteditable="true" inputmode="numeric"
-             onfocus="warehouseExcelTextFocus(this,'${esc(p.id)}','cost')"
-             oninput="warehouseExcelTextInput(this,'${esc(p.id)}','cost')"
-             onblur="warehouseExcelTextBlur(this,'${esc(p.id)}','cost')"
-             onkeydown="warehouseExcelKey(event,this,'${esc(p.id)}','cost')">${money(Number(d.cost||0))}</b>
+             onfocus="warehouseExcelTextFocus(this,decodeURIComponent('${encodeURIComponent(p.id)}'),'cost')"
+             oninput="warehouseExcelTextInput(this,decodeURIComponent('${encodeURIComponent(p.id)}'),'cost')"
+             onblur="warehouseExcelTextBlur(this,decodeURIComponent('${encodeURIComponent(p.id)}'),'cost')"
+             onkeydown="warehouseExcelKey(event,this,decodeURIComponent('${encodeURIComponent(p.id)}'),'cost')">${money(Number(d.cost||0))}</b>
         </td>`:''}
         <td class="right">
           <b class="warehouse-excel-cell" contenteditable="true" inputmode="numeric"
-             onfocus="warehouseExcelTextFocus(this,'${esc(p.id)}','salePrice')"
-             oninput="warehouseExcelTextInput(this,'${esc(p.id)}','salePrice')"
-             onblur="warehouseExcelTextBlur(this,'${esc(p.id)}','salePrice')"
-             onkeydown="warehouseExcelKey(event,this,'${esc(p.id)}','salePrice')">${money(Number(d.salePrice||0))}</b>
+             onfocus="warehouseExcelTextFocus(this,decodeURIComponent('${encodeURIComponent(p.id)}'),'salePrice')"
+             oninput="warehouseExcelTextInput(this,decodeURIComponent('${encodeURIComponent(p.id)}'),'salePrice')"
+             onblur="warehouseExcelTextBlur(this,decodeURIComponent('${encodeURIComponent(p.id)}'),'salePrice')"
+             onkeydown="warehouseExcelKey(event,this,decodeURIComponent('${encodeURIComponent(p.id)}'),'salePrice')">${money(Number(d.salePrice||0))}</b>
         </td>
         <td class="center warehouse-excel-locked"><span class="stock-qty ${qtyClass}">${Number(p.stock||0)}</span></td>
         <td class="warehouse-sold-qty warehouse-excel-locked"><b>${new Intl.NumberFormat('vi-VN').format(productTotalExportedQty(p.id))}</b></td>
@@ -17917,9 +18036,9 @@ function renderWarehouse(){
     }
 
     return `<tr class="warehouse-product-row${String(selectedWarehouseDeleteProductId||'')===String(p.id)?' warehouse-delete-selected':''}" data-product-id="${esc(p.id)}"
-      onclick="selectWarehouseDeleteRowV84('${esc(p.id)}',this,event)"
-      oncontextmenu="return openProductContextMenu(event,'${esc(p.id)}',this)"
-      ontouchstart="productContextTouchStart(event,'${esc(p.id)}',this)"
+      onclick="selectWarehouseDeleteRowV84(decodeURIComponent('${encodeURIComponent(p.id)}'),this,event)"
+      oncontextmenu="return openProductContextMenu(event,decodeURIComponent('${encodeURIComponent(p.id)}'),this)"
+      ontouchstart="productContextTouchStart(event,decodeURIComponent('${encodeURIComponent(p.id)}'),this)"
       ontouchend="productContextTouchEnd()" ontouchcancel="productContextTouchEnd()">
       <td>${esc(p.id)}</td>
       <td><b>${esc(p.name)}</b>${p.saleActive===false?'<span class="badge danger" style="margin-left:6px">Ngừng bán</span>':''}${p.supplierName?`<span class="product-supplier-note">NCC: ${esc(p.supplierName)}</span>`:''}</td>
@@ -19889,7 +20008,7 @@ function renderReportProductList(forceAll=false){
 
   box.innerHTML=arr.map(p=>`
     <div class="report-product-item"
-         onmousedown="event.preventDefault();chooseReportProduct('${p.id}')">
+         onmousedown="event.preventDefault();chooseReportProduct(decodeURIComponent('${encodeURIComponent(p.id)}'))">
       <div>
         <div class="name">${esc(p.name)}</div>
         <div class="meta">${esc(p.id)} • ${esc(p.group||'')}</div>
@@ -21316,7 +21435,7 @@ function clearTransientStateAfterFullReset(){
   stockoutViewingHistory=false; stockoutEditingHistory=false;
   stockinHistoryList=[]; stockinHistoryIndex=-1; stockinViewingHistory=false; stockinEditingHistory=false;
   warehouseMode='all'; selectedWarehouseProductId=''; selectedWarehouseDeleteProductId=''; warehouseProductIndex=-1; reportProductIndex=-1;
-  warehouseInlineEditMode=false; warehouseInlineDraft={};
+  warehouseInlineEditMode=false; warehouseInlineDraft=Object.create(null);
   warrantyDraftItems=[]; warrantyPickerIndex=-1; warrantySelectedProductId='';
   if(typeof warehouseMovementProductId!=='undefined')warehouseMovementProductId='';
   if(typeof supplierPickerIndex!=='undefined')supplierPickerIndex=-1;
@@ -23733,12 +23852,12 @@ function openProductContextMenu(event,id,rowEl=null){
 
   const items=[];
   if(isManager){
-    items.push(`<button onclick="closeProductContextMenu();toggleProductSaleActiveV257('${esc(p.id)}')">${p.saleActive===false?'▶ Bán lại':'⏸ Ngừng bán'}</button>`);
+    items.push(`<button onclick="closeProductContextMenu();toggleProductSaleActiveV257(decodeURIComponent('${encodeURIComponent(p.id)}'))">${p.saleActive===false?'▶ Bán lại':'⏸ Ngừng bán'}</button>`);
   }
   if(warehouseCanDeleteProductV193()){
-    items.push(`<button class="danger action-menu-delete" onclick="closeProductContextMenu();deleteProductSafe('${esc(p.id)}')">🗑 Xóa hàng hóa</button>`);
+    items.push(`<button class="danger action-menu-delete" onclick="closeProductContextMenu();deleteProductSafe(decodeURIComponent('${encodeURIComponent(p.id)}'))">🗑 Xóa hàng hóa</button>`);
   }
-  items.push(`<button class="action-menu-history" onclick="closeProductContextMenu();openProductMovement('${esc(p.id)}')">🕘 Lịch sử nhập/xuất</button>`);
+  items.push(`<button class="action-menu-history" onclick="closeProductContextMenu();openProductMovement(decodeURIComponent('${encodeURIComponent(p.id)}'))">🕘 Lịch sử nhập/xuất</button>`);
   m.innerHTML=items.join('');
   const x=Math.min(Number(event?.clientX||rowEl?.getBoundingClientRect()?.right||20),window.innerWidth-205);
   const y=Math.min(Number(event?.clientY||rowEl?.getBoundingClientRect()?.top||20),window.innerHeight-150);
@@ -23775,19 +23894,76 @@ function productHasDocumentHistory(id){
     (db.stockout||[]).some(o=>(o.items||[]).some(r=>String(r.productId)===String(id))) ||
     (db.warranty||[]).some(w=>String(w.productId||'')===String(id));
 }
+/* ===== V87: XÓA HÀNG NẾU CHƯA TỪNG XUẤT CHO KHÁCH ===== */
+/* Bắt chọn dòng ở cấp bảng để GitHub/PWA vẫn nhận ổn định sau mỗi lần render. */
+document.addEventListener('click',function warehouseDeleteRowDelegateV87(e){
+  if(warehouseInlineEditMode)return;
+  const tr=e.target?.closest?.('#warehouseTable tbody tr[data-product-id]');
+  if(!tr)return;
+  if(e.target?.closest?.('button,input,select,textarea,a,[contenteditable="true"]'))return;
+  const id=String(tr.dataset.productId||'').trim();
+  if(!id)return;
+  selectedWarehouseDeleteProductId=id;
+  document.querySelectorAll('#warehouseTable tbody tr[data-product-id]').forEach(row=>{
+    row.classList.toggle('warehouse-delete-selected',String(row.dataset.productId||'')===id);
+  });
+  warehouseInlineUpdateUI();
+},true);
+
+function productStockoutUsageV87(id){
+  id=String(id||'');
+  return (db.stockout||[]).filter(o=>(o.items||[]).some(r=>String(r.productId||'')===id));
+}
+function productStockoutCustomersV87(id){
+  const names=[];
+  productStockoutUsageV87(id).forEach(o=>{
+    let name=String(o.customerName||'').trim();
+    if(!name && o.customerId){
+      const c=(db.customers||[]).find(x=>String(x.id||'')===String(o.customerId||''));
+      name=String(c?.name||'').trim();
+    }
+    if(name && !names.includes(name))names.push(name);
+  });
+  return names;
+}
 async function deleteProductSafe(id){
-  if(!warehouseCanDeleteProductV193())return alert('Quản lý chưa cấp quyền Xóa hàng hóa.');
-  const p=(db.products||[]).find(x=>String(x.id)===String(id));if(!p)return alert('Không tìm thấy hàng hóa.');
-  if(productHasDocumentHistory(id))return alert('Không thể xóa “'+p.name+'” vì đã có lịch sử Nhập/Xuất/Bảo hành.\n\nĐể bảo toàn sổ kho, anh chỉ nên Sửa thông tin hàng này.');
-  if(Number(p.stock||0)!==0)return alert('Không thể xóa vì tồn hiện tại còn '+Number(p.stock||0)+' '+(p.unit||'')+'. Hãy xử lý tồn về 0 trước.');
-  if(!confirm('Xóa hẳn hàng hóa “'+p.name+'”?\n\nSản phẩm chưa có lịch sử và tồn = 0 nên có thể xóa an toàn.'))return;
-  const before=JSON.stringify(db);db.products=(db.products||[]).filter(x=>String(x.id)!==String(id));
+  if(!warehouseCanDeleteProductV193()){
+    if(typeof requireManager==='function')return requireManager(()=>deleteProductSafe(id),'Xóa hàng hóa cần quyền Quản lý.');
+    return alert('Quản lý chưa cấp quyền Xóa hàng hóa.');
+  }
+  id=String(id||'').trim();
+  const p=(db.products||[]).find(x=>String(x.id)===id);if(!p)return alert('Không tìm thấy hàng hóa.');
+
+  const soldDocs=productStockoutUsageV87(id);
+  if(soldDocs.length){
+    const customers=productStockoutCustomersV87(id);
+    const who=customers.length?'\nKhách đã xuất: '+customers.slice(0,5).join(', ')+(customers.length>5?'…':''):'';
+    return alert('Không thể xóa “'+p.name+'” vì mặt hàng này đã từng xuất cho khách ('+soldDocs.length+' phiếu).'+who+'\n\nĐể giữ đúng lịch sử bán hàng, anh có thể Ngừng bán/Ẩn mặt hàng này.');
+  }
+
+  const stock=Number(p.stock||0)||0;
+  const warn=stock!==0?'\n\nLưu ý: mặt hàng hiện còn tồn '+stock+' '+(p.unit||'')+'. Xóa sẽ loại mặt hàng này khỏi danh mục/tồn hiện tại.':'';
+  if(!confirm('Bạn chắc chắn muốn xóa “'+p.name+'” không?'+warn+'\n\nĐiều kiện kiểm tra: mặt hàng chưa từng xuất cho khách.'))return;
+
+  const before=JSON.stringify(db);
+  db.deletedProducts=Array.isArray(db.deletedProducts)?db.deletedProducts:[];
+  db.deletedProducts.push({
+    id:String(p.id||''),name:String(p.name||''),group:String(p.group||''),unit:String(p.unit||''),
+    cost:Number(p.cost||0)||0,salePrice:Number(p.salePrice!==undefined?p.salePrice:(p.price||0))||0,
+    stock:Number(p.stock||0)||0,deletedAt:new Date().toISOString(),reason:'never-sold-delete-v87'
+  });
+  db.products=(db.products||[]).filter(x=>String(x.id)!==id);
   if(!(await saveDB())){db=JSON.parse(before);return}
-  selectedWarehouseProductId='';selectedWarehouseDeleteProductId='';renderWarehouse();refreshLists();toast('Đã xóa hàng hóa '+p.name);
+  selectedWarehouseProductId='';selectedWarehouseDeleteProductId='';
+  renderWarehouse();refreshLists();warehouseInlineUpdateUI();
+  toast('Đã xóa hàng hóa '+p.name);
 }
 
 async function deleteWarehouseSelectedProductV193(){
-  if(!warehouseCanDeleteProductV193())return alert('Quản lý chưa cấp quyền Xóa hàng hóa.');
+  if(!warehouseCanDeleteProductV193()){
+    if(typeof requireManager==='function')return requireManager(()=>deleteWarehouseSelectedProductV193(),'Xóa hàng hóa cần quyền Quản lý.');
+    return alert('Quản lý chưa cấp quyền Xóa hàng hóa.');
+  }
   if(warehouseInlineEditMode)return alert('Đang ở chế độ Sửa. Hãy Lưu hoặc Hủy trước khi Xóa.');
 
   let id=String(selectedWarehouseDeleteProductId||selectedWarehouseProductId||'').trim();
@@ -23829,7 +24005,7 @@ function openEditProduct(id){
   showModal(`
     <h3>Sửa hàng hóa</h3>
     <div class="form-grid">
-      <div><label>Mã hàng</label><input id="epid" value="${esc(p.id)}" readonly></div>
+      <div><label>Mã hàng</label><input id="epoldid" type="hidden" value="${esc(p.id)}"><input id="epid" value="${esc(p.id)}" maxlength="50"><div class="small">Đổi mã sẽ tự cập nhật liên kết lịch sử.</div></div>
       <div><label>Tên hàng</label><input id="epname" value="${esc(p.name)}"></div>
       <div>
         <label>Nhóm hàng</label>
@@ -23873,9 +24049,12 @@ async function saveEditedProduct(){
     return requireManager(()=>saveEditedProduct(),'Nhân viên chưa có quyền Danh mục hàng hóa/Kho.');
   }
 
-  const id=$('epid').value;
-  const p=(db.products||[]).find(x=>x.id===id);
-  if(!p)return alert('Không tìm thấy hàng hóa.');
+  const oldId=String($('epoldid')?.value||'').trim();
+  const newId=productCodeLabelV85($('epid')?.value||'');
+  const p0=(db.products||[]).find(x=>String(x.id)===oldId);
+  if(!p0)return alert('Không tìm thấy hàng hóa.');
+  if(!productCodeValidV85(newId))return alert('Mã hàng không được để trống.');
+  if(newId!==oldId && (db.products||[]).some(x=>String(x.id)===newId))return alert('Mã hàng '+newId+' đã tồn tại.');
 
   const name=$('epname').value.trim();
   const group=$('epgroup').value;
@@ -23887,20 +24066,25 @@ async function saveEditedProduct(){
 
   if(!name)return alert('Nhập tên hàng.');
   if(!group)return alert('Chọn nhóm hàng.');
+  if(newId!==oldId && !confirm('Đổi mã hàng '+oldId+' → '+newId+'?\n\nHệ thống sẽ tự cập nhật các liên kết Nhập/Xuất/Bảo hành/HĐ VAT.'))return;
 
-  p.name=name;
-  p.group=group;
-  p.supplierId=supplierId;
-  p.supplierName=supplierName;
-  p.brand='';
-  p.unit=unit;
-  p.salePrice=salePrice;
-  p.min=min;
+  const before=JSON.stringify(db);
+  const map=new Map(newId!==oldId?[[oldId,newId]]:[]);
+  try{
+    applyProductCodeMapV85(map);
+    const p=(db.products||[]).find(x=>String(x.id)===newId);
+    if(!p)throw new Error('Không tìm thấy hàng sau khi đổi mã.');
+    p.name=name;p.group=group;p.supplierId=supplierId;p.supplierName=supplierName;p.brand='';p.unit=unit;p.salePrice=salePrice;p.min=min;
 
-  if(await saveDB()){
-    closeModal();
-    renderAll();
-    toast('Đã cập nhật hàng hóa');
+    if(await saveDB()){
+      syncLiveProductRefsV85(map);
+      closeModal();renderAll();toast(newId!==oldId?'Đã đổi mã '+oldId+' → '+newId:'Đã cập nhật hàng hóa');
+    }else{
+      db=JSON.parse(before);normalizeDB();
+    }
+  }catch(err){
+    db=JSON.parse(before);normalizeDB();
+    alert('Không đổi được mã hàng.\n\n'+String(err?.message||err));
   }
 }
 
@@ -23987,7 +24171,7 @@ function renderWarrantyProductList(forceAll=false){
   const arr=forceAll?(db.products||[]).slice(0,60):warrantyProductMatches(input.value);
   warrantyPickerIndex=-1;
   box.innerHTML=arr.length?arr.map((p,i)=>`
-    <div class="warranty-product-item" onmousedown="event.preventDefault();chooseWarrantyProduct('${p.id}')">
+    <div class="warranty-product-item" onmousedown="event.preventDefault();chooseWarrantyProduct(decodeURIComponent('${encodeURIComponent(p.id)}'))">
       <div><div class="name">${esc(p.name)}</div><div class="meta">${esc(p.id)} • ${esc(p.group||'')} • ${esc(p.unit||'')}</div></div>
       <div class="small">Tồn ${Number(p.stock||0)}</div>
     </div>`).join(''):'<div class="warranty-product-item">Không tìm thấy sản phẩm</div>';
@@ -24213,7 +24397,7 @@ function renderWarrantyEditProductListV234(forceAll=false){
   const arr=forceAll?(db.products||[]).slice(0,60):warrantyEditProductMatchesV234(input.value);
   warrantyEditPickerIndexV234=-1;
   box.innerHTML=arr.length?arr.map((p,i)=>`
-    <div class="warranty-product-item" onmousedown="event.preventDefault();chooseWarrantyEditProductV234('${esc(p.id)}')">
+    <div class="warranty-product-item" onmousedown="event.preventDefault();chooseWarrantyEditProductV234(decodeURIComponent('${encodeURIComponent(p.id)}'))">
       <div><div class="name">${esc(p.name)}</div><div class="meta">${esc(p.id)} • ${esc(p.group||'')} • ${esc(p.unit||'')}</div></div>
       <div class="small">Tồn ${Number(p.stock||0)}</div>
     </div>`).join(''):'<div class="warranty-product-item">Không tìm thấy sản phẩm</div>';
@@ -25304,7 +25488,7 @@ function openSuggestions(mode,i,el,showAll=false){
     if(mode==='so'){
       const b=vatStockSummary(p.id);
       const fmt=n=>new Intl.NumberFormat('vi-VN').format(Number(n)||0);
-      return `<div class="suggestion ${idx===0?'active':''}" data-product-id="${esc(p.id)}" onmousedown="event.preventDefault();chooseProduct('${mode}',${i},'${p.id}')">
+      return `<div class="suggestion ${idx===0?'active':''}" data-product-id="${esc(p.id)}" onmousedown="event.preventDefault();chooseProduct('${mode}',${i},decodeURIComponent('${encodeURIComponent(p.id)}'))">
         <b>${esc(p.name)}</b>
         <small>${p.id} • ${p.unit}</small>
         <div class="suggestion-stock-compact">
@@ -25314,7 +25498,7 @@ function openSuggestions(mode,i,el,showAll=false){
         </div>
       </div>`;
     }
-    return `<div class="suggestion ${idx===0?'active':''}" data-product-id="${esc(p.id)}" onmousedown="event.preventDefault();chooseProduct('${mode}',${i},'${p.id}')"><b>${esc(p.name)}</b>${p.saleActive===false?'<span class="badge danger" style="margin-left:6px">Ngừng bán</span>':''}<small>${p.id} • ${p.unit} • Tồn ${p.stock}${p.saleActive===false?' • Nhập lại sẽ tự bán lại':''}</small></div>`;
+    return `<div class="suggestion ${idx===0?'active':''}" data-product-id="${esc(p.id)}" onmousedown="event.preventDefault();chooseProduct('${mode}',${i},decodeURIComponent('${encodeURIComponent(p.id)}'))"><b>${esc(p.name)}</b>${p.saleActive===false?'<span class="badge danger" style="margin-left:6px">Ngừng bán</span>':''}<small>${p.id} • ${p.unit} • Tồn ${p.stock}${p.saleActive===false?' • Nhập lại sẽ tự bán lại':''}</small></div>`;
   }).join('');
   if(mode==='si' && isManager){
     const typedSi=String(el.value||'').trim();
@@ -28618,6 +28802,7 @@ function printCustomerPaymentReceiptV206(id){
     <div class="sign"><div>Người nộp tiền<br><br><br><br>(Ký, ghi rõ họ tên)</div><div>Người thu tiền<br><br><br><br>${esc(p.collector||p.operator||'')}</div></div>
     <div class="note">Phiếu được lập từ AN BÙI Manager</div>
     <div style="text-align:center;margin-top:20px"><button onclick="window.print()">In phiếu thu</button></div>
+
 </body></html>`);
   w.document.close();
   w.focus();
@@ -31295,7 +31480,7 @@ window.addEventListener('load',()=>{
 <script id="pwa-register">
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   window.addEventListener('load', function(){
-    navigator.serviceWorker.register('./sw.js?v=an-bui-v259-v84-warehouse-delete-row-github').then(function(reg){
+    navigator.serviceWorker.register('./sw.js?v=an-bui-v259-v87-delete-if-never-sold').then(function(reg){
       return reg.update();
     }).catch(function(err){ console.warn('Service worker:', err); });
   });
@@ -36024,6 +36209,13 @@ async function saveCustomerDebtEditUnifiedV193(id){
     w.document.open();
     w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${name}</title><style>body{font-family:Arial,sans-serif;margin:24px;color:#111}h2{text-align:center}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #222;padding:7px}.c{text-align:center}.r{text-align:right}.meta{display:grid;grid-template-columns:1fr 1fr;gap:8px 18px;margin:12px 0}.sum{width:430px;margin:12px 0 0 auto}.blue{color:#0b3f91;font-weight:900}.red{color:#c62828;font-weight:900}@media print{body{margin:10mm}}</style></head><body>${html}<script>window.onload=()=>setTimeout(()=>window.print(),180)<\/script>
 <!-- V84 FIX: click row to select warehouse product for delete; safe-delete rules retained -->
+
+
+<script id="v88-build-marker">
+window.AN_BUI_PATCH_VERSION=88;
+window.AN_BUI_BUILD='an-bui-v259-v88-delete-button-active';
+</script>
+
 </body></html>`);
     w.document.close();
   };
@@ -39937,7 +40129,7 @@ body.warehouse-page-active .topbar>.actions{
 
   /* ================= STOCKIN ================= */
   const baseOpenSuggestions69=window.openSuggestions;
-  function stockinSuggestions69(i,el,showAll){const box=q('sisg'+i);if(!box)return;const typed=String(el?.value||'').trim();let arr=[];if(showAll)arr=[...(db.products||[])].slice(0,30);else{if(!typed){box.classList.remove('show');box.innerHTML='';box.dataset.index='-1';return}const key=norm69(typed);arr=(db.products||[]).filter(p=>norm69((p.name||'')+' '+(p.id||'')).includes(key)).slice(0,20)}let html=arr.map((p,idx)=>`<div class="suggestion ${idx===0?'active':''}" data-product-id="${esc69(p.id)}" onmousedown="event.preventDefault();chooseProduct('si',${i},'${esc69(p.id)}')"><b>${esc69(p.name)}</b>${p.saleActive===false?'<span class="badge danger" style="margin-left:6px">Ngừng bán</span>':''}<small>${esc69(p.id)} • ${esc69(p.unit||'')} • Tồn ${Number(p.stock)||0}</small></div>`).join('');if(isManager&&typed&&!showAll){const exact=(db.products||[]).some(p=>norm69(p.name||'')===norm69(typed));if(!exact)html+=`<div class="suggestion create-new" onmousedown="event.preventDefault();openQuickProductFromStockin(${i},decodeURIComponent('${encodeURIComponent(typed)}'))">＋ Tạo hàng mới: <b>${esc69(typed)}</b><small>Tạo ngay, không cần qua menu Hàng hóa</small></div>`}box.innerHTML=html;box.classList.toggle('show',!!html);box.dataset.index='-1'}
+  function stockinSuggestions69(i,el,showAll){const box=q('sisg'+i);if(!box)return;const typed=String(el?.value||'').trim();let arr=[];if(showAll)arr=[...(db.products||[])].slice(0,30);else{if(!typed){box.classList.remove('show');box.innerHTML='';box.dataset.index='-1';return}const key=norm69(typed);arr=(db.products||[]).filter(p=>norm69((p.name||'')+' '+(p.id||'')).includes(key)).slice(0,20)}let html=arr.map((p,idx)=>`<div class="suggestion ${idx===0?'active':''}" data-product-id="${esc69(p.id)}" onmousedown="event.preventDefault();chooseProduct('si',${i},decodeURIComponent('${encodeURIComponent(p.id)}'))"><b>${esc69(p.name)}</b>${p.saleActive===false?'<span class="badge danger" style="margin-left:6px">Ngừng bán</span>':''}<small>${esc69(p.id)} • ${esc69(p.unit||'')} • Tồn ${Number(p.stock)||0}</small></div>`).join('');if(isManager&&typed&&!showAll){const exact=(db.products||[]).some(p=>norm69(p.name||'')===norm69(typed));if(!exact)html+=`<div class="suggestion create-new" onmousedown="event.preventDefault();openQuickProductFromStockin(${i},decodeURIComponent('${encodeURIComponent(typed)}'))">＋ Tạo hàng mới: <b>${esc69(typed)}</b><small>Tạo ngay, không cần qua menu Hàng hóa</small></div>`}box.innerHTML=html;box.classList.toggle('show',!!html);box.dataset.index='-1'}
   window.openSuggestions=function(mode,i,el,showAll=false){if(mode==='si')return stockinSuggestions69(i,el,!!showAll);return typeof baseOpenSuggestions69==='function'?baseOpenSuggestions69.apply(this,arguments):undefined};
   function syncStockin69(){const page=q('stockin');if(!page)return;let staff=false;try{staff=!isManager&&staffModuleEnabled('stockin')}catch(_){}page.classList.toggle('staff-stockin-private',!!staff);const head=q('siHeadRow');if(head)[...head.children].forEach(th=>{th.style.removeProperty('width');th.style.removeProperty('min-width');th.style.removeProperty('max-width')});document.querySelectorAll('#stockin input[data-mode="si"][data-role="product"]').forEach(el=>{el.onfocus=function(){try{this.select()}catch(_){}const i=Number(this.dataset.row||0),box=q('sisg'+i);if(box){box.classList.remove('show');box.innerHTML='';box.dataset.index='-1'}};el.onclick=function(ev){ev?.stopPropagation?.();try{this.select()}catch(_){}stockinSuggestions69(Number(this.dataset.row||0),this,true)};el.oninput=function(){const i=Number(this.dataset.row||0);if(Array.isArray(window.siRows)&&siRows[i]){siRows[i].productText=this.value;siRows[i].productId=''}stockinSuggestions69(i,this,false)}})}
   /* V76: renderSIRows không còn bị V69 bọc lại. */
@@ -40512,3 +40704,52 @@ body.warehouse-page-active .main>.topbar>.actions{
 <!-- AN BUI V83: Enter moves to next editable field globally -->
 
 <!-- AN BUI RELEASE V83 • ENTER NEXT FIELD GLOBAL • CORE 259 -->
+
+<!-- AN_BUI_PATCH_V86 any-code-char + clean-code-edit + toolbar-top-row -->
+
+
+<style id="v86-warehouse-top-actions-style">
+/* V86: đưa các nút thao tác lên cùng hàng với Tồn kho / Tất cả. */
+body.warehouse-page-active #warehouseStockTopHostV82{
+  display:flex!important;align-items:center!important;gap:7px!important;flex-wrap:wrap!important;
+}
+body.warehouse-page-active #warehouseStockTopHostV82>.btn{
+  height:38px!important;min-height:38px!important;max-height:38px!important;
+  padding:0 13px!important;font-size:12px!important;width:auto!important;min-width:70px!important;white-space:nowrap!important;
+}
+body.warehouse-page-active #warehouseStockTopHostV82 #warehouseAddProductBtn{min-width:104px!important}
+body.warehouse-page-active #warehouseStockTopHostV82 #warehouseManageGroupBtn{min-width:108px!important}
+body.warehouse-page-active #warehouseStockTopHostV82 #warehouseDeleteProductBtn{min-width:70px!important}
+body.warehouse-page-active #warehouseStockTopHostV82 .warehouse-print-btn{min-width:58px!important}
+body.warehouse-page-active #v69WarehouseActionRow:empty{display:none!important;border-top:0!important;padding-top:0!important}
+@media(max-width:900px){
+  body.warehouse-page-active #warehouseStockTopHostV82{gap:6px!important}
+  body.warehouse-page-active #warehouseStockTopHostV82>.btn{height:36px!important;min-height:36px!important;max-height:36px!important;padding:0 10px!important}
+}
+</style>
+<script id="v86-warehouse-top-actions-js">
+(function(){
+  'use strict';
+  function layoutWarehouseV86(){
+    try{ if(typeof window.layoutWarehouseV82==='function') window.layoutWarehouseV82(); }catch(_){}
+    const host=document.getElementById('warehouseStockTopHostV82');
+    if(!host)return;
+    const ids=['warehouseManageGroupBtn','warehouseAddProductBtn','warehouseInlineEditBtn','warehouseDeleteProductBtn','warehouseInlineSaveBtn','warehouseInlineCancelBtn'];
+    ids.forEach(id=>{const el=document.getElementById(id);if(el&&el.parentElement!==host)host.appendChild(el)});
+    const print=document.querySelector('#warehouseCompactBar .warehouse-print-btn, #warehouseStockTopHostV82 .warehouse-print-btn');
+    if(print&&print.parentElement!==host)host.appendChild(print);
+    const ar=document.getElementById('v69WarehouseActionRow');
+    if(ar && !ar.children.length)ar.style.display='none';
+  }
+  document.addEventListener('click',function(e){if(e.target?.closest?.('[data-page="warehouse"]'))setTimeout(layoutWarehouseV86,20)},true);
+  const oldRender=window.renderWarehouse;
+  if(typeof oldRender==='function')window.renderWarehouse=function(){const r=oldRender.apply(this,arguments);setTimeout(layoutWarehouseV86,20);return r};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(layoutWarehouseV86,350),{once:true});
+  else setTimeout(layoutWarehouseV86,350);
+  window.addEventListener('load',()=>setTimeout(layoutWarehouseV86,850));
+  window.layoutWarehouseV86=layoutWarehouseV86;
+})();
+</script>
+<script id="v86-build-marker">window.AN_BUI_PATCH_VERSION=86;window.AN_BUI_BUILD='an-bui-v259-v87-delete-if-never-sold';</script>
+<!-- AN BUI V86: any product-code characters + clean code edit + toolbar top row -->
+

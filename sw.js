@@ -1,11 +1,9 @@
-const CACHE_NAME='an-bui-v259-v84-warehouse-delete-row-github';
+const CACHE_NAME='an-bui-v259-v88-delete-button-active';
 const CORE=['./','./index.html'];
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache=>cache.addAll(CORE).catch(()=>{}))
-  );
+  event.waitUntil(caches.open(CACHE_NAME).then(c=>c.addAll(CORE).catch(()=>{})));
 });
 
 self.addEventListener('activate',event=>{
@@ -18,17 +16,16 @@ self.addEventListener('activate',event=>{
 
 self.addEventListener('fetch',event=>{
   const req=event.request;
-  if(req.method!=='GET') return;
-
-  const url=new URL(req.url);
-  if(url.origin!==self.location.origin) return;
+  if(req.method!=='GET')return;
+  const u=new URL(req.url);
+  if(u.origin!==self.location.origin)return;
 
   if(req.mode==='navigate'){
     event.respondWith((async()=>{
       try{
         const fresh=await fetch(req,{cache:'no-store'});
-        const cache=await caches.open(CACHE_NAME);
-        cache.put('./index.html',fresh.clone()).catch(()=>{});
+        const c=await caches.open(CACHE_NAME);
+        c.put('./index.html',fresh.clone()).catch(()=>{});
         return fresh;
       }catch(_){
         return (await caches.match(req)) || (await caches.match('./index.html'));
@@ -37,14 +34,5 @@ self.addEventListener('fetch',event=>{
     return;
   }
 
-  event.respondWith((async()=>{
-    try{
-      const fresh=await fetch(req);
-      const cache=await caches.open(CACHE_NAME);
-      cache.put(req,fresh.clone()).catch(()=>{});
-      return fresh;
-    }catch(_){
-      return (await caches.match(req)) || Response.error();
-    }
-  })());
+  event.respondWith(fetch(req).catch(()=>caches.match(req)));
 });
