@@ -15628,9 +15628,6 @@ function go(id){
   refreshStockinHistoryNav();
 
   if(id==='stockout'){
-    /* Mở menu Xuất hàng ở Phiếu mới. Phiếu đã lưu chỉ vào chế độ sửa
-       sau khi người dùng mở phiếu đó và bấm Sửa phiếu. */
-    newStockout();
     initStockoutHistoryNav();
     setTimeout(()=>refreshStockOperationGate('stockout',{announce:true}),0);
   }
@@ -26052,7 +26049,7 @@ function renderSIRows(){
           value="${esc(r.productText||(p?.name||''))}" placeholder="Gõ tên hàng..."
           oninput="siRows[${i}].productText=this.value;siRows[${i}].productId='';openSuggestions('si',${i},this)"
           onfocus="this.select()"
-          onclick="event.stopPropagation();this.select();openSuggestions('si',${i},this,!!siRows[${i}]?.productId||!this.value.trim())"
+          onclick="event.stopPropagation();this.select();openSuggestions('si',${i},this,true)"
           onkeydown="productKey(event,'si',${i},this)">
         <div class="suggestions" id="sisg${i}"></div>
       </td>
@@ -26101,8 +26098,8 @@ function renderSORows(){
         <input data-mode="so" data-role="product" data-row="${i}"
           value="${esc(r.productText||(p?.name||''))}" placeholder="Gõ tên hàng..."
           oninput="soRows[${i}].productText=this.value;soRows[${i}].productId='';soRows[${i}]._vatShortage=false;openSuggestions('so',${i},this)"
-          onfocus="this.select()"
-          onclick="event.stopPropagation();this.select();openSuggestions('so',${i},this,!!soRows[${i}]?.productId||!this.value.trim())"
+          onfocus="this.select();openSuggestions('so',${i},this,true)"
+          onclick="event.stopPropagation();this.select();openSuggestions('so',${i},this,true)"
           onkeydown="productKey(event,'so',${i},this)">
         <div class="suggestions" id="sosg${i}"></div>
       </td>
@@ -38406,8 +38403,8 @@ async function saveCustomerDebtEditUnifiedV193(id){
     }catch(err){console.error('Excel auto save:',err);ok=false}
     finally{window[newName]=oldNew}
     if(ok===true){
-      /* Lưu xong luôn về phiếu mới; không tự bật sửa phiếu vừa lưu. */
-      try{oldNew?.()}catch(_){ }
+      if(mode==='si'){stockinViewingHistory=true;stockinEditingHistory=true;try{setStockinLocked(false);renderSIRows()}catch(_){}}
+      else{stockoutViewingHistory=true;stockoutEditingHistory=true;try{setStockoutLocked(false);renderSORows()}catch(_){}}
       clearDraft(mode);setStatus(mode,'✓ Đã lưu kho • sửa ô khác sẽ tự cập nhật','');
     }else{saveDraft(mode,'Đã giữ nháp • chưa ghi vào kho')}
     autoState[mode].busy=false;syncCorner(mode);
@@ -38454,7 +38451,7 @@ async function saveCustomerDebtEditUnifiedV193(id){
   document.addEventListener('focusout',e=>{const page=e.target.closest?.('#stockin,#stockout');if(!page)return;const mode=page.id==='stockin'?'si':'so';schedule(mode,false)},true);
   document.addEventListener('keydown',e=>{if(!['Enter','Tab'].includes(e.key))return;const page=e.target.closest?.('#stockin,#stockout');if(page)setTimeout(()=>schedule(page.id==='stockin'?'si':'so',false),0)},true);
   window.addEventListener('contextmenu',()=>setTimeout(refreshMenu,0),true);
-  let restored=false;function boot(){makeCorner('si');makeCorner('so');upgradeMenu();syncCorner('si');syncCorner('so');if(!restored){restored=true;restoreDraft('si');/* Không đổ nháp phiếu xuất cũ vào Phiếu mới khi mở app. */}}
+  let restored=false;function boot(){makeCorner('si');makeCorner('so');upgradeMenu();syncCorner('si');syncCorner('so');if(!restored){restored=true;restoreDraft('si');restoreDraft('so')}}
   window.addEventListener('load',()=>setTimeout(boot,700));setTimeout(boot,250);setInterval(()=>{makeCorner('si');makeCorner('so');refreshMenu()},900);
 })();
 </script>
@@ -40391,7 +40388,7 @@ body.warehouse-page-active .topbar>.actions{
   const baseOpenSuggestions69=window.openSuggestions;
   function stockinSuggestions69(i,el,showAll){const box=q('sisg'+i);if(!box)return;const typed=String(el?.value||'').trim();let arr=[];if(showAll)arr=[...(db.products||[])].slice(0,30);else{if(!typed){box.classList.remove('show');box.innerHTML='';box.dataset.index='-1';return}const key=norm69(typed);arr=(db.products||[]).filter(p=>norm69((p.name||'')+' '+(p.id||'')).includes(key)).slice(0,20)}let html=arr.map((p,idx)=>`<div class="suggestion ${idx===0?'active':''}" data-product-id="${esc69(p.id)}" onmousedown="event.preventDefault();chooseProduct('si',${i},decodeURIComponent('${encodeURIComponent(p.id)}'))"><b>${esc69(p.name)}</b>${p.saleActive===false?'<span class="badge danger" style="margin-left:6px">Ngừng bán</span>':''}<small>${esc69(p.id)} • ${esc69(p.unit||'')} • Tồn ${Number(p.stock)||0}</small></div>`).join('');if(isManager&&typed&&!showAll){const exact=(db.products||[]).some(p=>norm69(p.name||'')===norm69(typed));if(!exact)html+=`<div class="suggestion create-new" onmousedown="event.preventDefault();openQuickProductFromStockin(${i},decodeURIComponent('${encodeURIComponent(typed)}'))">＋ Tạo hàng mới: <b>${esc69(typed)}</b><small>Tạo ngay, không cần qua menu Hàng hóa</small></div>`}box.innerHTML=html;box.classList.toggle('show',!!html);box.dataset.index='-1'}
   window.openSuggestions=function(mode,i,el,showAll=false){if(mode==='si')return stockinSuggestions69(i,el,!!showAll);return typeof baseOpenSuggestions69==='function'?baseOpenSuggestions69.apply(this,arguments):undefined};
-  function syncStockin69(){const page=q('stockin');if(!page)return;let staff=false;try{staff=!isManager&&staffModuleEnabled('stockin')}catch(_){}page.classList.toggle('staff-stockin-private',!!staff);const head=q('siHeadRow');if(head)[...head.children].forEach(th=>{th.style.removeProperty('width');th.style.removeProperty('min-width');th.style.removeProperty('max-width')});document.querySelectorAll('#stockin input[data-mode="si"][data-role="product"]').forEach(el=>{el.onfocus=function(){try{this.select()}catch(_){}const i=Number(this.dataset.row||0),box=q('sisg'+i);if(box){box.classList.remove('show');box.innerHTML='';box.dataset.index='-1'}};el.onclick=function(ev){ev?.stopPropagation?.();try{this.select()}catch(_){}stockinSuggestions69(Number(this.dataset.row||0),this,!!siRows[Number(this.dataset.row||0)]?.productId||!String(this.value||'').trim())};el.oninput=function(){const i=Number(this.dataset.row||0);if(Array.isArray(window.siRows)&&siRows[i]){siRows[i].productText=this.value;siRows[i].productId=''}stockinSuggestions69(i,this,false)}})}
+  function syncStockin69(){const page=q('stockin');if(!page)return;let staff=false;try{staff=!isManager&&staffModuleEnabled('stockin')}catch(_){}page.classList.toggle('staff-stockin-private',!!staff);const head=q('siHeadRow');if(head)[...head.children].forEach(th=>{th.style.removeProperty('width');th.style.removeProperty('min-width');th.style.removeProperty('max-width')});document.querySelectorAll('#stockin input[data-mode="si"][data-role="product"]').forEach(el=>{el.onfocus=function(){try{this.select()}catch(_){}const i=Number(this.dataset.row||0),box=q('sisg'+i);if(box){box.classList.remove('show');box.innerHTML='';box.dataset.index='-1'}};el.onclick=function(ev){ev?.stopPropagation?.();try{this.select()}catch(_){}stockinSuggestions69(Number(this.dataset.row||0),this,true)};el.oninput=function(){const i=Number(this.dataset.row||0);if(Array.isArray(window.siRows)&&siRows[i]){siRows[i].productText=this.value;siRows[i].productId=''}stockinSuggestions69(i,this,false)}})}
   /* V76: renderSIRows không còn bị V69 bọc lại. */
 
   /* ================= WARRANTY CUSTOMER ================= */
