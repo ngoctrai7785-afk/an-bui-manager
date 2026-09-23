@@ -11059,6 +11059,12 @@ window.AN_BUI_BUILD='an-bui-v259-v90-audit-safe';
   </div>
 
   <section class="page active" id="dashboard">
+    <div class="dashboard-sales-filter">
+      <strong>Xem doanh số</strong>
+      <label for="dashboardSalesFrom">Từ ngày</label><input id="dashboardSalesFrom" type="date" onchange="renderDashboard()">
+      <label for="dashboardSalesTo">Đến ngày</label><input id="dashboardSalesTo" type="date" onchange="renderDashboard()">
+      <span>Áp dụng cho doanh thu và danh sách phiếu xuất.</span>
+    </div>
     <div class="grid cards" id="kpis"></div>
     <div class="grid two">
       <div class="card"><h3>Phiếu xuất gần đây</h3><div id="recentOutNote" class="recent-out-note"></div><div id="recentOut"></div></div>
@@ -11114,7 +11120,7 @@ window.AN_BUI_BUILD='an-bui-v259-v90-audit-safe';
 
       <button id="warehouseManageGroupBtn" type="button" class="btn" onclick="openWarehouseGroupAction()">+ Thêm nhóm</button>
       <button id="warehouseAddProductBtn" type="button" class="btn primary" onclick="openWarehouseAddProductAction()">+ Thêm hàng</button>
-      <button id="warehouseInlineEditBtn" type="button" class="btn warehouse-inline-edit-main" onclick="startWarehouseInlineEdit()">Sửa</button>
+      <button id="warehouseInlineEditBtn" type="button" class="btn warehouse-inline-edit-main" onclick="startWarehouseInlineEdit()">Sửa hàng</button>
       <button id="warehouseDeleteProductBtn" type="button" class="btn danger-lite" onclick="deleteWarehouseSelectedProductV193()" title="Chọn một mặt hàng rồi bấm Xóa">Xóa</button>
       <button id="warehouseInlineSaveBtn" type="button" class="btn ok warehouse-inline-edit-action" style="display:none" onclick="saveWarehouseInlineEdit()">💾 Lưu</button>
       <button id="warehouseInlineCancelBtn" type="button" class="btn warehouse-inline-edit-action" style="display:none" onclick="cancelWarehouseInlineEdit()">✕ Hủy</button>
@@ -11124,7 +11130,7 @@ window.AN_BUI_BUILD='an-bui-v259-v90-audit-safe';
     <div class="warehouse-summary-row">
       <div id="warehouseCount" class="badge info">0 mặt hàng</div>
       <div id="warehouseInlineEditNote" class="warehouse-inline-edit-note" style="display:none">
-        ✏️ Chế độ sửa kiểu Excel • Mã hàng sửa được an toàn • Tồn kho được khóa
+        ✏️ Sửa thông tin hàng hóa • Tồn hiện tại chỉ xem, thay đổi theo phiếu nhập/xuất
       </div>
     </div>
 
@@ -12476,6 +12482,8 @@ let db={};
 let siRows=[],soRows=[],selectedSupplierId='',selectedCustomerId='',selectedWarrantyIds=[];
 let stockoutHistoryList=[],stockoutHistoryIndex=-1;
 let stockoutViewingHistory=false;
+let stockoutEditingInvoiceId='';
+let stockinEditingInvoiceId='';
 let stockoutEditingHistory=false;
 let stockinHistoryList=[],stockinHistoryIndex=-1;
 let stockinViewingHistory=false;
@@ -12867,9 +12875,22 @@ async function remoteGetState(){
   if(!syncPin)throw new Error('Chưa có mã đồng bộ');
   return await syncRpc('manager_app_get_state',{p_app_id:APP_ID,p_pin:syncPin});
 }
+/* Keep full database writes in the order they were requested. An older
+   background save must never finish after a newer invoice edit. */
+let remoteStateWriteTail=Promise.resolve();
+function enqueueRemoteStateWrite(write){
+  const pending=remoteStateWriteTail.then(write,write);
+  remoteStateWriteTail=pending.then(()=>{},()=>{});
+  return pending;
+}
+function canonicalInvoiceValue(value){
+  if(Array.isArray(value))return value.map(canonicalInvoiceValue);
+  if(value&&typeof value==='object')return Object.fromEntries(Object.keys(value).sort().filter(k=>value[k]!==undefined).map(k=>[k,canonicalInvoiceValue(value[k])]));
+  return value;
+}
 async function remoteSaveState(value){
   if(!syncPin)throw new Error('Chưa có mã đồng bộ');
-  return await syncRpc('manager_app_save_state',{p_app_id:APP_ID,p_pin:syncPin,p_data:value});
+  return await enqueueRemoteStateWrite(()=>syncRpc('manager_app_save_state',{p_app_id:APP_ID,p_pin:syncPin,p_data:value}));
 }
 
 
@@ -13284,7 +13305,7 @@ async function stockOperationRefreshBase(mode,{quiet=false}={}){
     return false;
   }
 }
-async function saveStockOperationAtomic(expectedRevision){
+async function saveStockOperationAtomic(expectedRevision,verifyInvoice){
   stockOperationLastConflict=false;
   const wasBusy=syncBusy;
   syncBusy=true;
@@ -13294,8 +13315,23 @@ async function saveStockOperationAtomic(expectedRevision){
     if(!stockOperationManagedOnline())return {ok:true,conflict:false};
     if(!syncPin)return {ok:false,conflict:false,error:new Error('Chưa kết nối Online')};
     syncStatus('↻ Đang lưu an toàn','syncing');
-    const res=await syncRpc('manager_app_save_state_if_revision',{p_app_id:APP_ID,p_pin:syncPin,p_expected_revision:Number(expectedRevision||0),p_data:snapshot});
-    if(res?.ok){syncRevision=Number(res.revision||syncRevision);syncStatus('☁ Online','online');return {ok:true,conflict:false}}
+    const res=await enqueueRemoteStateWrite(()=>syncRpc('manager_app_save_state_if_revision',{p_app_id:APP_ID,p_pin:syncPin,p_expected_revision:Number(expectedRevision||0),p_data:snapshot}));
+    if(res?.ok){
+      syncRevision=Number(res.revision||syncRevision);
+      if(verifyInvoice){
+        let remote;
+        try{remote=await remoteGetState()}
+        catch(err){return {ok:false,conflict:false,uncertain:true,error:err}}
+        const collection=verifyInvoice.collection;
+        const expected=(snapshot[collection]||[]).find(x=>String(x.id)===String(verifyInvoice.id));
+        const actual=(remote?.data?.[collection]||[]).find(x=>String(x.id)===String(verifyInvoice.id));
+        if(!expected || JSON.stringify(canonicalInvoiceValue(actual))!==JSON.stringify(canonicalInvoiceValue(expected))){
+          return {ok:false,conflict:true,latest:remote?.data||null,revision:Number(remote?.revision||syncRevision)};
+        }
+        syncRevision=Math.max(syncRevision,Number(remote?.revision||0));
+      }
+      syncStatus('☁ Online','online');return {ok:true,conflict:false};
+    }
     if(res?.conflict){
       stockOperationLastConflict=true;const remote=await remoteGetState();
       return {ok:false,conflict:true,latest:remote?.data||null,revision:Number(remote?.revision||res?.revision||0)};
@@ -13308,6 +13344,11 @@ async function saveStockOperationAtomic(expectedRevision){
   }
 }
 async function recoverStockOperationSaveFailure(result,beforeJson){
+  if(result?.uncertain){
+    syncStatus('⚠ Chưa xác nhận','offline');
+    alert('Chưa xác nhận được phiếu đã lưu trên Online. Vui lòng kiểm tra kết nối rồi mở lại phiếu trước khi sửa tiếp.');
+    return;
+  }
   if(result?.conflict && result?.latest && typeof result.latest==='object'){
     db=result.latest;syncRevision=Number(result.revision||syncRevision);normalizeDB();ensureSecuritySettings();try{await idbWrite(db)}catch(e){}renderAll();
     alert('Dữ liệu vừa thay đổi trên một thiết bị khác.\n\nHệ thống đã tải dữ liệu mới nhất và KHÔNG ghi đè. Vui lòng kiểm tra lại phiếu rồi bấm Lưu lại.');return;
@@ -13352,7 +13393,10 @@ async function syncBootstrap(){
 }
 
 async function syncPoll(){
-  if(syncBusy || !syncPin || document.hidden)return;
+  /* Keep an open edit form intact. Its save checks the remote revision. */
+  if(syncBusy || !syncPin || document.hidden ||
+     stockinEditingHistory || stockoutEditingHistory ||
+     warehouseInlineEditMode || window.editingCustomerIdV194 || window.customerInlineTableEditModeV21 || window.customerDebtInlineEditModeV22)return;
   syncBusy=true;
   try{
     const remote=await remoteGetState();
@@ -13362,12 +13406,6 @@ async function syncPoll(){
       db=remote.data;
       normalizeDB();
       ensureSecuritySettings();
-
-      /* B12: nếu lần dọn trước chưa đẩy Online được thì không cho dữ liệu cũ từ server quay trở lại. */
-      if(localStorage.getItem(B12_PENDING_KEY)==='1'){
-        await cleanupB12KeepProductsSuppliers({forcePending:true,pushRemote:true});
-      }
-
       syncApplyingRemote=true;
       try{await idbWrite(db)}finally{syncApplyingRemote=false}
       if(typeof renderAll==='function')renderAll();
@@ -13454,6 +13492,22 @@ async function saveDB(){
     syncStatus('☁ Chạy cục bộ','local');
   }
   return true;
+}
+/* Customer edits must only report success after the Online write succeeds. */
+async function saveRevisionCheckedEdit(beforeJson){
+  if(!APP_CONFIG.syncEnabled){
+    const ok=await saveDB();
+    if(!ok){db=JSON.parse(beforeJson);try{await idbWrite(db)}catch(e){}}
+    return ok;
+  }
+  if(!syncPin){
+    alert('Chưa kết nối Online. Thay đổi chưa được lưu. Kiểm tra trạng thái Onl rồi bấm Lưu lại.');
+    return false;
+  }
+  const result=await saveStockOperationAtomic(Number(syncRevision||0));
+  if(result?.ok)return true;
+  await recoverStockOperationSaveFailure(result,beforeJson);
+  return false;
 }
 function toast(t){$('toast').textContent=t;$('toast').style.display='block';setTimeout(()=>$('toast').style.display='none',1700)}
 function createFreshDatabase(){
@@ -14001,6 +14055,7 @@ async function editCurrentStockin(){
 
   loadStockinIntoForm(invoice);
   stockinEditingHistory=true;
+  stockinEditingInvoiceId=String(invoice.id);
   setStockinLocked(false);
   renderSIRows();
 
@@ -14016,7 +14071,7 @@ async function editCurrentStockin(){
 }
 function stockinQtyMap(items){const m={};(items||[]).forEach(r=>{m[r.productId]=(m[r.productId]||0)+(Number(r.qty)||0)});return m}
 async function saveEditedStockin(doPrint=false){
-  const id=String($('siNo')?.textContent||'').trim();
+  const id=stockinEditingInvoiceId||String($('siNo')?.textContent||'').trim();
   let permissionInvoice=(db.stockin||[]).find(x=>String(x.id)===id)||null;
   if(!canEditSavedStockin(permissionInvoice)){
     alert(stockinEditDeniedMessage(permissionInvoice));
@@ -14050,9 +14105,9 @@ async function saveEditedStockin(doPrint=false){
   const reactivatedProductsV257=reactivateProductsFromStockinV257(rows);
   ids.forEach(pid=>{const p=(db.products||[]).find(x=>x.id===pid);if(p)p.stock=Number(p.stock||0)-Number(oldMap[pid]||0)+Number(newMap[pid]||0)});
   applyStaffSalesToProducts(rows);db.stockin[originalIndex]=saved;
-  const result=await saveStockOperationAtomic(expected);if(!result?.ok){await recoverStockOperationSaveFailure(result,before);return false}
-  stockinEditingHistory=false;stockinViewingHistory=false;renderAll();newStockin();
-  const d=ymdFromDateText(saved.dateText);if($('stockinHistoryDate'))$('stockinHistoryDate').value=d;stockinHistoryList=getStockinHistoryForDate('');stockinHistoryIndex=stockinHistoryList.length;updateStockinHistoryControls();
+  const result=await saveStockOperationAtomic(expected,{collection:'stockin',id});if(!result?.ok){await recoverStockOperationSaveFailure(result,before);return false}
+  stockinEditingHistory=false;stockinEditingInvoiceId='';renderAll();loadStockinIntoForm(saved);
+  const d=ymdFromDateText(saved.dateText);if($('stockinHistoryDate'))$('stockinHistoryDate').value=d;stockinHistoryList=getStockinHistoryForDate('');stockinHistoryIndex=stockinHistoryList.findIndex(x=>String(x.id)===id);updateStockinHistoryControls();
   if(doPrint){buildStockinPreview(saved);setTimeout(()=>printStockinPreview(true),80)}toast('Đã cập nhật phiếu nhập '+saved.id+(reactivatedProductsV257.length?' • Đã tự bán lại '+reactivatedProductsV257.length+' mã hàng':''));return true;
 }
 async function deleteCurrentStockin(){
@@ -14214,6 +14269,7 @@ async function editCurrentStockout(){
 
   loadStockoutIntoForm(invoice);
   stockoutEditingHistory=true;
+  stockoutEditingInvoiceId=String(invoice.id);
   if(typeof setStockoutDateEditV185==='function')setStockoutDateEditV185(true,invoice.dateText||'');
   setStockoutLocked(false);
   renderSORows();
@@ -14271,7 +14327,7 @@ function loadStockoutIntoForm(invoice){
   $('soNo').textContent=invoice.id||'';
   $('soDateText').textContent=invoice.dateText||'';
   if(typeof setStockoutDateEditV185==='function')setStockoutDateEditV185(false,invoice.dateText||'');
-  $('soCustomer').value=c?(c.name+' - '+c.phone):'';
+  $('soCustomer').value=c?(c.name||''):'';
   $('soCustomerAddress').value=c?.address||'';
   $('soCustomerPhone').value=c?.phone||'';
   $('soCustomerAlert').innerHTML='';
@@ -15572,6 +15628,9 @@ function go(id){
   refreshStockinHistoryNav();
 
   if(id==='stockout'){
+    /* Mở menu Xuất hàng ở Phiếu mới. Phiếu đã lưu chỉ vào chế độ sửa
+       sau khi người dùng mở phiếu đó và bấm Sửa phiếu. */
+    newStockout();
     initStockoutHistoryNav();
     setTimeout(()=>refreshStockOperationGate('stockout',{announce:true}),0);
   }
@@ -15776,6 +15835,13 @@ function stockoutDebtDeltaV257(o){
      Dựng lại như vậy để sửa dữ liệu cũ có trường debt bị lưu thiếu hoặc bằng 0. */
   return stockoutInvoiceValueV257(o)-reportMoneyNumberV248(o?.paid);
 }
+function customerDebtAdjustmentsV90(id){
+  return (db.customerDebtAdjustmentsV90||[]).filter(x=>String(x.customerId)===String(id));
+}
+function customerDebtAdjustmentTimeV90(x){
+  const t=debtDateFromInput(x.date,false);
+  return t+(x.kind==='opening'?0:12*60*60*1000);
+}
 function customerBalanceRawV257(id){
   const cid=String(id||'');
   const c=(db.customers||[]).find(x=>String(x.id||'')===cid);
@@ -15785,7 +15851,9 @@ function customerBalanceRawV257(id){
   const paid=(db.customerPayments||[])
     .filter(p=>String(p.customerId||'')===cid)
     .reduce((sum,p)=>sum+reportMoneyNumberV248(p.amount),0);
-  return due-paid;
+  const adjustments=customerDebtAdjustmentsV90(id).reduce((sum,x)=>
+    customerDebtAdjustmentTimeV90(x)<=Date.now()?sum+Number(x.amount||0):sum,0);
+  return due-paid+adjustments;
 }
 function customerDebt(id){
   return Math.max(0,customerBalanceRawV257(id));
@@ -17366,7 +17434,7 @@ function normalizeDB(){
 
   [
     'products','customers','suppliers','stockin','stockout',
-    'warranty','expenses','expenseCategories','expensePrivateCategories','customerPayments','supplierPayments','archives',
+    'warranty','expenses','expenseCategories','expensePrivateCategories','customerPayments','supplierPayments','customerDebtAdjustmentsV90','archives',
     'employees','employeeAbsences','salaryPayments','employeeSundayOvertime','employeeAttendanceConfirmations','employeeAttendanceConfirmations'
   ].forEach(k=>{
     if(!Array.isArray(db[k]))db[k]=[];
@@ -17378,8 +17446,20 @@ function normalizeDB(){
   ensureProductGroups();
 }
 
+function dashboardSalesInvoices(){
+  const now=new Date(),today=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');
+  const fromInput=$('dashboardSalesFrom'),toInput=$('dashboardSalesTo');
+  if(fromInput && !fromInput.value)fromInput.value=today.slice(0,7)+'-01';
+  if(toInput && !toInput.value)toInput.value=today;
+  const from=String(fromInput?.value||''),to=String(toInput?.value||'');
+  return (db.stockout||[]).filter(o=>{
+    const date=ymdFromDateText(o.dateText)||String(o.dateText||'').slice(0,10);
+    return date && (!from||date>=from) && (!to||date<=to);
+  });
+}
 function renderDashboard(){
-  let rev=db.stockout.reduce((s,o)=>s+(Number(o.total)||0),0);
+  const salesInvoices=dashboardSalesInvoices();
+  let rev=salesInvoices.reduce((s,o)=>s+stockoutInvoiceValueV257(o),0);
   let purch=db.stockin.reduce((s,o)=>s+reportStockinInvoiceValueV245(o),0);
   const missingStockinCost=(db.stockin||[]).filter(o=>(o.items||[]).length && reportStockinInvoiceValueV245(o)<=0).length;
   const purchaseHint=db.stockin.length+' phiếu nhập'+(missingStockinCost?' • '+missingStockinCost+' phiếu thiếu giá vốn':'');
@@ -17391,15 +17471,15 @@ function renderDashboard(){
 
   let cards=isManager
     ? [
-        ['Doanh thu',money(rev),db.stockout.length+' phiếu xuất'],
+        ['Doanh thu',money(rev),salesInvoices.length+' phiếu xuất trong kỳ'],
         ['Nhập hàng',money(purch),purchaseHint],
         ['Giá trị tồn',money(db.products.reduce((s,p)=>s+p.stock*p.cost,0)),'Theo giá vốn'],
         ['Công nợ KH',money(db.customers.reduce((s,c)=>s+customerDebt(c.id),0)),'Tổng còn nợ'],
         ['Chi phí hôm nay',money(expenseToday),'Tự cộng từ sổ Chi phí']
       ]
     : [
-        ['Doanh thu',money(rev),db.stockout.length+' phiếu xuất'],
-        ['Đơn xuất',String(db.stockout.length),'Phiếu đã lưu'],
+        ['Doanh thu',money(rev),salesInvoices.length+' phiếu xuất trong kỳ'],
+        ['Đơn xuất',String(salesInvoices.length),'Phiếu trong kỳ'],
         ['Mặt hàng',String(db.products.length),'Sản phẩm đang quản lý'],
         ['Công nợ KH',money(db.customers.reduce((s,c)=>s+customerDebt(c.id),0)),'Tổng còn nợ'],
         ['Chi phí hôm nay',money(expenseToday),'Theo quyền Nhân viên']
@@ -17407,8 +17487,8 @@ function renderDashboard(){
 
   $('kpis').innerHTML=cards.map(x=>`<div class="card kpi"><div class="label">${x[0]}</div><div class="value">${x[1]}</div><div class="hint">${x[2]}</div></div>`).join('');
   const recentLimit=Math.max(1,Number(db.settings?.recentOutLimit)||20);
-  if($('recentOutNote'))$('recentOutNote').textContent='Hiển thị '+recentLimit+' phiếu gần nhất • Bấm tên khách để xem chi tiết (chỉ xem).';
-  $('recentOut').innerHTML=table(['Mã','Ngày xuất','Khách hàng','Tổng','Còn nợ'],[...db.stockout].slice(-recentLimit).reverse().map(o=>{
+  if($('recentOutNote'))$('recentOutNote').textContent='Hiển thị tối đa '+recentLimit+' phiếu trong kỳ • Bấm tên khách để xem chi tiết.';
+  $('recentOut').innerHTML=table(['Mã','Ngày xuất','Khách hàng','Tổng','Còn nợ'],[...salesInvoices].slice(-recentLimit).reverse().map(o=>{
     const customer=db.customers.find(c=>c.id===o.customerId);
     return `<tr><td>${esc(o.id)}</td><td>${esc(o.dateText||'')}</td><td><button type="button" class="recent-invoice-link" style="border:0;background:none;padding:0;font:inherit" onclick="openRecentInvoice('${esc(o.id)}')">${esc(customer?.name||'Khách hàng')}</button></td><td>${money(o.total)}</td><td>${money(o.debt)}</td></tr>`;
   }));
@@ -17682,7 +17762,10 @@ function warehouseInlineDraftFor(p){
 function warehouseInlineSet(id,key,value){
   const p=(db.products||[]).find(x=>String(x.id)===String(id));if(!p)return;
   const d=warehouseInlineDraftFor(p);
-  if(key==='cost'||key==='salePrice'||key==='min')d[key]=Math.max(0,Number(String(value||'').replace(/[^\d.-]/g,''))||0);
+  if(key==='cost'||key==='salePrice'||key==='min'){
+    /* Dấu chấm/phẩy trong số nhập là dấu phân cách hàng nghìn. */
+    d[key]=Math.max(0,Number(String(value||'').replace(/\D/g,''))||0);
+  }
   else d[key]=String(value??'');
 }
 /* ===== V84: CHỌN DÒNG TRỰC TIẾP ĐỂ XÓA HÀNG HÓA ===== */
@@ -17870,7 +17953,7 @@ async function saveWarehouseInlineEdit(){
       p.supplierName=String((db.suppliers||[]).find(s=>String(s.id)===e.supplierId)?.name||'');
     });
 
-    const ok=await saveDB();
+    const ok=await saveRevisionCheckedEdit(before);
     if(!ok){db=JSON.parse(before);normalizeDB();return}
     syncLiveProductRefsV85(map);
     closeWarehouseExcelPopup();
@@ -18075,7 +18158,7 @@ function renderWarehouse(){
              onblur="warehouseExcelTextBlur(this,decodeURIComponent('${encodeURIComponent(p.id)}'),'salePrice')"
              onkeydown="warehouseExcelKey(event,this,decodeURIComponent('${encodeURIComponent(p.id)}'),'salePrice')">${money(Number(d.salePrice||0))}</b>
         </td>
-        <td class="center warehouse-excel-locked"><span class="stock-qty ${qtyClass}">${Number(p.stock||0)}</span></td>
+        <td class="center warehouse-excel-locked" title="Tồn kho chỉ cập nhật theo phiếu nhập/xuất"><span class="stock-qty ${qtyClass}">${Number(p.stock||0)}</span></td>
         <td class="warehouse-sold-qty warehouse-excel-locked"><b>${new Intl.NumberFormat('vi-VN').format(productTotalExportedQty(p.id))}</b></td>
         <td class="center">${statusHtml}</td>
       </tr>`;
@@ -18319,6 +18402,12 @@ function customerOutstandingDebtLots(customerId,asOf=Date.now()){
     if(amount>0)events.push({t,type:'credit',amount,ref:p.id||'',dateText:p.dateText||''});
   });
 
+  customerDebtAdjustmentsV90(customerId).forEach(x=>{
+    const t=customerDebtAdjustmentTimeV90(x),amount=Number(x.amount||0);
+    if(!t || t>asOf || !amount)return;
+    events.push({t,type:amount>0?'debit':'credit',amount:Math.abs(amount),ref:x.id||'ĐC',dateText:debtDisplayDate(x.date),adjustment:true});
+  });
+
   events.sort((a,b)=>a.t-b.t || (a.type==='credit'?1:-1));
 
   const applyCredit=(amount)=>{
@@ -18338,7 +18427,7 @@ function customerOutstandingDebtLots(customerId,asOf=Date.now()){
         t:e.t,
         ref:e.ref,
         dateText:e.dateText,
-        trackOverdue:true
+        trackOverdue:!e.adjustment
       });
     }else{
       applyCredit(e.amount);
@@ -18808,6 +18897,11 @@ function customerDebtOpeningRaw(customerId,startTs){
     if(t && t<startTs)raw-=Number(p.amount||0);
   });
 
+  customerDebtAdjustmentsV90(customerId).forEach(x=>{
+    const t=customerDebtAdjustmentTimeV90(x);
+    if(t<startTs || (x.kind==='opening' && t===startTs))raw+=Number(x.amount||0);
+  });
+
   return raw;
 }
 
@@ -18837,6 +18931,12 @@ function customerDebtPeriodSummary(customerId,bounds=customerDebtPeriodBounds())
     const amount=Math.max(0,Number(p.amount||0));
     if(p.transactionType==='warranty_return')autoReduction+=amount;
     else paid+=amount;
+  });
+
+  customerDebtAdjustmentsV90(customerId).forEach(x=>{
+    const t=customerDebtAdjustmentTimeV90(x);
+    if(t<start || t>end || (x.kind==='opening' && t===start))return;
+    incurred+=Number(x.amount||0);
   });
 
   const endingRaw=openingRaw+incurred-paid-autoReduction;
@@ -18892,6 +18992,13 @@ function customerDebtPeriodTransactions(customerId,bounds=customerDebtPeriodBoun
       credit:Math.max(0,Number(p.amount||0)),
       auto:isReturn
     });
+  });
+
+  customerDebtAdjustmentsV90(customerId).forEach(x=>{
+    const t=customerDebtAdjustmentTimeV90(x);
+    if(t<bounds.start || t>bounds.end || (x.kind==='opening' && t===bounds.start))return;
+    const amount=Number(x.amount||0);
+    rows.push({t,dateText:debtDisplayDate(x.date),ref:x.id||'ĐC',content:x.kind==='opening'?'Điều chỉnh nợ đầu kỳ':'Điều chỉnh phát sinh trong kỳ',debit:amount>0?amount:0,credit:amount<0?-amount:0,auto:false});
   });
 
   return rows.sort((a,b)=>a.t-b.t || String(a.ref).localeCompare(String(b.ref)));
@@ -24806,7 +24913,7 @@ let supplierPickerIndex=-1;
 let pendingNewSupplierName='';
 
 function supplierDisplay(s){
-  return s.phone ? `${s.name} - ${s.phone}` : s.name;
+  return s.name||'';
 }
 
 function supplierMatches(text){
@@ -25344,7 +25451,7 @@ function stockoutCustomerLoose(raw){
 function applyStockoutCustomer(c){
   if(!c)return false;
   selectedCustomerId=c.id;
-  if($('soCustomer'))$('soCustomer').value=(c.name||'')+' - '+(c.phone||'');
+  if($('soCustomer'))$('soCustomer').value=c.name||'';
   if($('soCustomerAddress'))$('soCustomerAddress').value=c.address||'';
   if($('soCustomerPhone'))$('soCustomerPhone').value=c.phone||'';
   setStockoutCustomerEditState(false);
@@ -25498,8 +25605,10 @@ function rememberInvoiceContent(mode){
   const value=String(el.value||'').trim();
   if(mode==='si')db.settings.stockinContentDefault=value;
   else db.settings.stockoutContentDefault=value;
+  /* The voucher's atomic write saves this setting together with the invoice.
+     A separate delayed saveDB() races the revision check and can reject Lưu. */
   clearTimeout(invoiceContentSaveTimer);
-  invoiceContentSaveTimer=setTimeout(()=>{ saveDB(); },350);
+  invoiceContentSaveTimer=null;
 }
 
 function newStockin(){
@@ -25508,6 +25617,7 @@ function newStockin(){
   siRows=[];
   stockinViewingHistory=false;
   stockinEditingHistory=false;
+  stockinEditingInvoiceId='';
   $('siNo').textContent=code('PN');
   $('siDateText').textContent=nowText();
   $('siSupplier').value='';
@@ -25548,6 +25658,7 @@ function newStockout(){
   soRows=[];
   stockoutViewingHistory=false;
   stockoutEditingHistory=false;
+  stockoutEditingInvoiceId='';
 
   $('soNo').textContent=code('PXH');
   $('soDateText').textContent=nowText();
@@ -25941,7 +26052,7 @@ function renderSIRows(){
           value="${esc(r.productText||(p?.name||''))}" placeholder="Gõ tên hàng..."
           oninput="siRows[${i}].productText=this.value;siRows[${i}].productId='';openSuggestions('si',${i},this)"
           onfocus="this.select()"
-          onclick="event.stopPropagation();this.select();openSuggestions('si',${i},this,true)"
+          onclick="event.stopPropagation();this.select();openSuggestions('si',${i},this,!!siRows[${i}]?.productId||!this.value.trim())"
           onkeydown="productKey(event,'si',${i},this)">
         <div class="suggestions" id="sisg${i}"></div>
       </td>
@@ -25990,8 +26101,8 @@ function renderSORows(){
         <input data-mode="so" data-role="product" data-row="${i}"
           value="${esc(r.productText||(p?.name||''))}" placeholder="Gõ tên hàng..."
           oninput="soRows[${i}].productText=this.value;soRows[${i}].productId='';soRows[${i}]._vatShortage=false;openSuggestions('so',${i},this)"
-          onfocus="this.select();openSuggestions('so',${i},this,true)"
-          onclick="event.stopPropagation();this.select();openSuggestions('so',${i},this,true)"
+          onfocus="this.select()"
+          onclick="event.stopPropagation();this.select();openSuggestions('so',${i},this,!!soRows[${i}]?.productId||!this.value.trim())"
           onkeydown="productKey(event,'so',${i},this)">
         <div class="suggestions" id="sosg${i}"></div>
       </td>
@@ -26934,7 +27045,7 @@ async function saveStockout(doPrint=false){
 
   const saleEmployee=stockoutSelectedSaleEmployee();
 
-  const currentId=$('soNo')?.textContent?.trim()||'';
+  const currentId=editing?(stockoutEditingInvoiceId||$('soNo')?.textContent?.trim()||''):($('soNo')?.textContent?.trim()||'');
   const originalIndex=editing?(db.stockout||[]).findIndex(o=>o.id===currentId):-1;
   const original=originalIndex>=0?db.stockout[originalIndex]:null;
 
@@ -27175,7 +27286,7 @@ async function saveStockout(doPrint=false){
     });
   }
 
-  const stockSaveResult=await saveStockOperationAtomic(expectedStockRevision);
+  const stockSaveResult=await saveStockOperationAtomic(expectedStockRevision,editing?{collection:'stockout',id:stockoutId}:null);
   if(!stockSaveResult?.ok){
     await recoverStockOperationSaveFailure(stockSaveResult,beforeSave);
     return false;
@@ -27187,13 +27298,19 @@ async function saveStockout(doPrint=false){
      Không mang lựa chọn BH của phiếu vừa lưu sang phiếu kế tiếp. */
   selectedWarrantyIds=[];
 
-  /* Sau khi lưu: tạo phiếu mới để nhập tiếp, nhưng thanh lịch sử phải giữ
-     đúng ngày của phiếu vừa lưu để có thể xem lại ngay. */
-  newStockout();
+  /* Sau khi sửa: ở lại phiếu vừa cập nhật để thấy rõ dữ liệu đã lưu. */
+  if(editing){
+    stockoutEditingHistory=false;
+    stockoutEditingInvoiceId='';
+    loadStockoutIntoForm(savedInvoice);
+  }else newStockout();
   const savedDate=ymdFromDateText(savedInvoice.dateText)||todayYMD();
   if($('stockoutHistoryDate'))$('stockoutHistoryDate').value=savedDate;
   stockoutHistoryList=getStockoutHistoryForDate('');
-  stockoutHistoryIndex=stockoutHistoryList.length; // vị trí Phiếu mới sau phiếu mới nhất toàn hệ thống
+  stockoutHistoryIndex=editing
+    ? stockoutHistoryList.findIndex(x=>String(x.id)===String(savedInvoice.id))
+    : stockoutHistoryList.length;
+  if(stockoutHistoryIndex<0){stockoutCustomerHistoryFilterId='';stockoutHistoryList=getStockoutHistoryForDate('');stockoutHistoryIndex=stockoutHistoryList.findIndex(x=>String(x.id)===String(savedInvoice.id));}
   updateStockoutHistoryControls();
 
   if(doPrint){
@@ -27214,7 +27331,7 @@ async function saveStockout(doPrint=false){
     toast('Đã lưu phiếu trả bảo hành • không phát sinh hàng bán');
   }else{
     toast(editing
-      ?'Đã cập nhật phiếu và tạo phiếu mới'
+      ?'Đã cập nhật phiếu xuất '+stockoutId
       :'Đã lưu xuất kho và tạo phiếu mới');
   }
   return true;
@@ -28387,125 +28504,6 @@ async function initUI(){
  renderAll();
  if(typeof initStockoutHistoryNav==='function')initStockoutHistoryNav();
 }
-
-/* ===== B12: DỌN SẠCH DỮ LIỆU - CHỈ GIỮ HÀNG HÓA + NCC ===== */
-const B12_CLEAN_MARK='b12_keep_products_suppliers_done';
-const B12_PENDING_KEY='an_bui_b12_cleanup_pending_'+APP_ID.toLowerCase();
-const B12_BACKUP_KEY='b12_backup_before_cleanup';
-
-async function writeB12BackupSnapshot(snapshot){
-  try{
-    const idb=await openAppDB();
-    await new Promise((resolve,reject)=>{
-      const tx=idb.transaction(IDB_STORE,'readwrite');
-      tx.objectStore(IDB_STORE).put({
-        savedAt:new Date().toISOString(),
-        appId:APP_ID,
-        data:snapshot
-      },B12_BACKUP_KEY);
-      tx.oncomplete=()=>{idb.close();resolve(true)};
-      tx.onerror=()=>{const e=tx.error||new Error('Không lưu được bản sao trước khi dọn');idb.close();reject(e)};
-      tx.onabort=()=>{const e=tx.error||new Error('Sao lưu trước khi dọn bị hủy');idb.close();reject(e)};
-    });
-    return true;
-  }catch(err){
-    console.warn('B12: chưa tạo được bản sao cục bộ trước khi dọn:',err);
-    return false;
-  }
-}
-
-function cleanCurrentDbB12(){
-  if(!db || typeof db!=='object')return false;
-  db.settings=db.settings||{};
-
-  /* Giữ danh mục hàng hóa, nhưng tồn phải về 0 vì toàn bộ lịch sử Nhập/Xuất sẽ xóa. */
-  db.products=(db.products||[]).map(p=>({
-    ...p,
-    stock:0
-  }));
-
-  /* Giữ danh mục NCC, nhưng bỏ nợ cũ để app bắt đầu sạch. */
-  db.suppliers=(db.suppliers||[]).map(s=>({
-    ...s,
-    oldDebt:0
-  }));
-
-  /* Giữ nhóm hàng để danh mục hàng hóa không mất cấu trúc. */
-  if(!Array.isArray(db.productGroups))db.productGroups=[];
-
-  /* Xóa toàn bộ dữ liệu nghiệp vụ. */
-  db.customers=[];
-  db.stockin=[];
-  db.stockout=[];
-  db.warranty=[];
-  db.warrantyNccBatchesB6=[];
-  db.customerPayments=[];
-  db.supplierPayments=[];
-  db.expenses=[];
-  db.expenseCategories=[];
-  db.expensePrivateCategories=[];
-  db.archives=[];
-  db.deletedProducts=[];
-  db.taxVatInvoices=[];
-  db.employees=[];
-  db.employeeAbsences=[];
-  db.salaryPayments=[];
-  db.employeeSundayOvertime=[];
-  db.employeeAttendanceConfirmations=[];
-
-  db.settings[B12_CLEAN_MARK]=true;
-  db.settings.b12CleanedAt=new Date().toISOString();
-  db.settings.b12CleanMode='KEEP_PRODUCTS_SUPPLIERS_RESET_STOCK_DEBT';
-  return true;
-}
-
-async function cleanupB12KeepProductsSuppliers({forcePending=false,pushRemote=true}={}){
-  const pending=forcePending || localStorage.getItem(B12_PENDING_KEY)==='1';
-  const already=!!db?.settings?.[B12_CLEAN_MARK];
-
-  if(already && !pending)return false;
-
-  try{localStorage.setItem(B12_PENDING_KEY,'1')}catch(_){}
-
-  /* Chỉ sao lưu snapshot gốc một lần trước khi dọn. */
-  try{
-    if(!already){
-      const snapshot=JSON.parse(JSON.stringify(db));
-      await writeB12BackupSnapshot(snapshot);
-    }
-  }catch(_){}
-
-  cleanCurrentDbB12();
-  normalizeDB();
-  ensureSecuritySettings();
-
-  /* Lưu cục bộ trước. */
-  try{await idbWrite(db)}catch(err){console.error('B12 lưu dữ liệu sạch cục bộ lỗi:',err);throw err}
-
-  /* Nếu đang Online, đẩy bản sạch lên vùng dữ liệu chung của app. */
-  if(pushRemote && syncPin){
-    try{
-      const saved=await remoteSaveState(JSON.parse(JSON.stringify(db)));
-      syncRevision=Number(saved?.revision||syncRevision);
-      try{localStorage.removeItem(B12_PENDING_KEY)}catch(_){}
-      syncStatus('☁ Online','online');
-      return true;
-    }catch(err){
-      console.warn('B12 chưa đẩy được dữ liệu sạch lên Online, sẽ thử lại khi có mạng:',err);
-      syncStatus('⚠ Chưa đồng bộ','offline');
-      return true;
-    }
-  }
-
-  /* App cục bộ thì xem như hoàn tất. */
-  if(!syncPin){
-    try{localStorage.removeItem(B12_PENDING_KEY)}catch(_){}
-  }
-  return true;
-}
-
-window.cleanupB12KeepProductsSuppliers=cleanupB12KeepProductsSuppliers;
-
 async function init(){
  await seed();
  normalizeDB();
@@ -28521,15 +28519,6 @@ async function init(){
 
  normalizeDB();
  ensureSecuritySettings();
-
- /* B12: dọn dữ liệu một lần sau khi đã lấy dữ liệu Online mới nhất. */
- try{
-   await cleanupB12KeepProductsSuppliers({forcePending:false,pushRemote:true});
- }catch(e){
-   console.error('B12 dọn dữ liệu lỗi:',e);
-   alert('Chưa dọn được dữ liệu. Hệ thống giữ nguyên để tránh mất dữ liệu ngoài ý muốn.');
- }
-
  try{await idbWrite(db)}catch(e){console.warn('Không lưu cache cục bộ:',e)}
 
  isManager=false;
@@ -30804,7 +30793,8 @@ async function confirmArchiveData(cutoff){
 
   /* Chụp số dư công nợ TRƯỚC khi bỏ phiếu cũ */
   const customerBalances={};
-  (db.customers||[]).forEach(c=>customerBalances[c.id]=customerDebt(c.id));
+  const archiveCutoffEnd=debtDateFromInput(cutoff,true);
+  (db.customers||[]).forEach(c=>customerBalances[c.id]=customerDebtPeriodSummary(c.id,{start:0,end:archiveCutoffEnd}).ending);
   const supplierBalances={};
   (db.suppliers||[]).forEach(s=>supplierBalances[s.id]=supplierDebt(s.id));
 
@@ -30819,6 +30809,7 @@ async function confirmArchiveData(cutoff){
     stockinCount:oldIn.length,
     stockout:oldOut,
     stockin:oldIn,
+    customerDebtAdjustmentsV90:(db.customerDebtAdjustmentsV90||[]).filter(x=>String(x.date||'')<=cutoff),
     customerPayments:(db.customerPayments||[]).filter(p=>{
       const d=String(p.dateText||'').match(/(\d{2})\/(\d{2})\/(\d{4})/);
       return d ? `${d[3]}-${d[2]}-${d[1]}`<=cutoff : false;
@@ -30842,6 +30833,8 @@ async function confirmArchiveData(cutoff){
   const oldSPIds=new Set(archive.supplierPayments.map(p=>p.id));
   db.customerPayments=(db.customerPayments||[]).filter(p=>!oldCPIds.has(p.id));
   db.supplierPayments=(db.supplierPayments||[]).filter(p=>!oldSPIds.has(p.id));
+  const archivedAdjustmentIds=new Set(archive.customerDebtAdjustmentsV90.map(x=>x.id));
+  db.customerDebtAdjustmentsV90=(db.customerDebtAdjustmentsV90||[]).filter(x=>!archivedAdjustmentIds.has(x.id));
 
   db.archives.push(archive);
 
@@ -31709,12 +31702,12 @@ window.addEventListener('load',()=>{
   const oldSO=window.saveStockout;
   if(typeof oldSO==='function')window.saveStockout=async function(){
     const removed=pruneZeroRows('so');if(removed)try{toast('Đã bỏ '+removed+' dòng có SL = 0');}catch(_){ }
-    const result=await oldSO.apply(this,arguments);if(result!==false)setDirty('so',false);syncMode();return result;
+    const result=await oldSO.apply(this,arguments);if(result===true)setDirty('so',false);syncMode();return result;
   };
   const oldSI=window.saveStockinStable;
   if(typeof oldSI==='function')window.saveStockinStable=async function(){
     const removed=pruneZeroRows('si');if(removed)try{toast('Đã bỏ '+removed+' dòng có SL = 0');}catch(_){ }
-    const result=await oldSI.apply(this,arguments);if(result!==false)setDirty('si',false);syncMode();return result;
+    const result=await oldSI.apply(this,arguments);if(result===true)setDirty('si',false);syncMode();return result;
   };
   const oldNewSO=window.newStockout;if(typeof oldNewSO==='function')window.newStockout=function(){
     setDirty('so',false);
@@ -32387,6 +32380,237 @@ setTimeout(()=>{try{ensurePrintDesignerSettings();applyStockoutRowHeightSetting(
 })();
 </script>
 
+
+<style id="v191-stt-delete-clean-style">
+#voucherDeletePopupV191{
+  position:fixed;z-index:2147483647;display:none;
+  width:260px;max-width:calc(100vw - 18px);
+  background:#fff;border:1px solid #e1e6eb;border-radius:11px;
+  box-shadow:0 16px 42px rgba(15,23,42,.28);
+  padding:11px;font-family:Arial,Helvetica,sans-serif;
+}
+#voucherDeletePopupV191.show{display:block}
+#voucherDeletePopupV191 .q{
+  font-size:13px;font-weight:800;color:#263442;
+  text-align:center;line-height:1.4;padding:2px 3px 9px;
+}
+#voucherDeletePopupV191 .trash{
+  display:flex;align-items:center;justify-content:center;
+  width:50px;height:44px;margin:0 auto;
+  border:1px solid #efb7b1;border-radius:9px;
+  background:#fff1f0;color:#b42318;
+  font-size:23px;cursor:pointer;
+}
+#voucherDeletePopupV191 .trash:hover{background:#ffe2df}
+</style>
+
+<script id="v191-stt-delete-clean-js">
+(function(){
+  let popup=null, deleteMode='';
+
+  function eventThV191(e){
+    const path=(typeof e.composedPath==='function')?e.composedPath():[];
+    for(const n of path){
+      if(n && n.nodeType===1 && n.tagName==='TH')return n;
+    }
+    const t=e.target;
+    if(t && t.nodeType===1 && t.closest)return t.closest('th');
+    if(t && t.parentElement && t.parentElement.closest)return t.parentElement.closest('th');
+    return null;
+  }
+
+  function headerModeV191(e){
+    const th=eventThV191(e);
+    if(!th || th.cellIndex!==0 || !th.closest('thead'))return '';
+    const table=th.closest('table.invoice-table');
+    if(!table)return '';
+    if(table.querySelector('#soBody'))return 'so';
+    if(table.querySelector('#siBody'))return 'si';
+    return '';
+  }
+
+  function oldVoucherOpenV191(mode){
+    return mode==='so' ? !!stockoutViewingHistory : !!stockinViewingHistory;
+  }
+
+  function hideV191(){
+    if(popup)popup.classList.remove('show');
+    deleteMode='';
+  }
+
+  function ensurePopupV191(){
+    if(popup)return popup;
+    popup=document.createElement('div');
+    popup.id='voucherDeletePopupV191';
+    popup.innerHTML=
+      '<div class="q">Bạn muốn xóa phiếu này không?</div>'+
+      '<button type="button" class="trash" title="Xóa phiếu" aria-label="Xóa phiếu">🗑</button>';
+    document.body.appendChild(popup);
+
+    popup.querySelector('.trash').addEventListener('click',async function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      const mode=deleteMode;
+      hideV191();
+
+      if(!isManager)return alert('Xóa phiếu chỉ dành cho Quản lý.');
+      if(!oldVoucherOpenV191(mode))return alert('Anh cần mở phiếu cũ trước khi xóa.');
+
+      try{
+        if(mode==='so')await deleteStockoutV191();
+        else if(mode==='si')await deleteStockinV191();
+      }catch(err){
+        console.error('V191 xóa phiếu:',err);
+        alert('Chưa xóa được phiếu. Vui lòng thử lại.');
+      }
+    });
+    return popup;
+  }
+
+  function showV191(mode,x,y){
+    const m=ensurePopupV191();
+    deleteMode=mode;
+    m.style.left='0px';
+    m.style.top='0px';
+    m.classList.add('show');
+    const r=m.getBoundingClientRect(),gap=9;
+    m.style.left=Math.max(gap,Math.min(Number(x)||gap,window.innerWidth-r.width-gap))+'px';
+    m.style.top=Math.max(gap,Math.min(Number(y)||gap,window.innerHeight-r.height-gap))+'px';
+  }
+
+  async function deleteStockoutV191(){
+    const id=String($('soNo')?.textContent||'').trim();
+    if(!id)return alert('Không xác định được phiếu xuất cần xóa.');
+
+    if(!(await ensureStockOperationLock('stockout')))return;
+    if(!(await stockOperationRefreshBase('stockout',{quiet:false}))){
+      await releaseStockOperationLock('stockout',{silent:true});
+      return;
+    }
+
+    const idx=(db.stockout||[]).findIndex(x=>String(x.id)===id);
+    const invoice=idx>=0?db.stockout[idx]:null;
+    const vatCheck=window.vatDeleteStockoutCheckV16?window.vatDeleteStockoutCheckV16(invoice):{ok:true};
+    if(!vatCheck.ok){await releaseStockOperationLock('stockout',{silent:true});return alert(vatCheck.message);}
+    if(!invoice){
+      await releaseStockOperationLock('stockout',{silent:true});
+      return alert('Không tìm thấy phiếu xuất.');
+    }
+
+    const before=JSON.stringify(db);
+    const expected=Number(syncRevision||0);
+
+    (invoice.items||[]).forEach(r=>{
+      const p=(db.products||[]).find(x=>x.id===r.productId);
+      if(p)p.stock=Number(p.stock||0)+(Number(r.qty)||0);
+    });
+
+    (invoice.warrantyIds||[]).forEach(wid=>{
+      const w=(db.warranty||[]).find(x=>String(x.id)===String(wid));
+      if(w && String(w.stockoutId||'')===String(invoice.id)){
+        w.status='Đang xử lý';
+        w.returnedDate='';
+        w.stockoutId='';
+        w.returnedByInvoice=false;
+        w.closedAt='';
+      }
+    });
+
+    db.stockout.splice(idx,1);
+    const result=await saveStockOperationAtomic(expected);
+    if(!result?.ok){
+      await recoverStockOperationSaveFailure(result,before);
+      await releaseStockOperationLock('stockout',{silent:true});
+      return;
+    }
+
+    await releaseStockOperationLock('stockout',{silent:true});
+    stockoutViewingHistory=false;
+    stockoutEditingHistory=false;
+    renderAll();
+    newStockout();
+    toast('Đã xóa phiếu xuất '+id+' và hoàn lại tồn/công nợ');
+  }
+
+  async function deleteStockinV191(){
+    const id=String($('siNo')?.textContent||'').trim();
+    if(!id)return alert('Không xác định được phiếu nhập cần xóa.');
+
+    if(!(await ensureStockOperationLock('stockin')))return;
+    if(!(await stockOperationRefreshBase('stockin',{quiet:false}))){
+      await releaseStockOperationLock('stockin',{silent:true});
+      return;
+    }
+
+    const idx=(db.stockin||[]).findIndex(x=>String(x.id)===id);
+    const invoice=idx>=0?db.stockin[idx]:null;
+    const vatCheck=window.vatDeleteStockinCheckV16?window.vatDeleteStockinCheckV16(invoice):{ok:true};
+    if(!vatCheck.ok){await releaseStockOperationLock('stockin',{silent:true});return alert(vatCheck.message);}
+    if(!invoice){
+      await releaseStockOperationLock('stockin',{silent:true});
+      return alert('Không tìm thấy phiếu nhập.');
+    }
+
+    const qty=stockinQtyMap(invoice.items);
+    for(const [pid,q] of Object.entries(qty)){
+      const p=(db.products||[]).find(x=>x.id===pid);
+      if(p && Number(p.stock||0)<Number(q||0)){
+        await releaseStockOperationLock('stockin',{silent:true});
+        return alert(
+          'Chưa thể xóa phiếu. “'+p.name+'” hiện chỉ còn '+Number(p.stock||0)+
+          ' nhưng phiếu đã nhập '+Number(q||0)+
+          '.\n\nMột phần hàng đã được xuất/bán. Cần xử lý các phiếu xuất liên quan trước để tránh tồn âm.'
+        );
+      }
+    }
+
+    const before=JSON.stringify(db);
+    const expected=Number(syncRevision||0);
+
+    Object.entries(qty).forEach(([pid,q])=>{
+      const p=(db.products||[]).find(x=>x.id===pid);
+      if(p)p.stock=Number(p.stock||0)-Number(q||0);
+    });
+
+    db.stockin.splice(idx,1);
+    const result=await saveStockOperationAtomic(expected);
+    if(!result?.ok){
+      await recoverStockOperationSaveFailure(result,before);
+      await releaseStockOperationLock('stockin',{silent:true});
+      return;
+    }
+
+    await releaseStockOperationLock('stockin',{silent:true});
+    stockinViewingHistory=false;
+    stockinEditingHistory=false;
+    renderAll();
+    newStockin();
+    toast('Đã xóa phiếu nhập '+id+' và trừ lại tồn/công nợ');
+  }
+
+  /* Chạy trước toàn bộ handler STT cũ: chỉ xử lý ô tiêu đề STT. */
+  window.addEventListener('contextmenu',function(e){
+    const mode=headerModeV191(e);
+    if(!mode)return;
+    if(!isManager)return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    showV191(mode,e.clientX,e.clientY);
+  },true);
+
+  window.addEventListener('mousedown',function(e){
+    if(popup && popup.classList.contains('show') && !popup.contains(e.target))hideV191();
+  },true);
+  window.addEventListener('keydown',function(e){if(e.key==='Escape')hideV191();},true);
+  window.addEventListener('resize',hideV191);
+  window.addEventListener('scroll',hideV191,true);
+
+  window.hideVoucherDeletePopupV191=hideV191;
+})();
+</script>
+
 <script id="v182-stt-context-js">
 (function(){
   let v182Menu=null;
@@ -32646,6 +32870,84 @@ setTimeout(()=>{try{ensurePrintDesignerSettings();applyStockoutRowHeightSetting(
   document.addEventListener('keydown',function(e){if(e.key==='Escape')hideMenu();});
   window.addEventListener('resize',hideMenu);
   window.addEventListener('scroll',hideMenu,true);
+})();
+</script>
+
+
+<style id="v186-stt-header-force-style">
+#voucherSttHeaderMenuV186{
+  position:fixed!important;z-index:2147483647!important;display:none;
+  min-width:220px;background:#fff;border:1px solid #d8dee5;border-radius:9px;
+  box-shadow:0 14px 38px rgba(15,23,42,.28);padding:6px;font-family:Arial,Helvetica,sans-serif;
+}
+#voucherSttHeaderMenuV186.show{display:block!important}
+#voucherSttHeaderMenuV186 .note{padding:5px 8px 7px;font-size:11px;color:#607080;border-bottom:1px solid #eef1f4;margin-bottom:4px}
+#voucherSttHeaderMenuV186 button{width:100%;border:0;border-radius:7px;background:#fff1f0;color:#b42318;text-align:left;padding:10px 11px;font-weight:900;cursor:pointer}
+#voucherSttHeaderMenuV186 button:hover{background:#ffe2df}
+body.voucher-stt-delete-ready-so #soBody.closest-placeholder{}
+</style>
+<script id="v186-stt-header-force-js">
+(function(){
+  let menu=null, modeNow='';
+  function editing(mode){
+    return mode==='so'
+      ? !!(stockoutViewingHistory&&stockoutEditingHistory)
+      : !!(stockinViewingHistory&&stockinEditingHistory);
+  }
+  function getModeFromHeader(target){
+    const th=target&&target.closest?target.closest('th'):null;
+    if(!th||th.cellIndex!==0||!th.closest('thead'))return '';
+    const table=th.closest('table.invoice-table');
+    if(!table)return '';
+    if(table.querySelector('tbody#soBody'))return 'so';
+    if(table.querySelector('tbody#siBody'))return 'si';
+    return '';
+  }
+  function getMenu(){
+    if(menu)return menu;
+    menu=document.createElement('div');
+    menu.id='voucherSttHeaderMenuV186';
+    menu.innerHTML='<div class="note"></div><button type="button">🗑 Xóa toàn bộ phiếu</button>';
+    document.body.appendChild(menu);
+    menu.querySelector('button').onclick=async function(e){
+      e.preventDefault();e.stopPropagation();
+      const mode=modeNow; hide();
+      if(!isManager)return alert('Xóa toàn bộ phiếu chỉ dành cho Quản lý.');
+      if(!editing(mode))return alert('Anh cần mở phiếu cũ và bấm Sửa phiếu trước.');
+      try{
+        if(mode==='so')await deleteCurrentStockout();
+        else if(mode==='si')await deleteCurrentStockin();
+      }catch(err){console.error('V186 delete voucher:',err);alert('Chưa xóa được phiếu. Vui lòng thử lại.');}
+    };
+    return menu;
+  }
+  function show(mode,x,y){
+    const m=getMenu(); modeNow=mode;
+    m.querySelector('.note').textContent=(mode==='so'?'Phiếu xuất':'Phiếu nhập')+' • tiêu đề STT';
+    m.style.left='0px';m.style.top='0px';m.classList.add('show');
+    const r=m.getBoundingClientRect(),gap=8;
+    m.style.left=Math.max(gap,Math.min(Number(x)||gap,window.innerWidth-r.width-gap))+'px';
+    m.style.top=Math.max(gap,Math.min(Number(y)||gap,window.innerHeight-r.height-gap))+'px';
+  }
+  function hide(){if(menu)menu.classList.remove('show');modeNow='';}
+
+  /* V186: bắt ở WINDOW capture để chạy trước các handler V182/V183/V185. */
+  window.addEventListener('contextmenu',function(e){
+    const mode=getModeFromHeader(e.target);
+    if(!mode)return;
+    if(!isManager||!editing(mode))return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    show(mode,e.clientX,e.clientY);
+  },true);
+
+  window.addEventListener('mousedown',function(e){
+    if(menu&&menu.classList.contains('show')&&!menu.contains(e.target))hide();
+  },true);
+  window.addEventListener('keydown',function(e){if(e.key==='Escape')hide();},true);
+  window.addEventListener('resize',hide);
+  window.addEventListener('scroll',hide,true);
 })();
 </script>
 
@@ -33295,10 +33597,7 @@ body.voucher-stockin-active #stockinTopNav{min-width:0!important;}
   }
   async function deleteWarrantySafe(id){
     const x=(db.warranty||[]).find(v=>String(v.id)===String(id));if(!x)return;
-    const ws=warrantyNormalizedStatus(x.status);
-    const nccStarted=!!String(x.nccBatchIdB6||'').trim() || ['Đã gửi NCC','NCC đã trả'].includes(String(x.nccStatusB6||'').trim());
-    if(!['Chờ xử lý','Đang xử lý'].includes(ws) || x.stockoutId || x.customerReturned || nccStarted)
-      return alert('Không thể xóa dòng bảo hành này vì đã phát sinh trả khách / phiếu xuất / gửi NCC. Chỉ được xóa phiếu BH tạo nhầm và chưa phát sinh xử lý.');
+    if(warrantyNormalizedStatus(x.status)!=='Đang xử lý'||x.stockoutId)return alert('Dòng bảo hành này đã phát sinh trả hàng/phiếu xuất nên không thể xóa trực tiếp.');
     if(!confirm('Xóa dòng bảo hành “'+(x.item||x.id)+'”?'))return;const old=[...(db.warranty||[])];db.warranty=(db.warranty||[]).filter(v=>String(v.id)!==String(id));if(!(await saveDB()))db.warranty=old;renderAll();
   }
   async function deleteVoucherLine(type,id){
@@ -34117,9 +34416,10 @@ async function saveCustomerDebtEditUnifiedV193(id){
     if(!name||!phone)return alert('Tên khách và SĐT không được để trống.');
     const dup=(db.customers||[]).find(x=>String(x.id)!==id && norm(x.phone||'')===norm(phone));
     if(dup)return alert('SĐT này đã thuộc khách hàng: '+(dup.name||dup.id));
+    const beforeDb=JSON.stringify(db);
     const before=window.editingCustomerBackupV194?{...window.editingCustomerBackupV194}:{...c};
     c.name=name;c.phone=phone;c.address=address;c.type=type;c.oldDebt=oldDebt;c.debtTermDays=debtTermDays;
-    const ok=await saveDB(); if(!ok){Object.assign(c,before);return;}
+    const ok=await saveRevisionCheckedEdit(beforeDb); if(!ok){Object.assign(c,before);return;}
     window.editingCustomerIdV194='';window.editingCustomerBackupV194=null;
     window.selectedCustomerManageIdV193='';
     if(typeof renderCustomers==='function')renderCustomers();
@@ -34134,18 +34434,18 @@ async function saveCustomerDebtEditUnifiedV193(id){
   const baseOut=window.saveStockout;
   if(typeof baseOut==='function'){
     window.saveStockout=async function(doPrint=false){
-      const editing=!!(window.stockoutViewingHistory&&window.stockoutEditingHistory);
+      const editing=!!(stockoutViewingHistory&&stockoutEditingHistory);
       const ok=await baseOut.apply(this,arguments);
-      if(ok===true&&!editing){setTimeout(()=>{try{if(!window.stockoutViewingHistory)newStockout()}catch(_){}},0)}
+      if(ok===true&&!editing){setTimeout(()=>{try{if(!stockoutViewingHistory)newStockout()}catch(_){}},0)}
       return ok;
     };
   }
   const baseIn=window.saveStockinStable;
   if(typeof baseIn==='function'){
     window.saveStockinStable=async function(doPrint=false){
-      const editing=!!(window.stockinViewingHistory&&window.stockinEditingHistory);
+      const editing=!!(stockinViewingHistory&&stockinEditingHistory);
       const ok=await baseIn.apply(this,arguments);
-      if(ok===true&&!editing){setTimeout(()=>{try{if(!window.stockinViewingHistory)newStockin()}catch(_){}},0)}
+      if(ok===true&&!editing){setTimeout(()=>{try{if(!stockinViewingHistory)newStockin()}catch(_){}},0)}
       return ok;
     };
   }
@@ -37825,7 +38125,8 @@ async function saveCustomerDebtEditUnifiedV193(id){
       if(!db.settings.excelTableLayoutV262)db.settings.excelTableLayoutV262={};
       db.settings.excelTableLayoutV262[mode]=next;
       clearTimeout(layoutSaveTimer);
-      layoutSaveTimer=setTimeout(()=>{try{Promise.resolve(saveDB()).catch(()=>{})}catch(_){ }},350);
+      if(!(stockinEditingHistory||stockoutEditingHistory))
+        layoutSaveTimer=setTimeout(()=>{try{Promise.resolve(saveDB()).catch(()=>{})}catch(_){ }},350);
     }catch(_){ }
   }
   function readWidths(mode){return readLayout(mode).widths||{}}
@@ -37987,7 +38288,8 @@ async function saveCustomerDebtEditUnifiedV193(id){
     try{
       if(db?.settings?.excelTableLayoutV262)delete db.settings.excelTableLayoutV262[mode];
       clearTimeout(layoutSaveTimer);
-      layoutSaveTimer=setTimeout(()=>{try{Promise.resolve(saveDB()).catch(()=>{})}catch(_){ }},350);
+      if(!(stockinEditingHistory||stockoutEditingHistory))
+        layoutSaveTimer=setTimeout(()=>{try{Promise.resolve(saveDB()).catch(()=>{})}catch(_){ }},350);
     }catch(_){ }
     const table=tableOf(mode);if(!table)return;
     activeVariant[mode]='';
@@ -38104,8 +38406,8 @@ async function saveCustomerDebtEditUnifiedV193(id){
     }catch(err){console.error('Excel auto save:',err);ok=false}
     finally{window[newName]=oldNew}
     if(ok===true){
-      if(mode==='si'){stockinViewingHistory=true;stockinEditingHistory=true;try{setStockinLocked(false);renderSIRows()}catch(_){}}
-      else{stockoutViewingHistory=true;stockoutEditingHistory=true;try{setStockoutLocked(false);renderSORows()}catch(_){}}
+      /* Lưu xong luôn về phiếu mới; không tự bật sửa phiếu vừa lưu. */
+      try{oldNew?.()}catch(_){ }
       clearDraft(mode);setStatus(mode,'✓ Đã lưu kho • sửa ô khác sẽ tự cập nhật','');
     }else{saveDraft(mode,'Đã giữ nháp • chưa ghi vào kho')}
     autoState[mode].busy=false;syncCorner(mode);
@@ -38136,7 +38438,7 @@ async function saveCustomerDebtEditUnifiedV193(id){
       if(act==='detail')return showDetail(mode,index);
       if(act==='edit'){if(locked(mode)){return mode==='si'?window.editCurrentStockin?.():window.editCurrentStockout?.()}return focusRow(mode,index)}
       if(act==='remove'){if(locked(mode))return alert('Phiếu đang khóa. Chọn Sửa trước rồi mới xóa dòng.');window.excelDemoRemoveRowV260?.(mode,index);return schedule(mode,false)}
-      if(act==='invoice-delete'){if(!window.isManager)return;return mode==='si'?window.deleteCurrentStockin?.():window.deleteCurrentStockout?.()}
+      if(act==='invoice-delete'){if(!isManager)return;return mode==='si'?window.deleteCurrentStockin?.():window.deleteCurrentStockout?.()}
     });
   }
   function refreshMenu(){
@@ -38152,7 +38454,7 @@ async function saveCustomerDebtEditUnifiedV193(id){
   document.addEventListener('focusout',e=>{const page=e.target.closest?.('#stockin,#stockout');if(!page)return;const mode=page.id==='stockin'?'si':'so';schedule(mode,false)},true);
   document.addEventListener('keydown',e=>{if(!['Enter','Tab'].includes(e.key))return;const page=e.target.closest?.('#stockin,#stockout');if(page)setTimeout(()=>schedule(page.id==='stockin'?'si':'so',false),0)},true);
   window.addEventListener('contextmenu',()=>setTimeout(refreshMenu,0),true);
-  let restored=false;function boot(){makeCorner('si');makeCorner('so');upgradeMenu();syncCorner('si');syncCorner('so');if(!restored){restored=true;restoreDraft('si');restoreDraft('so')}}
+  let restored=false;function boot(){makeCorner('si');makeCorner('so');upgradeMenu();syncCorner('si');syncCorner('so');if(!restored){restored=true;restoreDraft('si');/* Không đổ nháp phiếu xuất cũ vào Phiếu mới khi mở app. */}}
   window.addEventListener('load',()=>setTimeout(boot,700));setTimeout(boot,250);setInterval(()=>{makeCorner('si');makeCorner('so');refreshMenu()},900);
 })();
 </script>
@@ -38512,11 +38814,11 @@ body.manager-mode .payment-edit-v193{font-weight:700}
   window.customerInlineDraftV21={};
 
   function canEdit(){
-    if(window.isManager)return true;
+    if(isManager)return true;
     return typeof staffModuleEnabled==='function' && staffModuleEnabled('customers') && db.settings?.staffActions?.editCustomer===true;
   }
   function canDelete(){
-    if(window.isManager)return true;
+    if(isManager)return true;
     return typeof staffModuleEnabled==='function' && staffModuleEnabled('customers') && db.settings?.staffActions?.deleteCustomer===true;
   }
   function cloneCustomer(c){
@@ -38776,14 +39078,17 @@ body.manager-mode .payment-edit-v193{font-weight:700}
   window.customerDebtInlineDraftV22={};
 
   function debtEditAllowedV22(){
-    if(window.isManager)return true;
+    if(isManager)return true;
     return typeof staffModuleEnabled==='function' && staffModuleEnabled('customers') && db.settings?.staffActions?.editCustomer===true;
   }
   function cloneDebtCustomerV22(c){
+    const s=customerDebtPeriodSummary(c.id,customerDebtPeriodBounds());
     return {
       name:String(c?.name||''),
       address:String(c?.address||''),
-      debtTermDays:Math.max(0,Math.min(3650,Math.floor(Number(c?.debtTermDays||0)||0)))
+      debtTermDays:Math.max(0,Math.min(3650,Math.floor(Number(c?.debtTermDays||0)||0))),
+      opening:s.opening,
+      incurred:s.incurred
     };
   }
   function debtDraftV22(c){
@@ -38839,8 +39144,8 @@ body.manager-mode .payment-edit-v193{font-weight:700}
         return `<tr class="customer-debt-inline-row-v22">
           <td><input class="customer-debt-inline-input-v22" data-debt-row-v22="${esc(c.id||'')}" data-debt-field-v22="name" value="${esc(d.name||'')}"></td>
           <td><input class="customer-debt-inline-input-v22" data-debt-row-v22="${esc(c.id||'')}" data-debt-field-v22="address" value="${esc(d.address||'')}"></td>
-          <td class="right customer-debt-inline-locked-v22"><b>${money(s.opening)}</b></td>
-          <td class="right customer-debt-inline-locked-v22"><b>${money(s.incurred)}</b></td>
+          <td class="right"><input class="customer-debt-inline-input-v22" data-debt-row-v22="${esc(c.id||'')}" data-debt-field-v22="opening" inputmode="numeric" value="${Number(d.opening||0)}" ${isManager?'':'readonly'}></td>
+          <td class="right"><input class="customer-debt-inline-input-v22" data-debt-row-v22="${esc(c.id||'')}" data-debt-field-v22="incurred" inputmode="numeric" value="${Number(d.incurred||0)}" ${isManager?'':'readonly'}></td>
           <td class="center customer-debt-inline-locked-v22">${esc(lastPayment)}</td>
           <td class="right customer-debt-inline-locked-v22"><b>${money(s.paid)}</b></td>
           <td class="right customer-debt-inline-locked-v22"><span class="${s.ending>0?'customer-debt-positive':'customer-debt-zero'}">${money(s.ending)}</span></td>
@@ -38885,6 +39190,7 @@ body.manager-mode .payment-edit-v193{font-weight:700}
         if(!c)return;
         const d=debtDraftV22(c);
         if(field==='debtTermDays')d.debtTermDays=Math.max(0,Math.min(3650,Math.floor(Number(el.value)||0)));
+        else if(field==='opening'||field==='incurred')d[field]=el.value;
         else d[field]=String(el.value||'');
       };
     });
@@ -38917,7 +39223,9 @@ body.manager-mode .payment-edit-v193{font-weight:700}
   window.saveDebtInlineEditV22=async function(){
     if(!window.customerDebtInlineEditModeV22)return;
     if(!debtEditAllowedV22())return alert('Quản lý chưa cấp quyền sửa Công nợ khách hàng.');
-    const backup=(db.customers||[]).map(c=>({...c}));
+    const beforeJson=JSON.stringify(db);
+    const bounds=customerDebtPeriodBounds();
+    if(isManager && (!bounds.fromValue || !bounds.toValue))return alert('Chọn đủ Từ ngày và Đến ngày trước khi sửa công nợ.');
     const changes=[];
     for(const c of (db.customers||[])){
       const d=window.customerDebtInlineDraftV22[c.id]||cloneDebtCustomerV22(c);
@@ -38925,11 +39233,22 @@ body.manager-mode .payment-edit-v193{font-weight:700}
       const address=String(d.address||'').trim();
       const debtTermDays=Math.max(0,Math.min(3650,Math.floor(Number(d.debtTermDays)||0)));
       if(!name)return alert('Tên khách hàng không được để trống.');
-      changes.push({c,name,address,debtTermDays});
+      const base=customerDebtPeriodSummary(c.id,bounds);
+      const parseAmount=v=>Number(String(v).replace(/\./g,'').replace(/,/g,''));
+      const opening=parseAmount(d.opening),incurred=parseAmount(d.incurred);
+      if(isManager && (![opening,incurred].every(Number.isFinite) || opening<0 || incurred<0))return alert('Nợ đầu kỳ và phát sinh trong kỳ phải là số không âm.');
+      changes.push({c,name,address,debtTermDays,openingDelta:isManager?opening-base.opening:0,incurredDelta:isManager?incurred-base.incurred:0});
     }
     changes.forEach(x=>{x.c.name=x.name;x.c.address=x.address;x.c.debtTermDays=x.debtTermDays;});
-    const ok=await saveDB();
-    if(!ok){db.customers=backup;return;}
+    if(!Array.isArray(db.customerDebtAdjustmentsV90))db.customerDebtAdjustmentsV90=[];
+    changes.forEach(x=>{
+      for(const [kind,amount,date] of [['opening',x.openingDelta,bounds.fromValue],['incurred',x.incurredDelta,bounds.toValue]]){
+        if(Math.abs(amount)<0.000001)continue;
+        db.customerDebtAdjustmentsV90.push({id:'DC-'+Date.now()+'-'+Math.random().toString(36).slice(2,9),customerId:x.c.id,kind,date,amount,createdAt:new Date().toISOString(),createdBy:'Quản lý'});
+      }
+    });
+    const ok=await saveRevisionCheckedEdit(beforeJson);
+    if(!ok){db=JSON.parse(beforeJson);renderDebts();return;}
     window.customerDebtInlineEditModeV22=false;
     window.customerDebtInlineDraftV22={};
     if(typeof renderAll==='function')renderAll(); else renderDebts();
@@ -39146,17 +39465,12 @@ body.manager-mode .payment-edit-v193{font-weight:700}
     }else{
       startWarehouseInlineEdit();
     }
-    setText(b,typeof warehouseInlineEditMode!=='undefined'&&warehouseInlineEditMode,'Sửa');
+    setText(b,typeof warehouseInlineEditMode!=='undefined'&&warehouseInlineEditMode,'Sửa hàng');
   };
 
   window.toggleCustomerEditSaveV27Fix=async function(){
-    const b=id('customerEditBtnV193');
-    if(window.customerInlineTableEditModeV21){
-      await window.saveCustomerInlineTableEditV21();
-    }else{
-      window.editSelectedCustomerV193();
-    }
-    setText(b,!!window.customerInlineTableEditModeV21,'Sửa');
+    /* V195 uses Sửa to select a row, then its own Lưu inside that row. */
+    window.editSelectedCustomerV193();
   };
 
   window.toggleSupplierEditSaveV27Fix=async function(){
@@ -39180,8 +39494,8 @@ body.manager-mode .payment-edit-v193{font-weight:700}
   };
 
   function bind(){
-    const wh=id('warehouseInlineEditBtn');if(wh){wh.onclick=window.toggleWarehouseEditSaveV27Fix;setText(wh,typeof warehouseInlineEditMode!=='undefined'&&warehouseInlineEditMode,'Sửa')}
-    const cu=id('customerEditBtnV193');if(cu){cu.onclick=window.toggleCustomerEditSaveV27Fix;setText(cu,!!window.customerInlineTableEditModeV21,'Sửa')}
+    const wh=id('warehouseInlineEditBtn');if(wh){wh.onclick=window.toggleWarehouseEditSaveV27Fix;setText(wh,typeof warehouseInlineEditMode!=='undefined'&&warehouseInlineEditMode,'Sửa hàng')}
+    const cu=id('customerEditBtnV193');if(cu){cu.onclick=window.toggleCustomerEditSaveV27Fix;}
     const su=id('supplierEditModeBtnV218');if(su){su.onclick=window.toggleSupplierEditSaveV27Fix;setText(su,typeof supplierEditModeV218!=='undefined'&&supplierEditModeV218,'Sửa')}
     const em=id('employeeTableEditBtnV239');if(em){em.onclick=window.toggleEmployeeEditSaveV27Fix;setText(em,typeof employeeTableEditModeV239!=='undefined'&&employeeTableEditModeV239,'Sửa bảng')}
   }
@@ -40077,7 +40391,7 @@ body.warehouse-page-active .topbar>.actions{
   const baseOpenSuggestions69=window.openSuggestions;
   function stockinSuggestions69(i,el,showAll){const box=q('sisg'+i);if(!box)return;const typed=String(el?.value||'').trim();let arr=[];if(showAll)arr=[...(db.products||[])].slice(0,30);else{if(!typed){box.classList.remove('show');box.innerHTML='';box.dataset.index='-1';return}const key=norm69(typed);arr=(db.products||[]).filter(p=>norm69((p.name||'')+' '+(p.id||'')).includes(key)).slice(0,20)}let html=arr.map((p,idx)=>`<div class="suggestion ${idx===0?'active':''}" data-product-id="${esc69(p.id)}" onmousedown="event.preventDefault();chooseProduct('si',${i},decodeURIComponent('${encodeURIComponent(p.id)}'))"><b>${esc69(p.name)}</b>${p.saleActive===false?'<span class="badge danger" style="margin-left:6px">Ngừng bán</span>':''}<small>${esc69(p.id)} • ${esc69(p.unit||'')} • Tồn ${Number(p.stock)||0}</small></div>`).join('');if(isManager&&typed&&!showAll){const exact=(db.products||[]).some(p=>norm69(p.name||'')===norm69(typed));if(!exact)html+=`<div class="suggestion create-new" onmousedown="event.preventDefault();openQuickProductFromStockin(${i},decodeURIComponent('${encodeURIComponent(typed)}'))">＋ Tạo hàng mới: <b>${esc69(typed)}</b><small>Tạo ngay, không cần qua menu Hàng hóa</small></div>`}box.innerHTML=html;box.classList.toggle('show',!!html);box.dataset.index='-1'}
   window.openSuggestions=function(mode,i,el,showAll=false){if(mode==='si')return stockinSuggestions69(i,el,!!showAll);return typeof baseOpenSuggestions69==='function'?baseOpenSuggestions69.apply(this,arguments):undefined};
-  function syncStockin69(){const page=q('stockin');if(!page)return;let staff=false;try{staff=!isManager&&staffModuleEnabled('stockin')}catch(_){}page.classList.toggle('staff-stockin-private',!!staff);const head=q('siHeadRow');if(head)[...head.children].forEach(th=>{th.style.removeProperty('width');th.style.removeProperty('min-width');th.style.removeProperty('max-width')});document.querySelectorAll('#stockin input[data-mode="si"][data-role="product"]').forEach(el=>{el.onfocus=function(){try{this.select()}catch(_){}const i=Number(this.dataset.row||0),box=q('sisg'+i);if(box){box.classList.remove('show');box.innerHTML='';box.dataset.index='-1'}};el.onclick=function(ev){ev?.stopPropagation?.();try{this.select()}catch(_){}stockinSuggestions69(Number(this.dataset.row||0),this,true)};el.oninput=function(){const i=Number(this.dataset.row||0);if(Array.isArray(window.siRows)&&siRows[i]){siRows[i].productText=this.value;siRows[i].productId=''}stockinSuggestions69(i,this,false)}})}
+  function syncStockin69(){const page=q('stockin');if(!page)return;let staff=false;try{staff=!isManager&&staffModuleEnabled('stockin')}catch(_){}page.classList.toggle('staff-stockin-private',!!staff);const head=q('siHeadRow');if(head)[...head.children].forEach(th=>{th.style.removeProperty('width');th.style.removeProperty('min-width');th.style.removeProperty('max-width')});document.querySelectorAll('#stockin input[data-mode="si"][data-role="product"]').forEach(el=>{el.onfocus=function(){try{this.select()}catch(_){}const i=Number(this.dataset.row||0),box=q('sisg'+i);if(box){box.classList.remove('show');box.innerHTML='';box.dataset.index='-1'}};el.onclick=function(ev){ev?.stopPropagation?.();try{this.select()}catch(_){}stockinSuggestions69(Number(this.dataset.row||0),this,!!siRows[Number(this.dataset.row||0)]?.productId||!String(this.value||'').trim())};el.oninput=function(){const i=Number(this.dataset.row||0);if(Array.isArray(window.siRows)&&siRows[i]){siRows[i].productText=this.value;siRows[i].productId=''}stockinSuggestions69(i,this,false)}})}
   /* V76: renderSIRows không còn bị V69 bọc lại. */
 
   /* ================= WARRANTY CUSTOMER ================= */
@@ -41472,7 +41786,7 @@ body.voucher-stockout-active .main>.topbar>.actions{
       .filter(Boolean).forEach(el=>row.appendChild(el));
     sep(row,'stockoutSepInvoiceWarehouseV90Clean');
     [document.querySelector('.warehouse-print-btn'),q('warehouseManageGroupBtn'),q('warehouseAddProductBtn'),
-     q('warehouseInlineEditBtn'),q('warehouseDeleteProductBtn'),q('warehouseInlineSaveBtn'),q('warehouseInlineCancelBtn')]
+     q('warehouseDeleteProductBtn'),q('warehouseInlineSaveBtn'),q('warehouseInlineCancelBtn')]
       .filter(Boolean).forEach(el=>row.appendChild(el));
 
     /* Hàng dưới: Tồn kho + lịch/ngày + số phiếu + ô tìm. */
@@ -41553,11 +41867,13 @@ body.voucher-stockout-active #stockoutFunctionRowV90Clean #soEditBtn{
   function q(id){return document.getElementById(id)}
   function numericSuffix(v){const m=String(v||'').trim().match(/^PX\s*0*(\d+)$/i);return m?Number(m[1]||0):0;}
   function nextStockoutNoPX(){
-    const list=Array.isArray(window.db?.stockout)?window.db.stockout:[];let maxNo=0;
-    for(const s of list){maxNo=Math.max(maxNo,numericSuffix(s?.no),numericSuffix(s?.code),numericSuffix(s?.soNo),numericSuffix(s?.number));}
+    const list=Array.isArray(db?.stockout)?db.stockout:[];let maxNo=0;
+    for(const s of list){maxNo=Math.max(maxNo,numericSuffix(s?.id),numericSuffix(s?.no),numericSuffix(s?.code),numericSuffix(s?.soNo),numericSuffix(s?.number));}
     return 'PX'+String(maxNo+1);
   }
   function applyStockoutNoPX(force=false){
+    /* Never replace the number of a saved invoice, especially during edit. */
+    if(stockoutViewingHistory)return String(q('soNo')?.textContent||'').trim();
     const no=nextStockoutNoPX(),el=q('soNo');
     if(el){const cur=String(el.textContent||'').trim();if(force||!cur||/^PN|^PXH|^SO|^XH/i.test(cur)||/^\d+$/.test(cur))el.textContent=no;}
     if(q('soCode'))q('soCode').value=no;if(q('soNumber'))q('soNumber').value=no;
@@ -41640,7 +41956,7 @@ body.voucher-stockin-active .main>.topbar>.actions{flex:0 0 auto!important;margi
     const row=ensureStructure(),hist=q('stockinTopNav');if(!row||!hist)return;rememberHomes();
     [q('siNewBtn'),q('siEditBtn'),q('siDeleteBtn'),q('siSaveBtn'),q('siSavePrintBtn'),q('siSaveBillBtn')].filter(Boolean).forEach(el=>row.appendChild(el));
     sep(row);
-    [q('warehouseManageGroupBtn'),q('warehouseAddProductBtn'),q('warehouseInlineEditBtn'),q('warehouseDeleteProductBtn'),q('warehouseInlineSaveBtn'),q('warehouseInlineCancelBtn')].filter(Boolean).forEach(el=>row.appendChild(el));
+    [q('warehouseManageGroupBtn'),q('warehouseAddProductBtn'),q('warehouseDeleteProductBtn'),q('warehouseInlineSaveBtn'),q('warehouseInlineCancelBtn')].filter(Boolean).forEach(el=>row.appendChild(el));
     const stock=q('v69WarehouseStockFilter');if(stock&&stock.parentElement!==hist)hist.insertBefore(stock,hist.firstChild);
     const oldTop=q('stockinTopActions');if(oldTop)oldTop.style.display='none';installed=true;
   }
@@ -42073,6 +42389,18 @@ body:not(.warehouse-page-active) #warehouseTopNav{
 #dashboard > .grid.cards:first-child{
   margin-top:0!important;
 }
+#dashboard .dashboard-sales-filter{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px;
+  padding:9px 12px;border:1px solid #d7e2e8;border-radius:10px;background:#f8fbfc;
+  color:#314c5b;font-size:12px;
+}
+#dashboard .dashboard-sales-filter strong{font-weight:800;color:#183c50}
+#dashboard .dashboard-sales-filter label{white-space:nowrap}
+#dashboard .dashboard-sales-filter select,#dashboard .dashboard-sales-filter input{
+  height:32px;min-height:32px;width:auto;padding:4px 8px;border:1px solid #c9d8e1;border-radius:7px;background:#fff;color:#17324d;
+}
+#dashboard .dashboard-sales-filter span{color:#647987;font-size:11px}
+@media(max-width:650px){#dashboard .dashboard-sales-filter span{width:100%}}
 </style>
 
 <script id="dashboard-b9-view-only-js">
@@ -42135,532 +42463,15 @@ body:not(.warehouse-page-active) #warehouseTopNav{
 })();
 </script>
 <!-- B9: Tổng quan chỉ xem nhanh, không có chức năng kho -->
-
-
-
-<script id="v90-b10-discard-voucher-on-menu-change">
-(function(){
-  'use strict';
-
-  const DRAFT_KEYS_B10 = {
-    stockin: 'anbui_excel_draft_si_v266',
-    stockout: 'anbui_excel_draft_so_v266'
-  };
-
-  function clearVoucherDraftB10(page){
-    const key=DRAFT_KEYS_B10[page];
-    if(!key)return;
-    try{ localStorage.removeItem(key); }catch(_){}
-    /* Quét lại sau một chút để xóa cả timer lưu nháp đang chờ từ lần gõ cuối. */
-    setTimeout(()=>{ try{ localStorage.removeItem(key); }catch(_){} },260);
-    setTimeout(()=>{ try{ localStorage.removeItem(key); }catch(_){} },650);
-  }
-
-  function resetVoucherB10(page){
-    clearVoucherDraftB10(page);
-
-    try{
-      if(page==='stockout'){
-        if(typeof newStockout==='function') newStockout();
-        return true;
-      }
-      if(page==='stockin'){
-        if(typeof newStockin==='function') newStockin();
-        return true;
-      }
-    }catch(err){
-      console.error('B10 không tạo được phiếu mới khi rời menu:',err);
-      return false;
-    }
-    return true;
-  }
-
-  /*
-    B10:
-    - KHÔNG tự lưu Phiếu nhập/Phiếu xuất khi bấm sang menu khác.
-    - Bỏ mọi thay đổi chưa bấm Lưu.
-    - Trả form về Phiếu mới sạch.
-    - Giải phóng khóa sửa phiếu thông qua newStockin/newStockout.
-    - Xóa nháp tạm để lần sau không khôi phục phần đang làm dở.
-  */
-  leaveVoucherAndGoV193 = async function(targetPage){
-    const active=(typeof currentActivePageV193==='function')
-      ? currentActivePageV193()
-      : (document.querySelector('.page.active')?.id||'');
-
-    if(!targetPage)return false;
-    if(targetPage===active)return true;
-    if(voucherMenuAutoSavingV193)return false;
-
-    /* Các menu thường: chuyển như cũ. */
-    if(active!=='stockout' && active!=='stockin'){
-      return typeof forceGoMenuV193==='function'
-        ? forceGoMenuV193(targetPage)
-        : (typeof go==='function' ? (go(targetPage),true) : false);
-    }
-
-    voucherMenuAutoSavingV193=true;
-    document.body.classList.add('voucher-menu-autosaving');
-
-    try{
-      const ok=resetVoucherB10(active);
-      if(!ok){
-        alert('Chưa thể đóng phiếu đang thao tác. Vui lòng thử lại.');
-        return false;
-      }
-
-      const moved = typeof forceGoMenuV193==='function'
-        ? forceGoMenuV193(targetPage)
-        : (typeof go==='function' ? (go(targetPage),true) : false);
-
-      if(moved){
-        try{
-          if(typeof toast==='function'){
-            toast(active==='stockout'
-              ? 'Đã bỏ Phiếu xuất đang làm dở • không lưu'
-              : 'Đã bỏ Phiếu nhập đang làm dở • không lưu');
-          }
-        }catch(_){}
-      }
-      return !!moved;
-    }finally{
-      voucherMenuAutoSavingV193=false;
-      document.body.classList.remove('voucher-menu-autosaving');
-    }
-  };
-
-  window.clearVoucherDraftB10=clearVoucherDraftB10;
-})();
-</script>
-<!-- B10: Rời Phiếu nhập/xuất thì bỏ thay đổi chưa lưu và về Phiếu mới -->
-
-
-
-<style id="v90-b11-delete-one-standard-css">
-/* ===== B11: MỘT CHUẨN XÓA DUY NHẤT ===== */
-#voucherDeletePopupV191,
-#voucherSttHeaderMenuV186,
-#voucherSttHeaderMenuV185,
-#voucherSttContextV182{
-  display:none!important;
-}
-
-#voucherDeleteMenuB11{
-  position:fixed;
-  z-index:2147483647;
-  display:none;
-  min-width:220px;
-  max-width:calc(100vw - 18px);
-  padding:6px;
-  background:#fff;
-  border:1px solid #d7e0e5;
-  border-radius:10px;
-  box-shadow:0 14px 36px rgba(15,35,50,.24);
-  font-family:Segoe UI,Arial,sans-serif;
-}
-#voucherDeleteMenuB11.show{display:block}
-#voucherDeleteMenuB11 .note{
-  padding:5px 8px 7px;
-  margin-bottom:4px;
-  border-bottom:1px solid #edf1f3;
-  color:#607582;
-  font-size:11px;
-}
-#voucherDeleteMenuB11 button{
-  width:100%;
-  border:0;
-  border-radius:7px;
-  padding:9px 10px;
-  text-align:left;
-  background:#fff;
-  color:#a51d1d;
-  font-weight:850;
-  cursor:pointer;
-}
-#voucherDeleteMenuB11 button:hover{background:#fff0f0}
-#stockout .invoice-table tbody td:first-child,
-#stockin .invoice-table tbody td:first-child{
-  cursor:context-menu!important;
-}
-#stockout .invoice-table thead th:first-child,
-#stockin .invoice-table thead th:first-child{
-  user-select:none!important;
+<style id="anbui-v90-voucher-edit-save-fix">
+/* A saved voucher exposes its own edit action; the nearby catalog edit has a different purpose. */
+body.voucher-stockout-active #stockoutFunctionRowV90Clean #soEditBtn[style*="display: inline-flex"],
+body.voucher-stockin-active #stockinFunctionRowV90Clean #siEditBtn[style*="display: inline-flex"]{
+  display:inline-flex!important;
 }
 </style>
-
-<script id="v90-b11-delete-one-standard-js">
-(function(){
-  'use strict';
-
-  let menu=null;
-  let menuAction=null;
-
-  function q(id){return document.getElementById(id)}
-  function rows(mode){return mode==='so'?soRows:siRows}
-  function viewing(mode){return mode==='so'?!!stockoutViewingHistory:!!stockinViewingHistory}
-  function editing(mode){return mode==='so'?!!stockoutEditingHistory:!!stockinEditingHistory}
-  function renderRows(mode){
-    if(mode==='so'){
-      renderSORows();
-      try{recalcSO()}catch(_){}
-    }else{
-      renderSIRows();
-      try{recalcSI()}catch(_){}
-    }
-  }
-  function blankRow(mode){
-    return mode==='so'
-      ? {productId:'',productText:'',qty:'',price:'',ck:'',km:'',note:'',vatSource:'nonvat'}
-      : {productId:'',productText:'',qty:'',price:'',ck:'',km:'',note:''};
-  }
-
-  function getMenu(){
-    if(menu)return menu;
-    menu=document.createElement('div');
-    menu.id='voucherDeleteMenuB11';
-    menu.innerHTML='<div class="note"></div><button type="button"></button>';
-    document.body.appendChild(menu);
-    menu.querySelector('button').onclick=async function(e){
-      e.preventDefault();e.stopPropagation();
-      const fn=menuAction;
-      hide();
-      if(typeof fn==='function')await fn();
-    };
-    return menu;
-  }
-  function hide(){
-    if(menu)menu.classList.remove('show');
-    menuAction=null;
-  }
-  function show(note,label,x,y,fn){
-    const m=getMenu();
-    m.querySelector('.note').textContent=note;
-    m.querySelector('button').textContent=label;
-    menuAction=fn;
-    m.style.left='0px';m.style.top='0px';m.classList.add('show');
-    const r=m.getBoundingClientRect(),gap=8;
-    m.style.left=Math.max(gap,Math.min(Number(x)||gap,window.innerWidth-r.width-gap))+'px';
-    m.style.top=Math.max(gap,Math.min(Number(y)||gap,window.innerHeight-r.height-gap))+'px';
-  }
-
-  function voucherModeFromCell(cell){
-    const table=cell?.closest?.('table.invoice-table');
-    if(!table)return '';
-    if(table.querySelector('tbody#soBody'))return 'so';
-    if(table.querySelector('tbody#siBody'))return 'si';
-    return '';
-  }
-
-  async function ensureEditForRowDelete(mode){
-    if(!viewing(mode) || editing(mode))return true;
-    try{
-      if(mode==='so')await editCurrentStockout();
-      else await editCurrentStockin();
-    }catch(err){
-      console.error('B11 mở Sửa phiếu để xóa dòng lỗi:',err);
-      return false;
-    }
-    return editing(mode);
-  }
-
-  async function deleteRow(mode,index){
-    const wasSaved=viewing(mode);
-
-    if(!(await ensureEditForRowDelete(mode))){
-      return alert('Phiếu đã lưu. Anh cần có quyền Sửa phiếu để xóa dòng này.');
-    }
-
-    const list=rows(mode);
-    if(!Array.isArray(list)||index<0||index>=list.length)return;
-
-    const r=list[index]||{};
-    const p=(db.products||[]).find(x=>String(x.id)===String(r.productId||''));
-    const name=String(r.productText||p?.name||('dòng '+(index+1))).trim();
-    const qty=Math.max(0,Number(r.qty)||0);
-
-    if(!confirm('Xóa dòng “'+name+'” khỏi '+(mode==='so'?'Phiếu xuất':'Phiếu nhập')+'?'))return;
-
-    list.splice(index,1);
-    if(!list.length)list.push(blankRow(mode));
-    renderRows(mode);
-
-    if(wasSaved){
-      toast(mode==='so'
-        ? 'Đã xóa dòng khỏi bản sửa • bấm Lưu để hoàn lại '+qty+' vào kho và cập nhật công nợ'
-        : 'Đã xóa dòng khỏi bản sửa • bấm Lưu để trừ lại '+qty+' khỏi kho và cập nhật công nợ NCC');
-    }else{
-      toast('Đã xóa dòng khỏi phiếu đang làm • chưa ảnh hưởng kho/công nợ');
-    }
-  }
-
-  async function deleteWhole(mode){
-    if(!isManager)return alert('Xóa toàn bộ phiếu chỉ dành cho Quản lý.');
-    if(!viewing(mode))return alert('Chỉ xóa được phiếu đã lưu đang mở.');
-    try{
-      if(mode==='so')await deleteCurrentStockout();
-      else await deleteCurrentStockin();
-    }catch(err){
-      console.error('B11 xóa toàn phiếu lỗi:',err);
-      alert('Chưa xóa được phiếu. Vui lòng thử lại.');
-    }
-  }
-
-  /* Một điểm bắt duy nhất cho chuột phải STT.
-     - STT dòng: Xóa dòng.
-     - STT tiêu đề: Xóa toàn phiếu (Quản lý), không cần bấm Sửa trước.
-  */
-  window.addEventListener('contextmenu',function(e){
-    const cell=e.target?.closest?.('td,th');
-    if(!cell || cell.cellIndex!==0)return;
-
-    const mode=voucherModeFromCell(cell);
-    if(!mode)return;
-
-    if(cell.closest('thead')){
-      if(!isManager || !viewing(mode))return;
-      e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
-      show(
-        (mode==='so'?'Phiếu xuất':'Phiếu nhập')+' • '+String(mode==='so'?q('soNo')?.textContent:q('siNo')?.textContent||''),
-        '🗑 Xóa toàn bộ phiếu',
-        e.clientX,e.clientY,
-        ()=>deleteWhole(mode)
-      );
-      return;
-    }
-
-    const tbody=cell.closest('tbody');
-    if(!tbody || (mode==='so'&&tbody.id!=='soBody') || (mode==='si'&&tbody.id!=='siBody'))return;
-    const tr=cell.closest('tr');
-    const index=Array.prototype.indexOf.call(tbody.children,tr);
-    if(index<0)return;
-
-    e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
-    show(
-      (mode==='so'?'Phiếu xuất':'Phiếu nhập')+' • dòng '+(index+1),
-      '🗑 Xóa dòng sản phẩm',
-      e.clientX,e.clientY,
-      ()=>deleteRow(mode,index)
-    );
-  },true);
-
-  /* Nút Xóa phiếu trên góc phải: Quản lý nhìn thấy ngay khi đang xem phiếu đã lưu.
-     Không bắt buộc bấm Sửa trước. */
-  deleteEditingVoucher = async function(){
-    const so=document.body.classList.contains('voucher-stockout-active');
-    const si=document.body.classList.contains('voucher-stockin-active');
-    if(!isManager)return;
-    if(so && stockoutViewingHistory)return deleteWhole('so');
-    if(si && stockinViewingHistory)return deleteWhole('si');
-  };
-
-  syncVoucherEditDeleteButton = function(){
-    const btn=q('voucherEditDeleteBtn');
-    if(!btn)return;
-    const so=document.body.classList.contains('voucher-stockout-active');
-    const si=document.body.classList.contains('voucher-stockin-active');
-    const showBtn=!!isManager && ((so&&stockoutViewingHistory)||(si&&stockinViewingHistory));
-    btn.style.display=showBtn?'inline-flex':'none';
-    btn.disabled=!showBtn;
-    btn.textContent='Xóa phiếu';
-    btn.title=so?'Xóa toàn bộ Phiếu xuất đang mở':(si?'Xóa toàn bộ Phiếu nhập đang mở':'Xóa phiếu');
-  };
-
-  function refresh(){
-    try{syncVoucherEditDeleteButton()}catch(_){}
-  }
-
-  document.addEventListener('mousedown',function(e){
-    if(menu?.classList.contains('show')&&!menu.contains(e.target))hide();
-  },true);
-  window.addEventListener('keydown',function(e){if(e.key==='Escape')hide()},true);
-  window.addEventListener('resize',hide);
-  window.addEventListener('scroll',hide,true);
-
-  const oldRenderAll=window.renderAll;
-  if(typeof oldRenderAll==='function'){
-    window.renderAll=function(){
-      const r=oldRenderAll.apply(this,arguments);
-      setTimeout(refresh,0);
-      return r;
-    };
-  }
-  const oldGo=window.go;
-  if(typeof oldGo==='function'){
-    window.go=function(){
-      const r=oldGo.apply(this,arguments);
-      setTimeout(refresh,0);
-      return r;
-    };
-  }
-
-  document.addEventListener('click',()=>setTimeout(refresh,0),true);
-  window.addEventListener('load',()=>setTimeout(refresh,250));
-
-  window.deleteVoucherRowB11=deleteRow;
-  window.deleteWholeVoucherB11=deleteWhole;
-  window.refreshDeleteUIB11=refresh;
-})();
-</script>
-<!-- B11: gom tính năng Xóa về một chuẩn -->
-
-
-
-<script id="v90-b12-clean-message">
-(function(){
-  window.addEventListener('load',()=>{
-    setTimeout(()=>{
-      try{
-        if(db?.settings?.b12CleanMode==='KEEP_PRODUCTS_SUPPLIERS_RESET_STOCK_DEBT'){
-          toast('Dữ liệu đã được dọn sạch • chỉ giữ Hàng hóa và NCC');
-        }
-      }catch(_){}
-    },1400);
-  });
-})();
-</script>
-<!-- B12: CLEAN DATA KEEP PRODUCTS + SUPPLIERS -->
-<!-- B13: ENTER HET DONG -> THEM DONG MOI, AP DUNG PHIEU NHAP + PHIEU XUAT -->
-<!-- B14: ENTER UNLIMITED ROWS FOR STOCKIN + STOCKOUT -->
-
-
-
-<script id="v90-b15-enter-role-safe">
-/* ===== B15: ENTER NHẬP/XUẤT ỔN ĐỊNH CHO NHÂN VIÊN + QUẢN LÝ ===== */
-(function(){
-  'use strict';
-
-  function visibleB15(el){
-    if(!el || el.disabled || el.readOnly)return false;
-    const st=getComputedStyle(el), td=el.closest('td'), ts=td?getComputedStyle(td):null;
-    if(st.display==='none'||st.visibility==='hidden')return false;
-    if(ts && (ts.display==='none'||ts.visibility==='hidden'))return false;
-    const r=el.getBoundingClientRect();
-    return r.width>8 && r.height>8;
-  }
-
-  function modeAndIndexB15(el){
-    const tr=el?.closest?.('tr[data-line]');
-    if(!tr)return null;
-    const line=String(tr.dataset.line||'');
-    const mode=line.startsWith('si')?'si':(line.startsWith('so')?'so':'');
-    if(!mode)return null;
-    const index=Number(line.slice(2));
-    if(!Number.isFinite(index))return null;
-    return {mode,index,tr};
-  }
-
-  function stockinStaffModeB15(){
-    try{return !isManager && staffModuleEnabled('stockin')}catch(_){return !isManager}
-  }
-
-  function sequenceB15(mode){
-    if(mode==='si'){
-      if(stockinStaffModeB15()){
-        /* Nhân viên: không thấy Giá vốn. */
-        return ['qty','vatSource','salePrice','saleCK','saleKM'];
-      }
-      /* Quản lý: có đủ Giá vốn + Giá bán. */
-      return ['qty','vatSource','price','salePrice','ck','km'];
-    }
-    /* Phiếu xuất: cùng một luồng cho NV và Quản lý. */
-    return ['qty','vatSource','price','ck','km'];
-  }
-
-  function fieldB15(mode,index,role){
-    const el=document.querySelector(`[data-mode="${mode}"][data-row="${index}"][data-role="${role}"]`);
-    return visibleB15(el)?el:null;
-  }
-
-  function focusB15(el){
-    if(!el)return false;
-    setTimeout(()=>{
-      try{
-        el.focus();
-        if(el.tagName==='INPUT' && typeof el.select==='function')el.select();
-        el.scrollIntoView({block:'nearest',inline:'nearest'});
-      }catch(_){try{el.focus()}catch(__){}}
-    },15);
-    return true;
-  }
-
-  function focusProductB15(mode,index){
-    setTimeout(()=>{
-      const el=document.querySelector(`input[data-mode="${mode}"][data-row="${index}"][data-role="product"]`);
-      focusB15(el);
-    },35);
-  }
-
-  function appendRowB15(mode){
-    if(mode==='si'){
-      addSIRow(false);
-      return siRows.length-1;
-    }
-    addSORow(false);
-    return soRows.length-1;
-  }
-
-  function goNextB15(mode,index,currentRole){
-    const seq=sequenceB15(mode);
-    const pos=seq.indexOf(currentRole);
-    if(pos<0)return false;
-
-    /* Tìm ô hợp lệ kế tiếp theo đúng quyền hiện tại. */
-    for(let j=pos+1;j<seq.length;j++){
-      const next=fieldB15(mode,index,seq[j]);
-      if(next)return focusB15(next);
-    }
-
-    const rows=mode==='si'?siRows:soRows;
-    if(index<rows.length-1){
-      focusProductB15(mode,index+1);
-      return true;
-    }
-
-    /* Hết dòng cuối: luôn nối thêm dòng mới, không giới hạn số dòng. */
-    const newIndex=appendRowB15(mode);
-    focusProductB15(mode,newIndex);
-    return true;
-  }
-
-  /*
-    Bắt ở WINDOW capture để chạy trước Enter global V83.
-    Tên hàng vẫn giao cho productKey xử lý danh sách gợi ý.
-  */
-  window.addEventListener('keydown',function(e){
-    if(e.key!=='Enter')return;
-    if(e.shiftKey||e.ctrlKey||e.metaKey||e.altKey)return;
-
-    const el=e.target;
-    const info=modeAndIndexB15(el);
-    if(!info)return;
-
-    const role=String(el?.dataset?.role||'');
-    if(!role || role==='product')return;
-
-    const seq=sequenceB15(info.mode);
-    if(!seq.includes(role))return;
-
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
-    try{markEntryOk(el)}catch(_){}
-    goNextB15(info.mode,info.index,role);
-  },true);
-
-  /* Các luồng cũ gọi helper này cũng dùng cùng chuẩn B15. */
-  window.invoiceNextRowV260=function(mode,i){
-    const rows=mode==='si'?siRows:soRows;
-    if(i<rows.length-1){
-      focusProductB15(mode,i+1);
-      return;
-    }
-    const newIndex=appendRowB15(mode);
-    focusProductB15(mode,newIndex);
-  };
-
-  window.voucherEnterSequenceB15=sequenceB15;
-  window.voucherEnterNextB15=goNextB15;
-})();
-</script>
-<!-- B15: ENTER 4 CASES = SI STAFF / SI MANAGER / SO STAFF / SO MANAGER -->
-
+<style id="anbui-v90-hide-catalog-edit-on-vouchers">
+/* Sửa hàng chỉ thuộc Danh mục hàng hóa; hai phiếu dùng nút Sửa phiếu. */
+body.voucher-stockout-active #warehouseInlineEditBtn,
+body.voucher-stockin-active #warehouseInlineEditBtn{display:none!important}
+</style>
