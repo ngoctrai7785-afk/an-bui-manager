@@ -25926,26 +25926,25 @@ function fieldKey(e,mode,i,role){
   e.preventDefault();
   markEntryOk(e.currentTarget||e.target);
 
-  if(role==='qty'){
-    if(mode==='si'&&!isManager)focusField(mode,i,'salePrice');
-    else focusField(mode,i,'price');
-  }else if(mode==='si'&&!isManager && role==='salePrice'){
-    focusField(mode,i,'saleCK');
-  }else if(mode==='si'&&!isManager && role==='saleCK'){
-    focusField(mode,i,'saleKM');
-  }else if(mode==='si'&&!isManager && role==='saleKM'){
-    invoiceNextRowV260(mode,i);
-  }else if(mode==='si'&&isManager && role==='price'){
-    focusField(mode,i,'salePrice');
-  }else if(mode==='si'&&isManager && role==='salePrice'){
-    focusField(mode,i,'ck');
-  }else if(role==='price'){
-    focusField(mode,i,'ck');
-  }else if(role==='ck'){
-    focusField(mode,i,'km');
-  }else if(role==='km'){
-    invoiceNextRowV260(mode,i);
-  }else if(role==='note'){
+  /* Chỉ đi qua ô đang hiển thị trên dòng. Ghi chú, giá vốn hoặc CK/KM
+     có thể bị ẩn tùy chế độ; khi hết ô thì luôn nhập hàng dòng kế. */
+  const tr=document.querySelector(`[data-line="${mode}${i}"]`);
+  const fields=tr?[...tr.querySelectorAll('input[data-mode][data-row]')]
+    .filter(el=>el.getClientRects().length &&
+      getComputedStyle(el).visibility!=='hidden' &&
+      !el.disabled && !el.readOnly):[];
+  const from=fields.findIndex(el=>el===e.currentTarget||el===e.target);
+  /* CK/KM để trống là không giảm giá. Enter sau đơn giá được thêm hàng
+     ngay, không bắt người dùng đi qua các ô giảm giá trống. */
+  const optional=new Set(['ck','km','saleCK','saleKM']);
+  let next=from>=0?fields[from+1]:null;
+  while(next && optional.has(next.dataset.role) && !String(next.value||'').trim()){
+    const pos=fields.indexOf(next);
+    next=fields[pos+1]||null;
+  }
+  if(next){
+    setTimeout(()=>{if(next.isConnected){next.focus();next.select?.()}},0);
+  }else{
     invoiceNextRowV260(mode,i);
   }
 }
