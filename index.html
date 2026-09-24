@@ -39421,9 +39421,10 @@ body.manager-mode .payment-edit-v193{font-weight:700}
 
 
 <style id="v27fix-safe-ui-css">
-/* Một nút Sửa -> Lưu: ẩn nút Lưu rời, giữ nút Sửa luôn hiện */
-#warehouseInlineSaveBtn,#customerSaveBtnV21,#supplierSaveModeBtnV218,#employeeTableSaveBtnV239{display:none!important}
-#warehouseInlineEditBtn,#customerEditBtnV193,#supplierEditModeBtnV218,#employeeTableEditBtnV239{display:inline-flex!important}
+/* Khách hàng sửa cả bảng: nút Lưu và Sửa do updateUi điều khiển theo chế độ.
+   Các bảng khác vẫn dùng một nút Sửa -> Lưu. */
+#warehouseInlineSaveBtn,#supplierSaveModeBtnV218,#employeeTableSaveBtnV239{display:none!important}
+#warehouseInlineEditBtn,#supplierEditModeBtnV218,#employeeTableEditBtnV239{display:inline-flex!important}
 
 /* Danh sách xổ dài xuống gần cuối màn hình - chỉ CSS, không dùng MutationObserver */
 .warehouse-product-list,
