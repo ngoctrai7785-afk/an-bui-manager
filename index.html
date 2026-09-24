@@ -10916,8 +10916,8 @@ body:has(#payments.page.active) .topbar #paymentTopbarFilterHost{
 
 
 <script id="v90-build-marker">
-window.AN_BUI_PATCH_VERSION=90;
-window.AN_BUI_BUILD='an-bui-v259-v90-audit-safe';
+window.AN_BUI_PATCH_VERSION=91;
+window.AN_BUI_BUILD='an-bui-v259-v91-enter-next-product';
 </script>
 </head>
 <body>
@@ -40932,6 +40932,22 @@ body.warehouse-page-active .main>.topbar>.actions{
     const el=ev.target;
     if(!isEditableV83(el) || !isVisibleV83(el))return;
 
+    /* Dòng hàng có thứ tự Enter riêng và tự mở dòng sản phẩm kế tiếp. */
+    const invoiceBody=el.closest('#siBody,#soBody');
+    if(invoiceBody){
+      const mode=invoiceBody.id==='siBody'?'si':'so';
+      const row=Number(el.dataset.row);
+      const role=el.dataset.role;
+      if(Number.isInteger(row) && row>=0 && role && !ev.shiftKey){
+        ev.preventDefault();
+        ev.stopImmediatePropagation();
+        if(role==='product')productKey(ev,mode,row,el);
+        else if(role==='vatSource')focusField(mode,row,mode==='si'&&!isManager?'salePrice':'price');
+        else fieldKey({key:ev.key,currentTarget:el,target:el,preventDefault:()=>ev.preventDefault()},mode,row,role);
+        return;
+      }
+    }
+
     /* Cho phép xuống dòng thật sự bằng Shift+Enter trong textarea/contenteditable */
     if((el.matches('textarea') || el.isContentEditable) && ev.shiftKey)return;
 
@@ -41045,8 +41061,8 @@ body.warehouse-page-active #v69WarehouseActionRow:empty{display:none!important;b
 </style>
 <script id="v89-excel-import">
 (function(){
-  window.AN_BUI_PATCH_VERSION=90;
-  window.AN_BUI_BUILD='an-bui-v259-v90-audit-safe';
+  window.AN_BUI_PATCH_VERSION=91;
+  window.AN_BUI_BUILD='an-bui-v259-v91-enter-next-product';
 
   let v89ImportDraft=null;
 
