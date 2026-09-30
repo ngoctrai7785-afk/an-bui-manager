@@ -42370,7 +42370,148 @@ window.confirmWarrantyNccReceiveB6=async function(){const b=batchByIdB6(pendingR
 
 function renderWarrantyNccBatchesB6(){const host=q('warrantyNccBatchesB6');if(!host)return;const rows=[...ensureBatchesB6()].reverse();if(!rows.length){host.innerHTML='<h3>Phiếu gửi BH NCC</h3><div class="small muted">Chưa có phiếu gửi NCC.</div>';return}host.innerHTML='<h3>Phiếu gửi BH NCC / đối chiếu</h3><div class="table-wrap"><table><thead><tr><th>Phiếu</th><th>NCC</th><th>Ngày gửi</th><th>Đã gửi</th><th>Đã nhận</th><th>Còn tại NCC</th><th>Trạng thái</th><th>Đối chiếu</th></tr></thead><tbody>'+rows.map(b=>{const total=(b.itemIds||[]).length,ret=(b.returnedIds||[]).length,left=Math.max(0,total-ret);return `<tr><td><b>${h(b.id)}</b></td><td>${h(b.supplierName||'')}</td><td>${h(b.dateSent||'')}</td><td class="center">${total}</td><td class="center">${ret}</td><td class="center"><b>${left}</b></td><td>${h(b.status||'Đã gửi')}</td><td><button class="btn mini-btn" onclick="printWarrantyNccBatchB6('${h(b.id)}')">🖨 In đối chiếu</button>${left?` <button class="btn mini-btn" onclick="openWarrantyNccReceiveBatchB6('${h(b.id)}')">Nhận hàng</button>`:''}</td></tr>`}).join('')+'</tbody></table></div>';}
 
-window.printWarrantyNccBatchB6=function(id){const b=batchByIdB6(id);if(!b)return;const rows=(b.itemIds||[]).map(wid=>(db.warranty||[]).find(x=>String(x.id)===String(wid))).filter(Boolean);const total=rows.length,ret=rows.filter(w=>nccStatusB6(w)==='NCC đã trả').length;const html=`<!doctype html><html><head><meta charset="utf-8"><title>${h(b.id)}</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h2{text-align:center;margin:0 0 6px}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px}th,td{border:1px solid #555;padding:6px}th{background:#f1f1f1}.summary{margin:10px 0;font-size:13px}.sign{display:grid;grid-template-columns:1fr 1fr;text-align:center;margin-top:35px}</style></head><body><h2>PHIẾU ĐỐI CHIẾU BẢO HÀNH NCC</h2><div style="text-align:center"><b>${h(b.id)}</b></div><div class="summary">NCC: <b>${h(b.supplierName||'')}</b> • Ngày gửi: ${h(b.dateSent||'')}<br>Đã gửi: <b>${total}</b> • Đã nhận: <b>${ret}</b> • Còn tại NCC: <b>${Math.max(0,total-ret)}</b></div><table><thead><tr><th>STT</th><th>Mã BH</th><th>Khách</th><th>Hàng BH</th><th>SL</th><th>Kết quả NCC</th><th>Ngày nhận</th><th>Trạng thái</th></tr></thead><tbody>${rows.map((w,i)=>{const c=(db.customers||[]).find(x=>x.id===w.customerId),p=(db.products||[]).find(x=>x.id===w.productId);return `<tr><td>${i+1}</td><td>${h(w.batchId||w.id)}</td><td>${h(c?.name||'')}</td><td>${h(p?.name||w.item||'')}</td><td>${Number(w.qty||1)}</td><td>${h(w.nccResultB6||'')}</td><td>${h(w.nccReturnedDateB6||'')}</td><td>${h(nccStatusB6(w))}</td></tr>`}).join('')}</tbody></table><div class="sign"><div><b>NPP giao/nhận</b><br><br><br>Ký tên</div><div><b>Nhà cung cấp</b><br><br><br>Ký tên</div></div><script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`;const w=window.open('','_blank');if(!w)return alert('Trình duyệt đang chặn cửa sổ in.');w.document.open();w.document.write(html);w.document.close();};
+window.printWarrantyNccBatchB6=function(id){const b=batchByIdB6(id);if(!b)return;const rows=(b.itemIds||[]).map(wid=>(db.warranty||[]).find(x=>String(x.id)===String(wid))).filter(Boolean);const total=rows.length,ret=rows.filter(w=>nccStatusB6(w)==='NCC đã trả').length;const html=`<!doctype html><html><head><meta charset="utf-8"><title>${h(b.id)}</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h2{text-align:center;margin:0 0 6px}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px}th,td{border:1px solid #555;padding:6px}th{background:#f1f1f1}.summary{margin:10px 0;font-size:13px}.sign{display:grid;grid-template-columns:1fr 1fr;text-align:center;margin-top:35px}</style></head><body><h2>PHIẾU ĐỐI CHIẾU BẢO HÀNH NCC</h2><div style="text-align:center"><b>${h(b.id)}</b></div><div class="summary">NCC: <b>${h(b.supplierName||'')}</b> • Ngày gửi: ${h(b.dateSent||'')}<br>Đã gửi: <b>${total}</b> • Đã nhận: <b>${ret}</b> • Còn tại NCC: <b>${Math.max(0,total-ret)}</b></div><table><thead><tr><th>STT</th><th>Mã BH</th><th>Khách</th><th>Hàng BH</th><th>SL</th><th>Kết quả NCC</th><th>Ngày nhận</th><th>Trạng thái</th></tr></thead><tbody>${rows.map((w,i)=>{const c=(db.customers||[]).find(x=>x.id===w.customerId),p=(db.products||[]).find(x=>x.id===w.productId);return `<tr><td>${i+1}</td><td>${h(w.batchId||w.id)}</td><td>${h(c?.name||'')}</td><td>${h(p?.name||w.item||'')}</td><td>${Number(w.qty||1)}</td><td>${h(w.nccResultB6||'')}</td><td>${h(w.nccReturnedDateB6||'')}</td><td>${h(nccStatusB6(w))}</td></tr>`}).join('')}</tbody></table><div class="sign"><div><b>NPP giao/nhận</b><br><br><br>Ký tên</div><div><b>Nhà cung cấp</b><br><br><br>Ký tên</div></div><script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script>
+<style id="supplier-safe-delete-feature-css">
+#supplierSafeDeleteMenu{
+  position:fixed;z-index:2147483647;display:none;min-width:220px;
+  background:#fff;border:1px solid #d8dee5;border-radius:9px;
+  box-shadow:0 14px 38px rgba(15,23,42,.28);padding:6px;
+  font-family:Arial,Helvetica,sans-serif
+}
+#supplierSafeDeleteMenu.show{display:block}
+#supplierSafeDeleteMenu .note{padding:5px 8px 7px;font-size:11px;color:#607080;border-bottom:1px solid #edf1f3;margin-bottom:4px}
+#supplierSafeDeleteMenu button{width:100%;border:0;background:#fff;color:#a12626;text-align:left;padding:9px 10px;border-radius:6px;cursor:pointer;font-weight:800}
+#supplierSafeDeleteMenu button:hover{background:#fff1f1}
+#suppliersTable tbody td:first-child.supplier-delete-stt{cursor:context-menu;font-weight:800}
+</style>
+<script id="supplier-safe-delete-feature-js">
+(function(){
+  let menu=null,currentSupplierId='';
+
+  function ensureMenu(){
+    if(menu&&document.body.contains(menu))return menu;
+    menu=document.createElement('div');
+    menu.id='supplierSafeDeleteMenu';
+    menu.innerHTML='<div class="note">Nhà cung cấp • STT</div><button type="button">🗑 Xóa nhà cung cấp</button>';
+    menu.querySelector('button').onclick=function(){ deleteSupplierSafe(currentSupplierId); };
+    document.body.appendChild(menu);
+    return menu;
+  }
+
+  function hideMenu(){
+    if(menu)menu.classList.remove('show');
+    currentSupplierId='';
+  }
+
+  function showMenu(id,x,y){
+    if(!isManager)return;
+    currentSupplierId=String(id||'');
+    const m=ensureMenu();
+    m.style.left='0px';m.style.top='0px';m.classList.add('show');
+    const r=m.getBoundingClientRect(),gap=8;
+    m.style.left=Math.max(gap,Math.min(Number(x)||gap,window.innerWidth-r.width-gap))+'px';
+    m.style.top=Math.max(gap,Math.min(Number(y)||gap,window.innerHeight-r.height-gap))+'px';
+  }
+
+  function bindSupplierDeleteRows(){
+    const box=document.getElementById('suppliersTable');
+    if(!box)return;
+    const rows=[...box.querySelectorAll('tbody tr')];
+    rows.forEach(tr=>{
+      const td=tr.children&&tr.children[0];
+      if(!td)return;
+      const id=String(td.textContent||'').trim();
+      if(!id || !(db.suppliers||[]).some(s=>String(s.id||'')===id))return;
+      td.classList.add('supplier-delete-stt');
+      td.title=isManager?'Chuột phải để xóa Nhà cung cấp chưa phát sinh giao dịch':'STT';
+      if(td.dataset.supplierDeleteBound==='1')return;
+      td.dataset.supplierDeleteBound='1';
+      td.addEventListener('contextmenu',function(e){
+        if(!isManager || (typeof supplierEditModeV218!=='undefined' && supplierEditModeV218))return;
+        e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+        showMenu(id,e.clientX,e.clientY);
+      },true);
+    });
+  }
+
+  async function deleteSupplierSafe(id){
+    hideMenu();
+    if(!isManager){
+      return requireManager(()=>deleteSupplierSafe(id),'Xóa Nhà cung cấp cần quyền Quản lý.');
+    }
+    const sid=String(id||'');
+    const supplier=(db.suppliers||[]).find(s=>String(s.id||'')===sid);
+    if(!supplier)return alert('Không tìm thấy Nhà cung cấp.');
+
+    const d=typeof supplierDebtBreakdownV258==='function'
+      ? supplierDebtBreakdownV258(sid)
+      : {balance:Number(supplier.oldDebt)||0,invoices:[],payments:[],oldDebt:Number(supplier.oldDebt)||0};
+
+    const balance=Math.max(0,Number(d.balance)||0);
+    if(balance>0){
+      alert('Không thể xóa. Nhà cung cấp "'+(supplier.name||sid)+'" còn công nợ '+money(balance)+'.\nVui lòng xử lý công nợ trước.');
+      return;
+    }
+
+    const hasHistory=(d.invoices||[]).length>0 || (d.payments||[]).length>0 || Math.abs(Number(supplier.oldDebt)||0)>0;
+    if(hasHistory){
+      alert('Không thể xóa Nhà cung cấp "'+(supplier.name||sid)+'" vì đã phát sinh phiếu nhập, công nợ hoặc thanh toán.\nCần giữ lại để bảo toàn lịch sử giao dịch.');
+      return;
+    }
+
+    if(!confirm('Xóa Nhà cung cấp "'+(supplier.name||sid)+'"?\nChỉ NCC chưa phát sinh giao dịch mới được xóa.'))return;
+
+    const suppliersBackup=(db.suppliers||[]).map(x=>({...x}));
+    const productBackup=(db.products||[]).map(p=>({id:p.id,supplierId:p.supplierId,supplierName:p.supplierName}));
+    const supplierName=String(supplier.name||'');
+
+    db.suppliers=(db.suppliers||[]).filter(s=>String(s.id||'')!==sid);
+    (db.products||[]).forEach(p=>{
+      const linkedById=String(p.supplierId||'')===sid;
+      const linkedByName=!p.supplierId && supplierName && typeof norm==='function' && norm(p.supplierName||'')===norm(supplierName);
+      if(linkedById||linkedByName){
+        p.supplierId='';
+        p.supplierName='';
+      }
+    });
+
+    const ok=await saveDB();
+    if(!ok){
+      db.suppliers=suppliersBackup;
+      productBackup.forEach(x=>{
+        const p=(db.products||[]).find(v=>String(v.id)===String(x.id));
+        if(p){p.supplierId=x.supplierId;p.supplierName=x.supplierName;}
+      });
+      renderSuppliers();
+      return;
+    }
+
+    if(typeof renderAll==='function')renderAll(); else renderSuppliers();
+    toast('✓ Đã xóa Nhà cung cấp '+(supplier.name||sid));
+  }
+
+  const oldRenderSuppliers=window.renderSuppliers;
+  if(typeof oldRenderSuppliers==='function'){
+    window.renderSuppliers=function(){
+      const out=oldRenderSuppliers.apply(this,arguments);
+      setTimeout(bindSupplierDeleteRows,0);
+      return out;
+    };
+  }
+
+  window.deleteSupplierSafe=deleteSupplierSafe;
+  window.bindSupplierDeleteRows=bindSupplierDeleteRows;
+  window.addEventListener('load',()=>setTimeout(bindSupplierDeleteRows,350));
+  document.addEventListener('mousedown',function(e){
+    if(menu&&menu.classList.contains('show')&&!menu.contains(e.target))hideMenu();
+  },true);
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')hideMenu();},true);
+  window.addEventListener('resize',hideMenu);
+  window.addEventListener('scroll',hideMenu,true);
+})();
+</script>
+
+</body></html>`;const w=window.open('','_blank');if(!w)return alert('Trình duyệt đang chặn cửa sổ in.');w.document.open();w.document.write(html);w.document.close();};
 
 window.openWarrantyReturnCustomerB6=function(){const list=(db.warranty||[]).filter(w=>!warrantyClosedB6(w));if(!list.length)return alert('Không có phiếu bảo hành nào đang chờ trả khách.');showModal(`<h3>Trả bảo hành cho khách</h3><div class="small">Chọn phiếu BH. Hệ thống sẽ mở Phiếu xuất và dùng đúng luồng trả BH theo phiếu hiện có.</div><div class="warranty-send-list-b6">${list.map(w=>{const c=(db.customers||[]).find(x=>x.id===w.customerId),p=(db.products||[]).find(x=>x.id===w.productId);return `<div class="warranty-send-row-b6"><div>↩</div><div><b>${h(w.batchId||w.id)}</b><div class="small">${h(p?.name||w.item||'')}</div></div><div>${h(c?.name||'')}</div><div><button class="btn" onclick="prepareWarrantyReturnInvoiceB6('${h(w.id)}')">Lập phiếu trả</button></div></div>`}).join('')}</div><div class="modal-actions"><button class="btn" onclick="closeModal()">Đóng</button></div>`);};
 window.prepareWarrantyReturnInvoiceB6=async function(id){const w=(db.warranty||[]).find(x=>String(x.id)===String(id));if(!w)return;const c=(db.customers||[]).find(x=>x.id===w.customerId);if(!c)return alert('Không tìm thấy khách hàng của phiếu BH.');closeModal();try{go('stockout');}catch(_){ }if(typeof newStockout==='function')newStockout();if(typeof applyStockoutCustomer==='function')applyStockoutCustomer(c);if(typeof setWarrantyProcessed==='function')await setWarrantyProcessed(w.id);if(Array.isArray(selectedWarrantyIds)&&!selectedWarrantyIds.includes(w.id))selectedWarrantyIds.push(w.id);if(typeof renderCustomerWarranty==='function')renderCustomerWarranty();if(q('soContent'))q('soContent').value='Trả bảo hành theo phiếu '+(w.batchId||w.id);toast('Đã đưa phiếu BH sang Phiếu xuất • kiểm tra rồi bấm Lưu');};
