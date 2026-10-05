@@ -41230,6 +41230,10 @@ body.warehouse-page-active .main>.topbar>.actions{
     const el=ev.target;
     if(!isEditableV83(el) || !isVisibleV83(el))return;
 
+    /* V93: Phiếu Nhập/Xuất có luồng Enter riêng bằng fieldKey/productKey.
+       Không để Enter toàn app V83 cướp focus sang vùng Thanh toán. */
+    if(el.closest('#siBody,#soBody'))return;
+
     /* Cho phép xuống dòng thật sự bằng Shift+Enter trong textarea/contenteditable */
     if((el.matches('textarea') || el.isContentEditable) && ev.shiftKey)return;
 
