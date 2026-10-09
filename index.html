@@ -11146,7 +11146,7 @@ window.AN_BUI_BUILD='an-bui-v259-v90-audit-safe';
     <div class="paper">
       <div class="invoice-header">
         <div class="npp"><b id="siNpp"></b><br><span id="siAddress"></span><br>ĐT: <span id="siPhone"></span></div>
-        <div class="invoice-title"><h1>PHIẾU NHẬP HÀNG</h1><div class="si-date-line">Ngày: <span id="siDateText" onclick="openStockinDateEditV92()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openStockinDateEditV92()}"></span><input id="siEditDateV92" type="date" aria-label="Ngày nhập hàng" title="Sửa ngày, tháng, năm nhập hàng" style="display:none" onchange="changeStockinDateV92()" onblur="finishStockinDateEditV92()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}"></div></div>
+        <div class="invoice-title"><h1>PHIẾU NHẬP HÀNG</h1><div>Ngày: <span id="siDateText"></span></div></div>
         <div class="meta">Số phiếu: <b id="siNo"></b><br>Kho: Kho chính</div>
       </div>
       <div class="rule"></div>
@@ -11365,10 +11365,6 @@ window.AN_BUI_BUILD='an-bui-v259-v90-audit-safe';
   </section>
 
   <section class="page" id="debts">
-    <div id="debtTabsV95" class="debt-tabs-v95" style="display:none" aria-label="Chọn loại công nợ">
-      <button id="debtCustomerTabV95" type="button" class="btn active" aria-pressed="true" aria-controls="customerDebtCard" onclick="setDebtTabV95('customer')">Công nợ khách hàng</button>
-      <button id="debtSupplierTabV95" type="button" class="btn" aria-pressed="false" aria-controls="supplierDebtCardV258" onclick="setDebtTabV95('supplier')">Công nợ nhà cung cấp</button>
-    </div>
     <div id="customerDebtCard" class="card v198-customer-debt-full">
       <div class="customer-debt-head v198-debt-head">
         <div>
@@ -11404,22 +11400,15 @@ window.AN_BUI_BUILD='an-bui-v259-v90-audit-safe';
       <div id="customerDebtTable"></div>
     </div>
 
-    <div id="supplierDebtCardV258" class="card" style="margin-top:12px;display:none">
+    <div id="supplierDebtCardV258" class="card" style="margin-top:12px">
       <div class="customer-debt-head">
         <div>
           <h3 class="debt-card-title">Công nợ Nhà cung cấp</h3>
-          <div class="small">Màn hình theo dõi công nợ — xem và sửa, ghi thanh toán tại mục Thanh toán.</div>
+          <div class="small">Quản lý nợ NCC theo Nợ cũ + Phiếu nhập − tiền đã trả.</div>
         </div>
       </div>
-      <div class="supplier-debt-toolbar-v96">
-        <label>Tìm nhà cung cấp
-          <input id="supplierDebtSearchV258" type="search" placeholder="Nhập tên / SĐT / địa chỉ..." oninput="renderSupplierDebtsV258()" onfocus="this.select()">
-        </label>
-        <div class="customer-debt-total-box-v25"><span>Tổng công nợ</span><b id="supplierDebtTotalV96">0 đ</b></div>
-        <label>Từ ngày<input id="supplierDebtFromV96" type="date" onchange="renderSupplierDebtsV258()"></label>
-        <label>Đến ngày<input id="supplierDebtToV96" type="date" onchange="renderSupplierDebtsV258()"></label>
-        <button id="supplierDebtEditBtnV96" type="button" class="btn" onclick="toggleSupplierDebtEditV96()">Sửa</button>
-        <button id="supplierDebtCancelBtnV96" type="button" class="btn" style="display:none" onclick="cancelSupplierDebtV96()">✕ Hủy</button>
+      <div class="toolbar" style="margin-top:10px">
+        <input id="supplierDebtSearchV258" type="search" placeholder="Tìm Nhà cung cấp..." oninput="renderSupplierDebtsV258()" onfocus="this.select()">
       </div>
       <div id="supplierDebtSummaryV258" class="small" style="margin-bottom:8px"></div>
       <div id="supplierDebtTableV258"></div>
@@ -11489,17 +11478,17 @@ window.AN_BUI_BUILD='an-bui-v259-v90-audit-safe';
               <label class="payment-filter-label">Số tiền khách trả</label>
               <input id="payCustomerAmount" type="number" min="0" placeholder="0" oninput="updateCustomerPaymentPreviewV206()">
             </div>
+            <div class="v208-date-cell">
+              <label class="payment-filter-label">Ngày trả</label>
+              <input id="payCustomerDate" type="date" onchange="updateCustomerPaymentPreviewV206()">
+            </div>
             <div class="v208-method-cell">
-              <label class="payment-filter-label">Trạng thái</label>
+              <label class="payment-filter-label">Hình thức</label>
               <select id="payCustomerMethod">
                 <option value="Tiền mặt">Tiền mặt</option>
                 <option value="Chuyển khoản">Chuyển khoản</option>
                 <option value="Khác">Khác</option>
               </select>
-            </div>
-            <div class="v208-date-cell">
-              <label class="payment-filter-label">Ngày trả</label>
-              <input id="payCustomerDate" type="date" onchange="updateCustomerPaymentPreviewV206()">
             </div>
             <div class="v208-save-cell">
               <input id="payCustomerCollector" type="hidden">
@@ -11534,7 +11523,6 @@ window.AN_BUI_BUILD='an-bui-v259-v90-audit-safe';
             <label class="payment-filter-label">Số tiền trả NCC</label>
             <input id="paySupplierAmount" type="number" min="0" placeholder="0">
           </div>
-          <div class="v208-method-cell"><label class="payment-filter-label">Trạng thái</label><select id="paySupplierMethod"><option value="Chuyển khoản">Chuyển khoản</option><option value="Tiền mặt" selected>Tiền mặt</option><option value="Khác">Khác</option></select></div>
           <div class="payment-transaction-date">
             <label class="payment-filter-label">Ngày thanh toán</label>
             <input id="paySupplierDate" type="date">
@@ -13321,6 +13309,11 @@ async function saveStockOperationAtomic(expectedRevision,verifyInvoice){
   stockOperationLastConflict=false;
   const wasBusy=syncBusy;
   syncBusy=true;
+  /* V260: mọi thay đổi phiếu nhập/xóa/sửa phải dựng lại số dư công nợ NCC
+     theo đúng dòng thời gian trước khi chụp dữ liệu để lưu. */
+  if(typeof rebuildAllSupplierDebtSnapshotsV260==='function'){
+    rebuildAllSupplierDebtSnapshotsV260();
+  }
   const snapshot=JSON.parse(JSON.stringify(db));
   try{
     await idbWrite(snapshot);try{localStorage.removeItem(KEY)}catch(e){}
@@ -13337,7 +13330,10 @@ async function saveStockOperationAtomic(expectedRevision,verifyInvoice){
         const collection=verifyInvoice.collection;
         const expected=(snapshot[collection]||[]).find(x=>String(x.id)===String(verifyInvoice.id));
         const actual=(remote?.data?.[collection]||[]).find(x=>String(x.id)===String(verifyInvoice.id));
-        if(!expected || JSON.stringify(canonicalInvoiceValue(actual))!==JSON.stringify(canonicalInvoiceValue(expected))){
+        const verifyFailed=verifyInvoice.absent===true
+          ? !!actual
+          : (!expected || JSON.stringify(canonicalInvoiceValue(actual))!==JSON.stringify(canonicalInvoiceValue(expected)));
+        if(verifyFailed){
           return {ok:false,conflict:true,latest:remote?.data||null,revision:Number(remote?.revision||syncRevision)};
         }
         syncRevision=Math.max(syncRevision,Number(remote?.revision||0));
@@ -13473,6 +13469,11 @@ async function openSyncSetup(){
 }
 
 async function saveDB(){
+  /* V260: thanh toán NCC hoặc chỉnh sửa dữ liệu liên quan cũng phải cập nhật
+     lại Nợ trước/Còn nợ của toàn bộ phiếu nhập phía sau. */
+  if(typeof rebuildAllSupplierDebtSnapshotsV260==='function'){
+    rebuildAllSupplierDebtSnapshotsV260();
+  }
   try{
     await idbWrite(db);
     try{ localStorage.removeItem(KEY); }catch(e){}
@@ -13862,7 +13863,6 @@ function setStockinLocked(locked){
   if(deleteBtn)deleteBtn.style.display=(isManager && stockinViewingHistory && !stockinEditingHistory && locked)?'inline-flex':'none';
   if(saveBtn)saveBtn.disabled=!!locked;
   if(savePrintBtn)savePrintBtn.disabled=false;
-  syncStockinDateEditV92();
 }
 
 function loadStockinIntoForm(invoice){
@@ -13881,7 +13881,6 @@ function loadStockinIntoForm(invoice){
 
   $('siNo').textContent=invoice.id||'';
   $('siDateText').textContent=invoice.dateText||'';
-  syncStockinDateEditV92(true);
   $('siSupplier').value=s?supplierDisplay(s):(invoice.supplierName||'');
   $('siSupplierAddress').value=s?.address||invoice.supplierAddress||'';
   $('siSupplierPhone').value=s?.phone||invoice.supplierPhone||'';
@@ -13958,14 +13957,16 @@ function loadStockinIntoForm(invoice){
   }else{
     updateStockinRoleTotal(histCostTotal);
   }
-  const histOld=Number(invoice.oldDebtAtPurchase)||0;
-  const histInvoiceDebt=histCostTotal-reportMoneyNumberV248(invoice.paid);
+  const histSupplier=s||null;
+  const histLedger=histSupplier?supplierLedgerV260(histSupplier):null;
+  const histState=histLedger?.invoiceState?.get(String(invoice.id||''));
+  const histOld=histState?histState.before:(Number(invoice.oldDebtAtPurchase)||0);
+  const histPaid=histState?histState.paid:reportMoneyNumberV248(invoice.paid);
+  const histInvoiceDebt=histCostTotal-histPaid;
   const histPayable=histOld+histCostTotal;
-  const histRemain=Math.max(histOld+histInvoiceDebt,0);
+  const histRemain=histState?histState.after:Math.max(histOld+histInvoiceDebt,0);
 
-  $('siOldDebt').textContent=invoice.oldDebtAtPurchase!==undefined
-    ? money(histOld)
-    : '—';
+  $('siOldDebt').textContent=money(histOld);
   if($('siPayable'))$('siPayable').textContent=money(histPayable);
   $('siPaid').value=invoice.paid||'';
   $('siDebt').textContent=money(histRemain);
@@ -14108,15 +14109,11 @@ async function saveEditedStockin(doPrint=false){
   for(const pid of ids){const p=(db.products||[]).find(x=>x.id===pid);if(!p)continue;const after=Number(p.stock||0)-Number(oldMap[pid]||0)+Number(newMap[pid]||0);if(after<0)return alert('Không thể sửa phiếu vì “'+p.name+'” đã xuất/bán một phần.\n\nSau khi sửa tồn sẽ âm '+after+'. Hãy kiểm tra các phiếu xuất liên quan trước.')}
   const total=rows.reduce((s,r)=>s+(Number(r.qty)||0)*stockinCostNetV249(r),0);
   const saleTotalAtReceive=stockinSaleTotalV249(rows);
-  let baseDebt=supplierDebt(selectedSupplierId);
-  if(stockinBelongsToSupplierV257(original,supplier)){
-    baseDebt-=reportStockinInvoiceValueV245(original)-reportMoneyNumberV248(original.paid);
-  }
-  baseDebt=Math.max(0,baseDebt);
+  /* V260: lấy số dư ngay trước phiếu đang sửa, không lấy số nợ cuối hiện tại. */
+  const probe={...original,supplierId:selectedSupplierId,supplierName:supplier.name||''};
+  let baseDebt=supplierDebtBeforeInvoiceV260(probe,supplier);
   const totalPayable=Math.max(baseDebt+total,0);const paid=Math.min(Math.max(Number($('siPaid')?.value)||0,0),totalPayable);const debt=total-paid;
-  let dateText;
-  try{dateText=stockinChosenDateTextV92(original.dateText)}catch(err){alert(err.message);return false}
-  const saved={...original,dateText,supplierId:selectedSupplierId,supplierName:supplier.name||'',supplierPhone:supplier.phone||'',supplierAddress:supplier.address||'',oldDebtAtPurchase:baseDebt,totalPayable,remainingSupplierDebt:Math.max(baseDebt+debt,0),items:stockinSavedItems(rows),total,saleTotalAtReceive,paid,debt,content:$('siContent')?.value||'',note:$('siNote')?.value||'',invoiceRef:$('siInvoiceRef')?.value||'',...stockinVatSnapshot(total)};
+  const saved={...original,supplierId:selectedSupplierId,supplierName:supplier.name||'',supplierPhone:supplier.phone||'',supplierAddress:supplier.address||'',oldDebtAtPurchase:baseDebt,totalPayable,remainingSupplierDebt:Math.max(baseDebt+debt,0),items:stockinSavedItems(rows),total,saleTotalAtReceive,paid,debt,content:$('siContent')?.value||'',note:$('siNote')?.value||'',invoiceRef:$('siInvoiceRef')?.value||'',...stockinVatSnapshot(total)};
   const before=JSON.stringify(db),expected=Number(syncRevision||0);
   const reactivatedProductsV257=reactivateProductsFromStockinV257(rows);
   ids.forEach(pid=>{const p=(db.products||[]).find(x=>x.id===pid);if(p)p.stock=Number(p.stock||0)-Number(oldMap[pid]||0)+Number(newMap[pid]||0)});
@@ -14144,7 +14141,7 @@ async function deleteCurrentStockin(){
     }
   }
   const before=JSON.stringify(db),expected=Number(syncRevision||0);Object.entries(qty).forEach(([pid,q])=>{const p=(db.products||[]).find(x=>x.id===pid);if(p)p.stock=Number(p.stock||0)-Number(q||0)});db.stockin.splice(idx,1);
-  const result=await saveStockOperationAtomic(expected);if(!result?.ok){await recoverStockOperationSaveFailure(result,before);await releaseStockOperationLock('stockin',{silent:true});return}
+  const result=await saveStockOperationAtomic(expected,{collection:'stockin',id,absent:true});if(!result?.ok){await recoverStockOperationSaveFailure(result,before);await releaseStockOperationLock('stockin',{silent:true});return}
   await releaseStockOperationLock('stockin',{silent:true});
   stockinEditingHistory=false;stockinViewingHistory=false;renderAll();newStockin();toast('Đã xóa phiếu nhập '+id+' và trừ lại tồn/công nợ');
 }
@@ -15384,8 +15381,6 @@ function applyPermissions(){
   if($('siDeleteBtn'))$('siDeleteBtn').style.display=(isManager && stockinViewingHistory && !stockinEditingHistory)?'inline-flex':'none';
   applyStockoutSalePermissionUI();
   applyStockinPrivacyUI();
-  syncStockinDateEditV92();
-  syncDebtTabsV95();
 }
 
 function ensureProductGroups(){
@@ -15541,7 +15536,6 @@ function resetPageMonthDateFilters(pageId){
 
   if(pageId==='debts'){
     setMonthRangeInputs('customerDebtFrom','customerDebtTo');
-    if(!supplierDebtEditingV96)setMonthRangeInputs('supplierDebtFromV96','supplierDebtToV96');
   }else if(pageId==='payments'){
     setMonthRangeInputs('payCustomerFrom','payCustomerTo');
   }else if(pageId==='expenses'){
@@ -15901,7 +15895,18 @@ function stockinBelongsToSupplierV257(o,supplier){
   if(snapshotName){
     const invoiceKey=supplierCanonicalKeyV257(snapshotName);
     const supplierKey=supplierCanonicalKeyV257(supplier.name);
-    return !!invoiceKey && invoiceKey===supplierKey;
+    if(invoiceKey && invoiceKey===supplierKey)return true;
+    /* Nếu mã NCC trùng nhưng tên chụp là tên cũ đã được đổi (ví dụ Shinsu),
+       vẫn giữ phiếu cho đúng NCC. Riêng khi tên chụp đang khớp một NCC khác
+       còn tồn tại thì tin tên chụp để sửa dữ liệu cũ từng lưu nhầm mã. */
+    if(String(o.supplierId||'')===String(supplier.id||'')){
+      const snapshotMatchesAnother=(db.suppliers||[]).some(x=>
+        String(x.id||'')!==String(supplier.id||'') &&
+        supplierCanonicalKeyV257(x.name)===invoiceKey
+      );
+      return !snapshotMatchesAnother;
+    }
+    return false;
   }
   if(String(o.supplierId||'')===String(supplier.id||''))return true;
   const invoiceName=supplierNameByIdV257(o.supplierId);
@@ -15937,13 +15942,74 @@ function isViLongLegacyInvoiceV259(o,supplier){
          /(^|\D)0?3[\/\-.]0?3([\/\-.]\d{2,4})?(\D|$)/.test(txt);
 }
 function supplierInvoicePaidForDebtV259(o,supplier){
-  const raw=Math.max(0,reportMoneyNumberV248(o?.paid));
-  /* V259: hai phiếu Vi Long 02/03 và 03/03 là phiếu nhập công nợ cũ.
-     Trường paid cũ của hai phiếu này từng làm tổng công nợ bị triệt tiêu về 0.
-     Vì anh chưa ghi giao dịch trả NCC cho hai phiếu này, công nợ phải lấy đủ
-     Thành tiền vốn và chỉ giảm khi có giao dịch ở mục Thanh toán NCC. */
-  if(isViLongLegacyInvoiceV259(o,supplier))return 0;
-  return raw;
+  /* V260: không còn ép riêng Vi Long 02/03 và 03/03 bằng 0.
+     Phiếu đã sửa bao nhiêu tiền trả thì công nợ phải chạy đúng bấy nhiêu. */
+  return Math.max(0,reportMoneyNumberV248(o?.paid));
+}
+
+function supplierEventTimeV260(x){
+  const direct=Number(x?.ts||x?.createdTs||0);
+  if(direct>0)return direct;
+  try{return Number(stockoutDateTimeValue(x?.dateText||''))||0}catch(_){return 0}
+}
+function supplierLedgerV260(supplier){
+  if(!supplier)return {supplier:null,oldDebt:0,events:[],invoiceState:new Map(),paymentState:new Map(),balance:0};
+  const supplierKey=supplierCanonicalKeyV257(supplier.name);
+  const aliases=(db.suppliers||[]).filter(x=>
+    String(x.id||'')===String(supplier.id||'') ||
+    (!!supplierKey && supplierCanonicalKeyV257(x.name)===supplierKey)
+  );
+  const oldDebt=aliases.reduce((m,x)=>Math.max(m,reportMoneyNumberV248(x.oldDebt)),0);
+  const events=[];
+  (db.stockin||[]).forEach((o,index)=>{
+    if(!stockinBelongsToSupplierV257(o,supplier))return;
+    const total=Math.max(0,reportStockinInvoiceValueV245(o));
+    const paid=Math.max(0,supplierInvoicePaidForDebtV259(o,supplier));
+    events.push({kind:'invoice',ref:o,id:String(o.id||''),time:supplierEventTimeV260(o),sourceIndex:index,total,paid,delta:total-paid});
+  });
+  (db.supplierPayments||[]).forEach((p,index)=>{
+    if(!supplierPaymentBelongsV257(p,supplier))return;
+    const amount=Math.max(0,reportMoneyNumberV248(p.amount));
+    events.push({kind:'payment',ref:p,id:String(p.id||''),time:supplierEventTimeV260(p),sourceIndex:index,amount,delta:-amount});
+  });
+  /* Có giờ/phút thì xếp theo giờ. Dữ liệu cũ chỉ có ngày được giữ theo thứ tự
+     đã lưu; nếu trùng đúng thời điểm, phiếu nhập đứng trước lần thanh toán. */
+  events.sort((a,b)=>a.time-b.time || (a.kind===b.kind?a.sourceIndex-b.sourceIndex:(a.kind==='invoice'?-1:1)));
+  let running=Math.max(0,oldDebt);
+  const invoiceState=new Map(),paymentState=new Map();
+  events.forEach(e=>{
+    const before=Math.max(0,running);
+    running=Math.max(0,before+e.delta);
+    const state={before,after:running,total:e.total||0,paid:e.paid||0,amount:e.amount||0,event:e};
+    if(e.kind==='invoice')invoiceState.set(e.id,state); else paymentState.set(e.id,state);
+  });
+  return {supplier,oldDebt,events,invoiceState,paymentState,balance:Math.max(0,running)};
+}
+function supplierDebtBeforeInvoiceV260(invoice,supplier){
+  if(!supplier)return 0;
+  const ledger=supplierLedgerV260(supplier);
+  const state=ledger.invoiceState.get(String(invoice?.id||''));
+  if(state)return state.before;
+  const t=supplierEventTimeV260(invoice);
+  let running=Math.max(0,ledger.oldDebt);
+  for(const e of ledger.events){
+    if(e.time>t)break;
+    running=Math.max(0,running+e.delta);
+  }
+  return running;
+}
+function rebuildAllSupplierDebtSnapshotsV260(){
+  (db.suppliers||[]).forEach(s=>{
+    const ledger=supplierLedgerV260(s);
+    ledger.invoiceState.forEach((state,id)=>{
+      const o=(db.stockin||[]).find(x=>String(x.id||'')===String(id));
+      if(!o)return;
+      o.oldDebtAtPurchase=state.before;
+      o.totalPayable=Math.max(0,state.before+state.total);
+      o.debt=state.total-state.paid;
+      o.remainingSupplierDebt=state.after;
+    });
+  });
 }
 function supplierDebtBreakdownV258(id){
   const s=(db.suppliers||[]).find(x=>String(x.id||'')===String(id||''));
@@ -15962,10 +16028,8 @@ function supplierDebtBreakdownV258(id){
   const legacyViLongFix=invoices.reduce((a,o)=>a+Math.max(0,reportMoneyNumberV248(o.paid)-supplierInvoicePaidForDebtV259(o,s)),0);
   const payments=(db.supplierPayments||[]).filter(p=>supplierPaymentBelongsV257(p,s));
   const separatePayments=payments.reduce((a,p)=>a+reportMoneyNumberV248(p.amount),0);
-  const adjustments=supplierDebtAdjustmentsV96(s);
-  const adjustmentTotal=adjustments.filter(x=>String(x.date||'')<=currentISODate()).reduce((sum,x)=>sum+(Number(x.amount)||0),0);
-  const balance=Math.max(0,oldDebt+purchases-paidAtInvoices-separatePayments+adjustmentTotal);
-  return {supplier:s,oldDebt,purchases,paidAtInvoices,separatePayments,balance,invoices,payments,legacyViLongFix,adjustments,adjustmentTotal};
+  const balance=supplierLedgerV260(s).balance;
+  return {supplier:s,oldDebt,purchases,paidAtInvoices,separatePayments,balance,invoices,payments,legacyViLongFix};
 }
 function supplierDebt(id){
   return supplierDebtBreakdownV258(id).balance;
@@ -17455,7 +17519,7 @@ function normalizeDB(){
 
   [
     'products','customers','suppliers','stockin','stockout',
-    'warranty','expenses','expenseCategories','expensePrivateCategories','customerPayments','supplierPayments','customerDebtAdjustmentsV90','supplierDebtAdjustmentsV96','archives',
+    'warranty','expenses','expenseCategories','expensePrivateCategories','customerPayments','supplierPayments','customerDebtAdjustmentsV90','archives',
     'employees','employeeAbsences','salaryPayments','employeeSundayOvertime','employeeAttendanceConfirmations','employeeAttendanceConfirmations'
   ].forEach(k=>{
     if(!Array.isArray(db[k]))db[k]=[];
@@ -17543,18 +17607,9 @@ async function saveRecentOutLimit(){
   toast('Đã cài Tổng quan hiển thị '+n+' phiếu xuất gần nhất');
 }
 
-/* V93: Danh mục luôn xếp theo tên A–Z, kể cả hàng vừa thêm. */
-const productCatalogNameCollatorV93=new Intl.Collator('vi',{sensitivity:'base',numeric:true});
-function compareProductCatalogNamesV93(a,b){
-  const nameA=String(a?.name||'').trim().normalize('NFC');
-  const nameB=String(b?.name||'').trim().normalize('NFC');
-  return productCatalogNameCollatorV93.compare(nameA,nameB)
-    || productCatalogNameCollatorV93.compare(String(a?.id||''),String(b?.id||''));
-}
-
 function renderProducts(){
   let q=norm($('prodSearch')?.value||''),g=$('prodGroup')?.value||'';
-  let filtered=db.products.filter(p=>(norm(p.id+' '+p.name).includes(q))&&(!g||p.group===g)).sort(compareProductCatalogNamesV93);
+  let filtered=db.products.filter(p=>(norm(p.id+' '+p.name).includes(q))&&(!g||p.group===g));
 
   if(isManager){
     let rows=filtered.map(p=>`<tr>
@@ -18114,7 +18169,7 @@ function renderWarehouse(){
     if(selectedWarehouseProductId)return p.id===selectedWarehouseProductId;
     if(search)return norm((p.id||'')+' '+(p.name||'')).includes(search);
     return true;
-  }).sort(compareProductCatalogNamesV93);
+  });
 
   if($('warehouseTitle')){
     if(selectedWarehouseProductId){
@@ -19020,8 +19075,7 @@ function customerDebtPeriodTransactions(customerId,bounds=customerDebtPeriodBoun
         : 'Khách hàng thanh toán',
       debit:0,
       credit:Math.max(0,Number(p.amount||0)),
-      auto:isReturn,
-      method:isReturn?'':paymentMethodValueV94(p.method)
+      auto:isReturn
     });
   });
 
@@ -19053,7 +19107,6 @@ function openCustomerDebtDetail(customerId){
       <td class="right">${x.debit?`<b>${money(x.debit)}</b>`:''}</td>
       <td class="right">${x.credit?`<b>${money(x.credit)}</b>`:''}</td>
       <td class="right"><b>${money(Math.max(0,runningRaw))}</b></td>
-      <td>${esc(paymentMethodTextV94(x))}</td>
     </tr>`;
   });
 
@@ -19083,7 +19136,7 @@ function openCustomerDebtDetail(customerId){
 
     <div class="customer-debt-detail-table">
       ${table(
-        ['Ngày giờ','Chứng từ','Nội dung','Phát sinh nợ','Thanh toán / Giảm nợ','Dư nợ','Trạng thái'],
+        ['Ngày giờ','Chứng từ','Nội dung','Phát sinh nợ','Thanh toán / Giảm nợ','Dư nợ'],
         rows
       )}
     </div>
@@ -19117,161 +19170,36 @@ function customerLastPaymentDateV198(customerId,bounds=customerDebtPeriodBounds(
   return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
 }
 
-/* V95: Quản lý chọn xem công nợ KH hoặc NCC ngay đầu trang. */
-let debtTabV95='customer';
-function syncDebtTabsV95(){
-  if(!isManager)debtTabV95='customer';
-  const supplierSelected=isManager && debtTabV95==='supplier';
-  const tabs=$('debtTabsV95'),customerCard=$('customerDebtCard'),supplierCard=$('supplierDebtCardV258');
-  if(tabs)tabs.style.display=isManager?'flex':'none';
-  if(customerCard)customerCard.style.display=supplierSelected?'none':'';
-  if(supplierCard)supplierCard.style.display=supplierSelected?'':'none';
-  for(const [id,selected] of [['debtCustomerTabV95',!supplierSelected],['debtSupplierTabV95',supplierSelected]]){
-    const button=$(id);
-    if(button){button.classList.toggle('active',selected);button.setAttribute('aria-pressed',String(selected));}
-  }
-  const page=$('debts'),title=$('pageTitle');
-  if(page?.classList.contains('active') && title)title.textContent=supplierSelected?'Công nợ nhà cung cấp':'Công nợ khách hàng';
-}
-function setDebtTabV95(kind){
-  debtTabV95=isManager && kind==='supplier'?'supplier':'customer';
-  renderSupplierDebtsV258();
-}
-
-/* V96: Theo dõi, lọc kỳ và sửa công nợ NCC; thanh toán ở mục riêng. */
-let supplierDebtEditingV96=false;
-let supplierDebtSavingV96=false;
-let supplierDebtDraftV96={};
-let supplierDebtEditBoundsV96=null;
-function supplierDebtAdjustmentsV96(supplier){
-  if(!supplier)return [];
-  return (db.supplierDebtAdjustmentsV96||[]).filter(x=>String(x.supplierId||'')===String(supplier.id||'') || supplierPaymentBelongsV257(x,supplier));
-}
-function supplierDebtAdjustmentTimeV96(x){
-  return debtDateFromInput(x.date,false)+(x.kind==='opening'?0:12*60*60*1000);
-}
-function supplierDebtBoundsV96(){
-  const from=$('supplierDebtFromV96'),to=$('supplierDebtToV96'),r=currentMonthDateRange();
-  if(from && !from.value)from.value=r.from;
-  if(to && !to.value)to.value=r.to;
-  let fromValue=from?.value||r.from,toValue=to?.value||r.to;
-  if(fromValue>toValue){[fromValue,toValue]=[toValue,fromValue];if(from)from.value=fromValue;if(to)to.value=toValue;}
-  return {fromValue,toValue,start:debtDateFromInput(fromValue,false),end:debtDateFromInput(toValue,true)};
-}
-function supplierDebtPeriodV96(id,bounds=supplierDebtBoundsV96()){
-  const d=supplierDebtBreakdownV258(id);
-  let openingRaw=d.oldDebt,incurred=0,paid=0,lastPayment=0;
-  const tx=[];
-  const add=(t,amount,credit,record,content,openingAdjustment=false)=>{
-    if(!t || t>bounds.end)return;
-    if(t<bounds.start || (openingAdjustment && t===bounds.start))openingRaw+=amount-credit;
-    else{incurred+=amount;paid+=credit;tx.push({t,dateText:record.dateText||debtDisplayDate(record.date),ref:record.id||'',content,debit:amount>0?amount:0,credit:credit+(amount<0?-amount:0),method:record.method||''});}
-    if(credit>0 && !openingAdjustment)lastPayment=Math.max(lastPayment,t);
-  };
-  (d.invoices||[]).forEach(o=>add(stockoutDateTimeValue(o.dateText||''),Math.max(0,reportStockinInvoiceValueV245(o)),Math.max(0,supplierInvoicePaidForDebtV259(o,d.supplier)),o,o.content||'Phiếu nhập hàng'));
-  (d.payments||[]).forEach(p=>add(Number(p.ts)||stockoutDateTimeValue(p.dateText||''),0,Math.max(0,Number(p.amount)||0),p,p.note||'Thanh toán NCC'));
-  (d.adjustments||[]).forEach(x=>add(supplierDebtAdjustmentTimeV96(x),Number(x.amount)||0,0,x,x.kind==='opening'?'Điều chỉnh nợ đầu kỳ':'Điều chỉnh phát sinh trong kỳ',x.kind==='opening'));
-  tx.sort((a,b)=>a.t-b.t||String(a.ref).localeCompare(String(b.ref)));
-  const endingRaw=openingRaw+incurred-paid;
-  return {supplier:d.supplier,openingRaw,opening:Math.max(0,openingRaw),incurred,paid,endingRaw,ending:Math.max(0,endingRaw),lastPayment,tx};
-}
-function supplierDebtEntriesV96(bounds=supplierDebtBoundsV96()){
-  const query=norm($('supplierDebtSearchV258')?.value||''),seen=new Set(),entries=[];
+function renderSupplierDebtsV258(){
+  const card=$('supplierDebtCardV258');
+  if(!card)return;
+  if(!isManager){card.style.display='none';return;}
+  card.style.display='';
+  const q=norm($('supplierDebtSearchV258')?.value||'');
+  const seen=new Set(), rows=[], entries=[];
   (db.suppliers||[]).forEach(s=>{
     const key=supplierCanonicalKeyV257(s.name)||('ID:'+String(s.id||''));
-    if(seen.has(key))return;seen.add(key);
-    if(query && !norm([s.name,s.phone,s.address].join(' ')).includes(query))return;
-    entries.push(supplierDebtPeriodV96(s.id,bounds));
+    if(seen.has(key))return;
+    seen.add(key);
+    if(q && !norm((s.name||'')+' '+(s.phone||'')+' '+(s.address||'')).includes(q))return;
+    const d=supplierDebtBreakdownV258(s.id);
+    entries.push(d);
   });
-  return entries.sort((a,b)=>b.ending-a.ending||String(a.supplier.name||'').localeCompare(String(b.supplier.name||''),'vi'));
-}
-function supplierDebtUiV96(){
-  const editing=isManager && supplierDebtEditingV96;
-  const button=$('supplierDebtEditBtnV96'),cancel=$('supplierDebtCancelBtnV96');
-  if(button){button.textContent=supplierDebtSavingV96?'Đang lưu…':editing?'💾 Lưu':'Sửa';button.disabled=!isManager||supplierDebtSavingV96;}
-  if(cancel){cancel.style.display=editing?'inline-flex':'none';cancel.disabled=supplierDebtSavingV96;}
-  for(const id of ['supplierDebtSearchV258','supplierDebtFromV96','supplierDebtToV96'])if($(id))$(id).disabled=editing;
-}
-function renderSupplierDebtsV258(){
-  syncDebtTabsV95();
-  if(!$('supplierDebtCardV258'))return;
-  if(!isManager){supplierDebtEditingV96=false;supplierDebtDraftV96={};supplierDebtEditBoundsV96=null;supplierDebtUiV96();return;}
-  const bounds=supplierDebtBoundsV96(),entries=supplierDebtEntriesV96(bounds);
-  const rows=entries.map(s=>{
-    const id=String(s.supplier.id),draft=supplierDebtDraftV96[id];
-    const amountCell=field=>supplierDebtEditingV96 && draft
-      ? `<input class="customer-debt-inline-input-v22" data-supplier-debt-v96="${esc(id)}" data-field="${field}" inputmode="numeric" value="${esc(draft[field])}" oninput="updateSupplierDebtDraftV96(this)" onkeydown="supplierDebtKeyV96(event,this)" ${supplierDebtSavingV96?'disabled':''}>`
-      : `<b>${money(s[field])}</b>`;
-    const date=s.lastPayment?debtDisplayDate(debtInputDate(new Date(s.lastPayment))):'—';
-    return `<tr><td><button class="customer-debt-name" onclick="openSupplierDebtPeriodDetailV96('${esc(id)}')">${esc(s.supplier.name||'')}</button></td><td>${esc(s.supplier.address||'—')}</td><td class="right">${amountCell('opening')}</td><td class="right">${amountCell('incurred')}</td><td class="center">${esc(date)}</td><td class="right"><b>${money(s.paid)}</b></td><td class="right"><b class="customer-debt-positive">${money(s.ending)}</b></td><td title="Hình thức lần thanh toán gần nhất">${esc(latestDebtPaymentMethodV94('supplier',id,bounds.end))}</td></tr>`;
-  });
-  if($('supplierDebtTableV258'))$('supplierDebtTableV258').innerHTML=table(['Nhà cung cấp','Địa chỉ','Nợ đầu kỳ','Phát sinh trong kỳ','Ngày thanh toán lần cuối','Đã thanh toán','Nợ cuối kỳ','Trạng thái'],rows);
-  const total=entries.reduce((sum,s)=>sum+s.ending,0);
-  if($('supplierDebtTotalV96'))$('supplierDebtTotalV96').textContent=money(total);
-  if($('supplierDebtSummaryV258'))$('supplierDebtSummaryV258').innerHTML=`Kỳ <b>${debtDisplayDate(bounds.fromValue)}</b> → <b>${debtDisplayDate(bounds.toValue)}</b> • Hiển thị <b>${entries.length}</b> NCC • Tổng nợ cuối kỳ <b>${money(total)}</b>`;
-  supplierDebtUiV96();
-}
-function updateSupplierDebtDraftV96(el){
-  if(!isManager||!supplierDebtEditingV96||supplierDebtSavingV96)return;
-  const draft=supplierDebtDraftV96[el.dataset.supplierDebtV96],field=el.dataset.field;
-  if(draft && ['opening','incurred'].includes(field))draft[field]=el.value;
-}
-function supplierDebtKeyV96(event,el){
-  if(event.key==='Enter'){
-    event.preventDefault();const fields=[...document.querySelectorAll('#supplierDebtTableV258 [data-supplier-debt-v96]')];
-    const next=fields[fields.indexOf(el)+(event.shiftKey?-1:1)];if(next){next.focus();next.select();}else if(!event.shiftKey)saveSupplierDebtV96();
-  }else if(event.key==='Escape'){event.preventDefault();cancelSupplierDebtV96();}
-}
-function toggleSupplierDebtEditV96(){
-  if(!isManager)return;
-  if(supplierDebtEditingV96)return saveSupplierDebtV96();
-  const bounds=supplierDebtBoundsV96();supplierDebtEditBoundsV96={...bounds};supplierDebtDraftV96={};
-  supplierDebtEntriesV96(bounds).forEach(s=>{supplierDebtDraftV96[String(s.supplier.id)]={opening:s.opening,incurred:s.incurred,baseOpening:s.opening,baseIncurred:s.incurred};});
-  supplierDebtEditingV96=true;renderSupplierDebtsV258();
-  document.querySelector('#supplierDebtTableV258 [data-supplier-debt-v96]')?.focus();
-}
-function cancelSupplierDebtV96(){
-  if(supplierDebtSavingV96)return;
-  supplierDebtEditingV96=false;supplierDebtDraftV96={};supplierDebtEditBoundsV96=null;renderSupplierDebtsV258();
-}
-async function saveSupplierDebtV96(){
-  if(!isManager||!supplierDebtEditingV96||supplierDebtSavingV96)return;
-  const bounds=supplierDebtBoundsV96();
-  if(bounds.fromValue!==supplierDebtEditBoundsV96?.fromValue||bounds.toValue!==supplierDebtEditBoundsV96?.toValue)return alert('Kỳ công nợ đã thay đổi. Hủy sửa và chọn lại kỳ trước khi sửa.');
-  const changes=[];
-  for(const [id,draft] of Object.entries(supplierDebtDraftV96)){
-    const s=(db.suppliers||[]).find(x=>String(x.id)===id);if(!s)return alert('Nhà cung cấp đã thay đổi. Hủy sửa và kiểm tra lại.');
-    const current=supplierDebtPeriodV96(id,bounds);
-    if(current.opening!==draft.baseOpening||current.incurred!==draft.baseIncurred)return alert('Công nợ đã thay đổi từ lần mở sửa. Hủy sửa và kiểm tra số liệu mới.');
-    const parse=v=>typeof v==='number'?v:Number(String(v).trim().replace(/[.,\s]/g,''));
-    const opening=parse(draft.opening),incurred=parse(draft.incurred);
-    if(![opening,incurred].every(Number.isFinite)||opening<0||incurred<0||String(draft.opening).trim()===''||String(draft.incurred).trim()==='')return alert('Nợ đầu kỳ và phát sinh trong kỳ phải là số không âm.');
-    const openingDelta=opening===current.opening?0:opening-current.openingRaw;
-    for(const [kind,amount,date] of [['opening',openingDelta,bounds.fromValue],['incurred',incurred-current.incurred,bounds.toValue]]){
-      if(Math.abs(amount)<0.000001)continue;
-      changes.push({id:'DCNCC-'+Date.now()+'-'+Math.random().toString(36).slice(2,9),supplierId:s.id,supplierName:s.name||'',kind,date,amount,createdAt:new Date().toISOString(),createdBy:'Quản lý'});
-    }
+  entries.sort((a,b)=>b.balance-a.balance||String(a.supplier?.name||'').localeCompare(String(b.supplier?.name||''),'vi'));
+  entries.forEach(d=>rows.push(`<tr>
+    <td><button class="customer-debt-name" onclick="openSupplierDebtDetailV258('${esc(d.supplier.id)}')">${esc(d.supplier.name||'')}</button></td>
+    <td class="right">${money(d.oldDebt)}</td>
+    <td class="right"><b>${money(d.purchases)}</b></td>
+    <td class="right">${money(d.paidAtInvoices+d.separatePayments)}</td>
+    <td class="right"><b>${money(d.balance)}</b></td>
+    <td class="center"><button class="btn primary" onclick="openSupplierPayment('${esc(d.supplier.id)}')">Thanh toán NCC</button></td>
+  </tr>`));
+  if($('supplierDebtTableV258'))$('supplierDebtTableV258').innerHTML=table(['Nhà cung cấp','Nợ cũ','Tổng nhập','Đã thanh toán','Còn nợ','Thao tác'],rows);
+  if($('supplierDebtSummaryV258')){
+    const total=entries.reduce((s,d)=>s+d.balance,0);
+    $('supplierDebtSummaryV258').innerHTML=`Hiển thị <b>${entries.length}</b> NCC • Tổng công nợ phải trả <b>${money(total)}</b>`;
   }
-  if(!changes.length){cancelSupplierDebtV96();return;}
-  const beforeJson=JSON.stringify(db);
-  if(!Array.isArray(db.supplierDebtAdjustmentsV96))db.supplierDebtAdjustmentsV96=[];
-  db.supplierDebtAdjustmentsV96.push(...changes);
-  supplierDebtSavingV96=true;renderSupplierDebtsV258();
-  let ok=false;
-  try{ok=await saveRevisionCheckedEdit(beforeJson);}catch(e){alert('Chưa lưu được công nợ NCC: '+(e?.message||e));}
-  supplierDebtSavingV96=false;
-  if(!ok){db=JSON.parse(beforeJson);renderSupplierDebtsV258();return;}
-  supplierDebtEditingV96=false;supplierDebtDraftV96={};supplierDebtEditBoundsV96=null;
-  renderAll();toast('Đã lưu thay đổi Công nợ nhà cung cấp');
 }
-function openSupplierDebtPeriodDetailV96(id){
-  if(!isManager)return;
-  const bounds=supplierDebtBoundsV96(),s=supplierDebtPeriodV96(id,bounds);if(!s.supplier)return;
-  let running=s.openingRaw;
-  const rows=s.tx.map(x=>{running+=x.debit-x.credit;return `<tr><td>${esc(x.dateText)}</td><td>${esc(x.ref)}</td><td>${esc(x.content)}</td><td class="right">${x.debit?money(x.debit):''}</td><td class="right">${x.credit?money(x.credit):''}</td><td class="right"><b>${money(Math.max(0,running))}</b></td><td>${esc(paymentMethodTextV94(x))}</td></tr>`;});
-  showModal(`<h3>Công nợ NCC • ${esc(s.supplier.name)}</h3><div class="small">Kỳ ${debtDisplayDate(bounds.fromValue)} → ${debtDisplayDate(bounds.toValue)} • Nợ đầu kỳ <b>${money(s.opening)}</b> • Nợ cuối kỳ <b>${money(s.ending)}</b></div>${table(['Ngày','Chứng từ','Nội dung','Phát sinh nợ','Đã trả / giảm nợ','Dư nợ','Trạng thái'],rows)}<div class="modal-actions"><button class="btn" onclick="closeModal()">Đóng</button></div>`);
-}
-
 
 function renderDebts(){
   setTimeout(applyUnifiedDateFiltersV223,0);
@@ -19320,12 +19248,11 @@ function renderDebts(){
         <td class="right"><b>${money(s.paid)}</b></td>
         <td class="right"><span class="${s.ending>0?'customer-debt-positive':'customer-debt-zero'}">${money(s.ending)}</span></td>
         <td class="center">${warningHtml}</td>
-        <td title="Hình thức lần thanh toán gần nhất">${esc(latestDebtPaymentMethodV94('customer',c.id,bounds.end))}</td>
       </tr>`;
     });
 
   $('customerDebtTable').innerHTML=table(
-    ['Tên khách hàng','Địa chỉ','Nợ đầu kỳ','Phát sinh trong kỳ','Ngày thanh toán lần cuối','Đã thanh toán','Nợ cuối kỳ','Cảnh báo','Trạng thái'],
+    ['Tên khách hàng','Địa chỉ','Nợ đầu kỳ','Phát sinh trong kỳ','Ngày thanh toán lần cuối','Đã thanh toán','Nợ cuối kỳ','Cảnh báo'],
     customerRows
   );
 
@@ -23776,7 +23703,6 @@ function applyUnifiedDateFiltersV223(){
   /* Chỉ áp dụng cho ô LỌC khoảng ngày, không đụng ngày chứng từ/ngày thanh toán */
   [
     ['customerDebtFrom','customerDebtTo'],
-    ['supplierDebtFromV96','supplierDebtToV96'],
     ['expenseEntryFrom','expenseEntryTo'],
     ['reportFromDate','reportToDate'],
     ['whMoveFrom','whMoveTo'],
@@ -25770,64 +25696,6 @@ function rememberInvoiceContent(mode){
   invoiceContentSaveTimer=null;
 }
 
-/* V92: Quản lý chọn ngày nhập cho phiếu mới và khi sửa phiếu cũ. */
-function stockinDateEditableV92(){
-  return !!isManager && (!stockinViewingHistory || stockinEditingHistory);
-}
-function syncStockinDateEditV92(reset=false){
-  const input=$('siEditDateV92'),span=$('siDateText');
-  if(!input||!span)return;
-  if(reset){input.value=ymdFromDateText(span.textContent)||todayYMD();delete input.dataset.open}
-  else if(!input.value && input.dataset.open!=='1')input.value=ymdFromDateText(span.textContent)||todayYMD();
-  const editing=stockinDateEditableV92() && !document.querySelector('#stockin .paper')?.classList.contains('stockout-locked');
-  if(!editing)delete input.dataset.open;
-  const open=editing && input.dataset.open==='1';
-  input.style.display=open?'inline-block':'none';
-  input.disabled=!editing;
-  span.style.display=open?'none':'inline';
-  span.classList.toggle('si-date-editable-v92',editing);
-  if(editing){span.setAttribute('role','button');span.tabIndex=0;span.title='Bấm để sửa ngày, tháng, năm nhập hàng'}
-  else{span.removeAttribute('role');span.removeAttribute('tabindex');span.title=''}
-}
-function openStockinDateEditV92(){
-  if(!stockinDateEditableV92())return;
-  const input=$('siEditDateV92');
-  if(!input || input.disabled)return;
-  input.dataset.open='1';
-  syncStockinDateEditV92();
-  input.focus();
-}
-function finishStockinDateEditV92(){
-  const input=$('siEditDateV92');
-  if(!input || input.dataset.open!=='1')return;
-  changeStockinDateV92();
-  /* Nhập dở hoặc xóa ngày rồi rời ô: giữ ngày đang hiển thị trên phiếu. */
-  try{stockinChosenDateTextV92($('siDateText')?.textContent||'')}
-  catch(err){input.value=ymdFromDateText($('siDateText')?.textContent||'')||todayYMD()}
-  delete input.dataset.open;
-  syncStockinDateEditV92();
-}
-function stockinChosenDateTextV92(originalText){
-  const input=$('siEditDateV92');
-  if(!stockinDateEditableV92() || !input || input.disabled)return String(originalText||'');
-  const m=String(input.value||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if(!m)throw new Error('Chọn ngày nhập hàng hợp lệ trước khi lưu.');
-  const d=new Date(0);d.setFullYear(Number(m[1]),Number(m[2])-1,Number(m[3]));d.setHours(0,0,0,0);
-  if(d.getFullYear()!==Number(m[1]) || d.getMonth()!==Number(m[2])-1 || d.getDate()!==Number(m[3])){
-    throw new Error('Ngày nhập hàng không hợp lệ.');
-  }
-  const tm=String(originalText||'').match(/\s+(\d{2}:\d{2})/);
-  return m[3]+'/'+m[2]+'/'+m[1]+(tm?' '+tm[1]:'');
-}
-function changeStockinDateV92(){
-  if(!stockinDateEditableV92())return;
-  try{
-    const span=$('siDateText');
-    if(span)span.textContent=stockinChosenDateTextV92(span.textContent||nowText());
-    if($('siDebtAsOfDate'))$('siDebtAsOfDate').textContent=String(span?.textContent||'').split(/\s+/)[0];
-  }catch(err){/* Cho phép nhập dở; kiểm tra đầy đủ khi Lưu. */}
-}
-
 function newStockin(){
   if(stockOperationOwned && stockOperationMode==='stockin')releaseStockOperationLock('stockin',{silent:true});
   selectedSupplierId='';
@@ -25837,7 +25705,6 @@ function newStockin(){
   stockinEditingInvoiceId='';
   $('siNo').textContent=code('PN');
   $('siDateText').textContent=nowText();
-  syncStockinDateEditV92(true);
   $('siSupplier').value='';
   $('siSupplierAddress').value='';
   $('siSupplierPhone').value='';
@@ -26400,8 +26267,9 @@ function recalcSI(){
     const currentId=String($('siNo')?.textContent||'').trim();
     const original=(db.stockin||[]).find(o=>String(o.id||'')===currentId);
     const supplier=(db.suppliers||[]).find(s=>String(s.id||'')===String(selectedSupplierId));
-    if(original&&supplier&&stockinBelongsToSupplierV257(original,supplier)){
-      old=Math.max(0,old-(reportStockinInvoiceValueV245(original)-reportMoneyNumberV248(original.paid)));
+    if(original&&supplier){
+      const probe={...original,supplierId:selectedSupplierId,supplierName:supplier.name||''};
+      old=supplierDebtBeforeInvoiceV260(probe,supplier);
     }
   }
   const payable=Math.max(old+total,0);
@@ -26591,8 +26459,7 @@ async function saveStockin(doPrint=false){
   const remainingSupplierDebt=Math.max(oldDebtAtPurchase+debt,0);
 
   const stockinId=$('siNo').textContent || code('PN');
-  let savedTime;
-  try{savedTime=stockinChosenDateTextV92(nowText())}catch(err){alert(err.message);return false}
+  const savedTime=nowText();
 
   if(db.stockin.some(x=>x.id===stockinId)){
     alert('Số phiếu nhập đã tồn tại. Bấm Phiếu mới rồi lưu lại.');
@@ -29084,41 +28951,6 @@ let paymentTab='customer';
 let selectedPayCustomerId='';
 let selectedPaySupplierId='';
 
-/* V94: Hình thức thanh toán lưu theo từng giao dịch, không đổi tính công nợ. */
-function paymentMethodValueV94(value,fallback=''){
-  const v=String(value||'').trim();
-  return ['Chuyển khoản','Tiền mặt','Khác'].includes(v)?v:fallback;
-}
-function paymentMethodTextV94(payment){
-  return paymentMethodValueV94(payment?.method)||'—';
-}
-function paymentMethodOptionsV94(selected,keepUnknown=false){
-  const v=paymentMethodValueV94(selected,keepUnknown?'':'Tiền mặt');
-  return (keepUnknown&&!v?'<option value="" selected>Chưa ghi nhận</option>':'')+
-    ['Chuyển khoản','Tiền mặt','Khác'].map(x=>'<option value="'+x+'"'+(x===v?' selected':'')+'>'+x+'</option>').join('');
-}
-function latestDebtPaymentMethodV94(kind,partyId,end=Infinity){
-  const supplier=kind==='supplier';
-  const party=supplier?(db.suppliers||[]).find(x=>String(x.id)===String(partyId)):null;
-  let best=null,bestTime=-1;
-  const consider=(record,time,amount)=>{
-    const t=Number(time)||0;
-    if((Number(amount)||0)<=0 || !t || t>Number(end) || t<bestTime)return;
-    best=record;bestTime=t;
-  };
-  const invoices=supplier?(db.stockin||[]):(db.stockout||[]);
-  invoices.forEach(o=>{
-    const belongs=supplier?!!party&&stockinBelongsToSupplierV257(o,party):String(o.customerId)===String(partyId);
-    if(belongs)consider(o,stockoutDateTimeValue(o.dateText||''),supplier?supplierInvoicePaidForDebtV259(o,party):o.paid);
-  });
-  const payments=supplier?(db.supplierPayments||[]):(db.customerPayments||[]);
-  payments.forEach(p=>{
-    const belongs=supplier?!!party&&supplierPaymentBelongsV257(p,party):String(p.customerId)===String(partyId);
-    if(belongs)consider(p,supplier?(Number(p.ts)||stockoutDateTimeValue(p.dateText||'')):customerDebtPaymentTime(p),p.amount);
-  });
-  return best?.transactionType==='warranty_return'?'—':paymentMethodTextV94(best);
-}
-
 function ensurePaymentData(){
   if(!Array.isArray(db.customerPayments))db.customerPayments=[];
   if(!Array.isArray(db.supplierPayments))db.supplierPayments=[];
@@ -29818,7 +29650,7 @@ function debtPaymentHistoryHtml(kind,partyId){
     .sort((a,b)=>Number(b.ts||0)-Number(a.ts||0))
     .slice(0,10);
   if(!list.length)return '<div class="small" style="padding:8px 0">Chưa có lịch sử thanh toán riêng.</div>';
-  return table(['Ngày giờ','Số tiền','Trạng thái','Người thao tác'],list.map(p=>`<tr><td>${esc(p.dateText||'')}</td><td class="right"><b>${money(p.amount||0)}</b></td><td>${esc(paymentMethodTextV94(p))}</td><td>${esc(p.operator||'')}</td></tr>`));
+  return table(['Ngày giờ','Số tiền','Người thao tác'],list.map(p=>`<tr><td>${esc(p.dateText||'')}</td><td class="right"><b>${money(p.amount||0)}</b></td><td>${esc(p.operator||'')}</td></tr>`));
 }
 function openCustomerPayment(customerId=''){
   if(!isManager && !staffModuleEnabled('debts'))return alert('Quản lý chưa mở quyền Công nợ cho Nhân viên.');
@@ -29830,7 +29662,6 @@ function openCustomerPayment(customerId=''){
     <div class="debt-pay-summary"><span>${esc(c.name||'')}</span><b>Còn nợ ${money(debt)}</b></div>
     <div class="form-grid" style="margin-top:12px">
       <div><label>Số tiền khách trả</label><input id="debtCustomerPayAmount" type="number" min="0" max="${Math.max(0,debt)}" placeholder="0"></div>
-      <div><label>Trạng thái</label><select id="debtCustomerPayMethod">${paymentMethodOptionsV94()}</select></div>
       <div><label>Ghi chú</label><input id="debtCustomerPayNote" placeholder="Khách thanh toán công nợ"></div>
     </div>
     <div style="margin-top:14px"><b>Lịch sử thanh toán gần đây</b>${debtPaymentHistoryHtml('customer',c.id)}</div>
@@ -29848,7 +29679,7 @@ async function saveCustomerPaymentFromDebt(customerId){
   if(amount>debt && debt>0 && !confirm('Số tiền lớn hơn công nợ hiện tại '+money(debt)+'. Vẫn ghi nhận?'))return;
   const before=JSON.stringify(db);
   const btn=$('debtCustomerPayBtn');
-  const p={id:'TTKH'+Date.now(),customerId:c.id,customerName:c.name||'',customerPhone:c.phone||'',amount,dateText:paymentNowText(),ts:Date.now(),operator:isManager?'Quản lý':'Nhân viên',method:paymentMethodValueV94($('debtCustomerPayMethod')?.value,'Tiền mặt'),note:String($('debtCustomerPayNote')?.value||'').trim()};
+  const p={id:'TTKH'+Date.now(),customerId:c.id,customerName:c.name||'',customerPhone:c.phone||'',amount,dateText:paymentNowText(),ts:Date.now(),operator:isManager?'Quản lý':'Nhân viên',note:String($('debtCustomerPayNote')?.value||'').trim()};
   customerPaymentSaving=true;if(btn)btn.disabled=true;
   if(!Array.isArray(db.customerPayments))db.customerPayments=[];db.customerPayments.push(p);
   try{
@@ -29868,7 +29699,6 @@ function openSupplierPayment(supplierId=''){
     <div class="debt-pay-summary"><span>${esc(s.name||'')}</span><b>Còn nợ ${money(debt)}</b></div>
     <div class="form-grid" style="margin-top:12px">
       <div><label>Số tiền trả NCC</label><input id="debtSupplierPayAmount" type="number" min="0" max="${Math.max(0,debt)}" placeholder="0"></div>
-      <div><label>Trạng thái</label><select id="debtSupplierPayMethod">${paymentMethodOptionsV94()}</select></div>
       <div><label>Ghi chú</label><input id="debtSupplierPayNote" placeholder="Trả công nợ nhà cung cấp"></div>
     </div>
     <div style="margin-top:14px"><b>Lịch sử trả NCC gần đây</b>${debtPaymentHistoryHtml('supplier',s.id)}</div>
@@ -29887,7 +29717,7 @@ async function saveSupplierPaymentFromDebt(supplierId){
   if(amount>debt && debt>0 && !confirm('Số tiền lớn hơn công nợ hiện tại '+money(debt)+'. Vẫn ghi nhận?'))return;
   const before=JSON.stringify(db);
   const btn=$('debtSupplierPayBtn');
-  const p={id:'TTNCC'+Date.now(),supplierId:s.id,supplierName:s.name||'',amount,dateText:paymentNowText(),ts:Date.now(),operator:'Quản lý',method:paymentMethodValueV94($('debtSupplierPayMethod')?.value,'Tiền mặt'),note:String($('debtSupplierPayNote')?.value||'').trim()};
+  const p={id:'TTNCC'+Date.now(),supplierId:s.id,supplierName:s.name||'',amount,dateText:paymentNowText(),ts:Date.now(),operator:'Quản lý',note:String($('debtSupplierPayNote')?.value||'').trim()};
   supplierPaymentSaving=true;if(btn)btn.disabled=true;
   if(!Array.isArray(db.supplierPayments))db.supplierPayments=[];db.supplierPayments.push(p);
   try{
@@ -29986,7 +29816,7 @@ async function saveCustomerPayment(){
     amount,
     dateText:payDate.dateText,
     ts:payDate.ts,
-    method:paymentMethodValueV94($('payCustomerMethod')?.value,'Tiền mặt'),
+    method:String($('payCustomerMethod')?.value||'Tiền mặt'),
     collector:String($('payCustomerCollector')?.value||'').trim() || (isManager?'Quản lý':'Nhân viên'),
     note:String($('payCustomerNote')?.value||'').trim(),
     overpaymentAtReceipt:Math.max(0,amount-debt),
@@ -30044,7 +29874,7 @@ async function saveSupplierPayment(){
   if(amount>debt && debt>0 && !confirm('Số tiền lớn hơn công nợ hiện tại '+money(debt)+'. Vẫn ghi nhận thanh toán?'))return;
 
   const payDate=paymentDateRecordV193('paySupplierDate');
-  const p={id:'TTNCC'+Date.now(),supplierId:s.id,supplierName:s.name||'',amount,dateText:payDate.dateText,ts:payDate.ts,method:paymentMethodValueV94($('paySupplierMethod')?.value,'Tiền mặt'),operator:'Quản lý'};
+  const p={id:'TTNCC'+Date.now(),supplierId:s.id,supplierName:s.name||'',amount,dateText:payDate.dateText,ts:payDate.ts,operator:'Quản lý'};
   supplierPaymentSaving=true;
   db.supplierPayments.push(p);
   try{
@@ -30220,7 +30050,6 @@ function editSupplierPayment(id){
       <div><label>Nhà cung cấp</label><input value="${esc(s?.name||'')}" disabled></div>
       <div><label>Ngày thanh toán</label><input id="editSupplierPaymentDate" type="date" value="${paymentEventDateISO(p)||todayYMD()}"></div>
       <div><label>Số tiền thanh toán</label><input id="editSupplierPaymentAmount" type="number" min="0" value="${Number(p.amount)||0}"></div>
-      <div><label>Trạng thái</label><select id="editSupplierPaymentMethod">${paymentMethodOptionsV94(p.method,true)}</select></div>
     </div>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal()">Hủy</button>
@@ -30233,15 +30062,14 @@ async function saveEditedSupplierPayment(id){
   if(!canEditSupplierPaymentV8(p))return alert(supplierPaymentEditDeniedMessageV8(p));
   const amount=Math.max(0,Number($('editSupplierPaymentAmount')?.value)||0);
   if(amount<=0)return alert('Số tiền phải lớn hơn 0.');
-  const old={amount:p.amount,dateText:p.dateText,ts:p.ts,method:p.method};
+  const old={amount:p.amount,dateText:p.dateText,ts:p.ts};
   const editedDate=paymentEditedDateRecordV193($('editSupplierPaymentDate')?.value,p.dateText);
   p.amount=amount;
   p.dateText=editedDate.dateText;
   p.ts=editedDate.ts;
-  p.method=paymentMethodValueV94($('editSupplierPaymentMethod')?.value);
   p.editedAt=paymentNowText();p.editedBy=isManager?'Quản lý':'Nhân viên';
   if(!await saveDB()){
-    p.amount=old.amount;p.dateText=old.dateText;p.ts=old.ts;p.method=old.method;
+    p.amount=old.amount;p.dateText=old.dateText;p.ts=old.ts;
     return;
   }
   closeModal();renderAll();toast('Đã sửa phiếu thanh toán NCC.');
@@ -31054,10 +30882,7 @@ async function confirmArchiveData(cutoff){
   const archiveCutoffEnd=debtDateFromInput(cutoff,true);
   (db.customers||[]).forEach(c=>customerBalances[c.id]=customerDebtPeriodSummary(c.id,{start:0,end:archiveCutoffEnd}).ending);
   const supplierBalances={};
-  (db.suppliers||[]).forEach(s=>{
-    const retained=supplierDebtAdjustmentsV96(s).filter(x=>String(x.date||'')>cutoff && String(x.date||'')<=currentISODate()).reduce((sum,x)=>sum+(Number(x.amount)||0),0);
-    supplierBalances[s.id]=supplierDebt(s.id)-retained;
-  });
+  (db.suppliers||[]).forEach(s=>supplierBalances[s.id]=supplierDebt(s.id));
 
   const note=$('archiveNote')?.value.trim()||('Chốt đến '+cutoff.split('-').reverse().join('/'));
   const archive={
@@ -31071,7 +30896,6 @@ async function confirmArchiveData(cutoff){
     stockout:oldOut,
     stockin:oldIn,
     customerDebtAdjustmentsV90:(db.customerDebtAdjustmentsV90||[]).filter(x=>String(x.date||'')<=cutoff),
-    supplierDebtAdjustmentsV96:(db.supplierDebtAdjustmentsV96||[]).filter(x=>String(x.date||'')<=cutoff),
     customerPayments:(db.customerPayments||[]).filter(p=>{
       const d=String(p.dateText||'').match(/(\d{2})\/(\d{2})\/(\d{4})/);
       return d ? `${d[3]}-${d[2]}-${d[1]}`<=cutoff : false;
@@ -31097,8 +30921,6 @@ async function confirmArchiveData(cutoff){
   db.supplierPayments=(db.supplierPayments||[]).filter(p=>!oldSPIds.has(p.id));
   const archivedAdjustmentIds=new Set(archive.customerDebtAdjustmentsV90.map(x=>x.id));
   db.customerDebtAdjustmentsV90=(db.customerDebtAdjustmentsV90||[]).filter(x=>!archivedAdjustmentIds.has(x.id));
-  const archivedSupplierAdjustmentIds=new Set(archive.supplierDebtAdjustmentsV96.map(x=>x.id));
-  db.supplierDebtAdjustmentsV96=(db.supplierDebtAdjustmentsV96||[]).filter(x=>!archivedSupplierAdjustmentIds.has(x.id));
 
   db.archives.push(archive);
 
@@ -31343,10 +31165,9 @@ async function saveStockinStableOriginal(doPrint=false){
     const debt=total-paid;
     const remainingSupplierDebt=Math.max(oldDebtAtPurchase+debt,0);
 
-    const savedDateText=stockinChosenDateTextV92(nowText());
     const savedInvoice={
       id:stockinId,
-      dateText:savedDateText,
+      dateText:nowText(),
       supplierId:selectedSupplierId,
       supplierName:supplier.name||'',
       supplierPhone:supplier.phone||'',
@@ -31953,15 +31774,13 @@ window.addEventListener('load',()=>{
     tr.parentElement.querySelectorAll('tr').forEach(x=>x.classList.remove('excel-selected-row'));tr.classList.add('excel-selected-row');
   },true);
   document.addEventListener('input',function(e){
-    const body=e.target.closest?.('#siBody,#soBody');
-    if(!body && e.target.id!=='siEditDateV92')return;
-    const mode=e.target.id==='siEditDateV92'||body.id==='siBody'?'si':'so';e.target.closest('td')?.classList.add('excel-dirty-cell');
+    const body=e.target.closest?.('#siBody,#soBody');if(!body)return;
+    const mode=body.id==='siBody'?'si':'so';e.target.closest('td')?.classList.add('excel-dirty-cell');
     setDirty(mode,true);decorateZero(mode);syncMode();
   },true);
   document.addEventListener('change',function(e){
-    const body=e.target.closest?.('#siBody,#soBody');
-    if(!body && e.target.id!=='siEditDateV92')return;
-    const mode=e.target.id==='siEditDateV92'||body.id==='siBody'?'si':'so';e.target.closest('td')?.classList.add('excel-dirty-cell');setDirty(mode,true);syncMode();
+    const body=e.target.closest?.('#siBody,#soBody');if(!body)return;
+    const mode=body.id==='siBody'?'si':'so';e.target.closest('td')?.classList.add('excel-dirty-cell');setDirty(mode,true);syncMode();
   },true);
   document.addEventListener('mousedown',e=>{if(state.menu?.classList.contains('show')&&!state.menu.contains(e.target))hideMenu();},true);
   window.addEventListener('scroll',hideMenu,true);window.addEventListener('resize',hideMenu);
@@ -33857,28 +33676,10 @@ body.voucher-stockin-active #stockinTopNav{min-width:0!important;}
     if(!confirm('Xóa khách hàng “'+c.name+'”?'))return;const old=[...(db.customers||[])];db.customers=(db.customers||[]).filter(x=>String(x.id)!==String(id));if(!(await saveDB()))db.customers=old;renderAll();
   }
   async function deleteSupplierSafe(id){
-    const sid=String(id||'');
-    const x=(db.suppliers||[]).find(v=>String(v.id)===sid);if(!x)return;
-    const d=typeof supplierDebtBreakdownV258==='function'?supplierDebtBreakdownV258(sid):null;
-    const debt=d?Math.max(0,Number(d.balance)||0):Math.max(0,Number(x.oldDebt)||0);
-    if(debt>0)return alert('Không thể xóa. Nhà cung cấp “'+x.name+'” còn công nợ '+money(debt)+'. Vui lòng xử lý công nợ trước.');
-    const hasStockin=d?((d.invoices||[]).length>0):(db.stockin||[]).some(o=>String(o.supplierId||'')===sid);
-    const hasPayment=d?((d.payments||[]).length>0):(db.supplierPayments||[]).some(p=>String(p.supplierId||'')===sid);
-    const hasOldDebt=Math.abs(Number(x.oldDebt)||0)>0;
-    const hasAdjustment=(d?.adjustments||[]).length>0;
-    if(hasStockin||hasPayment||hasOldDebt||hasAdjustment)return alert('Không thể xóa Nhà cung cấp “'+x.name+'” vì đã phát sinh Phiếu nhập, Thanh toán hoặc Nợ cũ. Dữ liệu cần được giữ để bảo toàn lịch sử.');
-    if(!confirm('Xóa Nhà cung cấp “'+x.name+'”?'))return;
-    const oldSuppliers=[...(db.suppliers||[])];
-    const productBackup=(db.products||[]).map(p=>({id:p.id,supplierId:p.supplierId,supplierName:p.supplierName}));
-    db.suppliers=(db.suppliers||[]).filter(v=>String(v.id)!==sid);
-    (db.products||[]).forEach(p=>{if(String(p.supplierId||'')===sid){p.supplierId='';p.supplierName='';}});
-    if(!(await saveDB())){
-      db.suppliers=oldSuppliers;
-      productBackup.forEach(b=>{const p=(db.products||[]).find(v=>String(v.id)===String(b.id));if(p){p.supplierId=b.supplierId;p.supplierName=b.supplierName;}});
-      return;
-    }
-    renderAll();
-    toast('Đã xóa Nhà cung cấp '+(x.name||sid));
+    const x=(db.suppliers||[]).find(v=>String(v.id)===String(id));if(!x)return;
+    const used=(db.stockin||[]).some(o=>String(o.supplierId)===String(id))||(db.products||[]).some(p=>String(p.supplierId)===String(id))||(db.supplierPayments||[]).some(p=>String(p.supplierId)===String(id));
+    if(used||Number(x.oldDebt||0)!==0)return alert('Không thể xóa NCC này vì đã có Phiếu nhập/Hàng hóa/Thanh toán hoặc Nợ cũ. Anh chỉ nên Sửa thông tin.');
+    if(!confirm('Xóa Nhà cung cấp “'+x.name+'”?'))return;const old=[...(db.suppliers||[])];db.suppliers=(db.suppliers||[]).filter(v=>String(v.id)!==String(id));if(!(await saveDB()))db.suppliers=old;renderAll();
   }
   async function deleteWarrantySafe(id){
     const x=(db.warranty||[]).find(v=>String(v.id)===String(id));if(!x)return;
@@ -34143,7 +33944,7 @@ async function saveCustomerDebtEditUnifiedV193(id){
 
     db.stockin.splice(idx,1);
 
-    const result=await saveStockOperationAtomic(expected);
+    const result=await saveStockOperationAtomic(expected,{collection:'stockin',id,absent:true});
     if(!result?.ok){
       await recoverStockOperationSaveFailure(result,before);
       await releaseStockOperationLock('stockin',{silent:true});
@@ -36896,7 +36697,6 @@ async function saveCustomerDebtEditUnifiedV193(id){
         <div class="v17-selected-supplier-cell"><label class="payment-filter-label">Nhà cung cấp</label><div class="v17-selected-supplier-value"><b id="paymentSelectedSupplierNameV17">—</b><button type="button" onclick="clearPaymentSupplierV17()">Đổi</button></div></div>
         <div class="v17-current-debt-cell"><label class="payment-filter-label">Công nợ hiện tại</label><b id="paymentSupplierCurrentDebtV17">0 đ</b></div>
         <div class="v17-supplier-amount-cell"><label class="payment-filter-label">Số tiền trả NCC</label><input id="paySupplierAmount" type="number" min="0" placeholder="0"></div>
-        <div class="v17-supplier-method-cell v208-method-cell"><label class="payment-filter-label">Trạng thái</label><select id="paySupplierMethod">${paymentMethodOptionsV94()}</select></div>
         <div class="v17-supplier-date-cell"><label class="payment-filter-label">Ngày trả</label><input id="paySupplierDate" type="date"></div>
         <div class="v17-supplier-save-cell"><label class="payment-filter-label">&nbsp;</label><button id="paySupplierConfirmBtn" type="button" class="btn primary" onclick="saveSupplierPayment()">Lưu</button></div>
         <input id="paySupplierSearch" type="hidden"><datalist id="paySupplierList"></datalist><b id="paySupplierDebt" style="display:none">0 đ</b>`;
@@ -37028,12 +36828,8 @@ async function saveCustomerDebtEditUnifiedV193(id){
     });
     (d.payments||[]).forEach(p=>rows.push({
       t:supplierEventTimeV19(p),date:p.dateText||'',ref:p.id||'',type:'Thanh toán NCC',debit:0,
-      credit:Math.max(0,Number(p.amount)||0),note:p.note||'',paymentId:p.id||'',method:paymentMethodValueV94(p.method)
+      credit:Math.max(0,Number(p.amount)||0),note:p.note||'',paymentId:p.id||''
     }));
-    (d.adjustments||[]).filter(x=>String(x.date||'')<=currentISODate()).forEach(x=>{
-      const amount=Number(x.amount)||0;
-      rows.push({t:supplierDebtAdjustmentTimeV96(x),date:debtDisplayDate(x.date),ref:x.id||'ĐC',type:'Điều chỉnh công nợ',debit:Math.max(0,amount),credit:Math.max(0,-amount),note:x.kind==='opening'?'Nợ đầu kỳ':'Phát sinh trong kỳ',paymentId:''});
-    });
     rows.sort((a,b)=>a.t-b.t||String(a.ref).localeCompare(String(b.ref)));
     let running=Math.max(0,Number(d.oldDebt)||0);
     return rows.map(x=>{
@@ -37048,7 +36844,6 @@ async function saveCustomerDebtEditUnifiedV193(id){
         <td class="right">${x.credit?`<b>${money(x.credit)}</b>`:''}</td>
         <td class="right"><b>${money(running)}</b></td>
         <td class="center">${edit}</td>
-        <td>${esc(paymentMethodTextV94(x))}</td>
       </tr>`;
     });
   }
@@ -37068,7 +36863,7 @@ async function saveCustomerDebtEditUnifiedV193(id){
         <div><span>Công nợ hiện tại</span><b>${money(d.balance)}</b></div>
       </div>
       <div class="v19-supplier-history-table">
-        ${table(['Ngày giờ','Loại','Chứng từ','Phát sinh nợ','Đã trả','Dư nợ','Thao tác','Trạng thái'],rows)}
+        ${table(['Ngày giờ','Loại','Chứng từ','Phát sinh nợ','Đã trả','Dư nợ','Thao tác'],rows)}
       </div>
       <div class="modal-actions">
         <button class="btn" onclick="closeModal()">Đóng</button>
@@ -39444,11 +39239,10 @@ body.manager-mode .payment-edit-v193{font-weight:700}
             <input class="customer-debt-inline-input-v22" data-debt-row-v22="${esc(c.id||'')}" data-debt-field-v22="debtTermDays" type="number" min="0" max="3650" step="1" value="${Number(d.debtTermDays||0)}">
             <div class="customer-debt-inline-help-v22">0 = chưa cài • ${warning}</div>
           </td>
-          <td class="customer-debt-inline-locked-v22" title="Hình thức lần thanh toán gần nhất">${esc(latestDebtPaymentMethodV94('customer',c.id,bounds.end))}</td>
         </tr>`;
       });
 
-    $('customerDebtTable').innerHTML=table(['Tên khách hàng','Địa chỉ','Nợ đầu kỳ','Phát sinh trong kỳ','Ngày thanh toán lần cuối','Đã thanh toán','Nợ cuối kỳ','Cảnh báo / Hạn nợ','Trạng thái'],rows);
+    $('customerDebtTable').innerHTML=table(['Tên khách hàng','Địa chỉ','Nợ đầu kỳ','Phát sinh trong kỳ','Ngày thanh toán lần cuối','Đã thanh toán','Nợ cuối kỳ','Cảnh báo / Hạn nợ'],rows);
     const debtTable=$('customerDebtTable')?.querySelector('table');
     if(debtTable)debtTable.classList.add('customer-debt-period-table','v198-debt-table');
 
@@ -40401,7 +40195,6 @@ body.warehouse-page-active .topbar>.actions{
             <label class="payment-filter-label">Số tiền trả NCC</label>
             <input id="paySupplierAmount" type="number" min="0" placeholder="0">
           </div>
-          <div class="v17-supplier-method-cell v208-method-cell"><label class="payment-filter-label">Trạng thái</label><select id="paySupplierMethod">${paymentMethodOptionsV94()}</select></div>
           <div class="v17-supplier-date-cell v208-date-cell">
             <label class="payment-filter-label">Ngày trả</label>
             <input id="paySupplierDate" type="date">
@@ -40655,21 +40448,21 @@ body.warehouse-page-active .topbar>.actions{
     const box=q('customerPaymentHistory');if(!box)return;const c=currentCustomer69();const cid=String(c?.id||'');if(cid!==lastCustomer69){customerLimit69=10;lastCustomer69=cid}
     if(!c){box.innerHTML='<div class="v69-history-head"><b>Lịch sử thanh toán khách hàng</b><small>Chọn khách hàng phía trên để xem lịch sử.</small></div><div class="v69-empty">Chưa chọn khách hàng.</div>';return}
     const all=(db.customerPayments||[]).filter(p=>String(p.customerId||'')===cid&&p?.transactionType!=='warranty_return').sort((a,b)=>(Number(b.ts)||0)-(Number(a.ts)||0));
-    const rows=all.slice(0,customerLimit69).map(p=>{const before=customerBefore69(p),amt=Math.max(0,Number(p.amount)||0),after=Math.max(0,before-amt),can=typeof canEditCustomerPayment==='function'?canEditCustomerPayment(p):!!isManager;return `<tr><td>${esc69(p.dateText||'')}</td><td class="right"><span class="v69-before">${money69(before)}</span></td><td class="right"><span class="v69-pay">${money69(amt)}</span></td><td>${esc69(paymentMethodTextV94(p))}</td><td class="right"><span class="v69-after">${money69(after)}</span></td><td class="center">${can?`<button class="btn v69-edit" onclick="editCustomerPaymentAmountV69('${esc69(p.id)}')">Sửa</button>`:'<span class="small">Khóa</span>'}</td></tr>`});
-    box.innerHTML=`<div class="v69-history-head"><b>Lịch sử thanh toán • ${esc69(c.name||'Khách hàng')}</b><small>10 giao dịch gần nhất • Công nợ hiện tại: <b style="display:inline;font-size:inherit">${money69(customerDebt(c.id))}</b></small></div>`+(rows.length?table(['Ngày thanh toán','Nợ trước','Số tiền thanh toán','Trạng thái','Nợ còn lại','Sửa'],rows):'<div class="v69-empty">Khách hàng này chưa có lần thanh toán nào.</div>')+(all.length>customerLimit69?`<div class="v69-history-more"><button class="btn" onclick="customerLimit69MoreV69()">Xem thêm 10 giao dịch (${all.length-customerLimit69} còn lại)</button></div>`:'')
+    const rows=all.slice(0,customerLimit69).map(p=>{const before=customerBefore69(p),amt=Math.max(0,Number(p.amount)||0),after=Math.max(0,before-amt),can=typeof canEditCustomerPayment==='function'?canEditCustomerPayment(p):!!isManager;return `<tr><td>${esc69(p.dateText||'')}</td><td class="right"><span class="v69-before">${money69(before)}</span></td><td class="right"><span class="v69-pay">${money69(amt)}</span></td><td class="right"><span class="v69-after">${money69(after)}</span></td><td class="center">${can?`<button class="btn v69-edit" onclick="editCustomerPaymentAmountV69('${esc69(p.id)}')">Sửa</button>`:'<span class="small">Khóa</span>'}</td></tr>`});
+    box.innerHTML=`<div class="v69-history-head"><b>Lịch sử thanh toán • ${esc69(c.name||'Khách hàng')}</b><small>10 giao dịch gần nhất • Công nợ hiện tại: <b style="display:inline;font-size:inherit">${money69(customerDebt(c.id))}</b></small></div>`+(rows.length?table(['Ngày thanh toán','Nợ trước','Số tiền thanh toán','Nợ còn lại','Sửa'],rows):'<div class="v69-empty">Khách hàng này chưa có lần thanh toán nào.</div>')+(all.length>customerLimit69?`<div class="v69-history-more"><button class="btn" onclick="customerLimit69MoreV69()">Xem thêm 10 giao dịch (${all.length-customerLimit69} còn lại)</button></div>`:'')
   };
   window.customerLimit69MoreV69=function(){customerLimit69+=10;renderCustomerPaymentHistoryOnly()};
-  window.editCustomerPaymentAmountV69=function(id){const p=(db.customerPayments||[]).find(x=>String(x.id||'')===String(id||''));if(!p)return alert('Không tìm thấy giao dịch thanh toán.');if(typeof canEditCustomerPayment==='function'&&!canEditCustomerPayment(p))return alert(typeof customerPaymentEditDeniedMessage==='function'?customerPaymentEditDeniedMessage(p):'Bạn không có quyền sửa giao dịch này.');const c=(db.customers||[]).find(x=>String(x.id||'')===String(p.customerId||''))||{},before=customerBefore69(p),amt=Math.max(0,Number(p.amount)||0);showModal(`<h3>Sửa số tiền thanh toán</h3><div class="small">${esc69(c.name||'Khách hàng')} • Ngày ${esc69(p.dateText||'')}</div><div class="payment-edit-summary-v10"><div><span>Nợ trước</span><b>${money69(before)}</b></div><div><span>Đã thanh toán</span><b id="v69CustPreview">${money69(amt)}</b></div><div><span>Nợ còn lại</span><b id="v69CustAfter">${money69(Math.max(0,before-amt))}</b></div></div><div><label>Số tiền thanh toán</label><input id="v69CustAmount" type="number" min="1" value="${amt}" oninput="updateCustAmountV69('${esc69(p.id)}')" style="width:100%"></div><div><label>Trạng thái</label><select id="v69CustMethod" style="width:100%">${paymentMethodOptionsV94(p.method,true)}</select></div><div class="modal-actions"><button class="btn" onclick="closeModal()">Hủy</button><button class="btn primary" onclick="saveCustAmountV69('${esc69(p.id)}')">Lưu sửa</button></div>`)};
+  window.editCustomerPaymentAmountV69=function(id){const p=(db.customerPayments||[]).find(x=>String(x.id||'')===String(id||''));if(!p)return alert('Không tìm thấy giao dịch thanh toán.');if(typeof canEditCustomerPayment==='function'&&!canEditCustomerPayment(p))return alert(typeof customerPaymentEditDeniedMessage==='function'?customerPaymentEditDeniedMessage(p):'Bạn không có quyền sửa giao dịch này.');const c=(db.customers||[]).find(x=>String(x.id||'')===String(p.customerId||''))||{},before=customerBefore69(p),amt=Math.max(0,Number(p.amount)||0);showModal(`<h3>Sửa số tiền thanh toán</h3><div class="small">${esc69(c.name||'Khách hàng')} • Ngày ${esc69(p.dateText||'')}</div><div class="payment-edit-summary-v10"><div><span>Nợ trước</span><b>${money69(before)}</b></div><div><span>Đã thanh toán</span><b id="v69CustPreview">${money69(amt)}</b></div><div><span>Nợ còn lại</span><b id="v69CustAfter">${money69(Math.max(0,before-amt))}</b></div></div><div><label>Số tiền thanh toán</label><input id="v69CustAmount" type="number" min="1" value="${amt}" oninput="updateCustAmountV69('${esc69(p.id)}')" style="width:100%"></div><div class="modal-actions"><button class="btn" onclick="closeModal()">Hủy</button><button class="btn primary" onclick="saveCustAmountV69('${esc69(p.id)}')">Lưu sửa</button></div>`)};
   window.updateCustAmountV69=function(id){const p=(db.customerPayments||[]).find(x=>String(x.id||'')===String(id||''));if(!p)return;const before=customerBefore69(p),amt=Math.max(0,Number(q('v69CustAmount')?.value)||0);if(q('v69CustPreview'))q('v69CustPreview').textContent=money69(amt);if(q('v69CustAfter'))q('v69CustAfter').textContent=money69(Math.max(0,before-amt))};
-  window.saveCustAmountV69=async function(id){const p=(db.customerPayments||[]).find(x=>String(x.id||'')===String(id||''));if(!p)return alert('Không tìm thấy giao dịch.');const amt=Math.max(0,Number(q('v69CustAmount')?.value)||0);if(amt<=0)return alert('Số tiền phải lớn hơn 0.');const old=p.amount,oldMethod=p.method,cid=p.customerId;p.amount=amt;p.method=paymentMethodValueV94(q('v69CustMethod')?.value);p.editedAt=typeof paymentNowText==='function'?paymentNowText():new Date().toLocaleString('vi-VN');p.editedBy=isManager?'Quản lý':'Nhân viên';try{const ok=await saveDB();if(ok===false)throw new Error('Không lưu được dữ liệu.');closeModal();selectedPayCustomerId=cid;try{renderDebts()}catch(_){}try{renderDashboard()}catch(_){}try{syncSelectedPaymentCustomerV14()}catch(_){}renderCustomerPaymentHistoryOnly();if(typeof toast==='function')toast('Đã sửa số tiền thanh toán.')}catch(e){p.amount=old;p.method=oldMethod;alert('Không lưu được: '+(e?.message||e))}};
+  window.saveCustAmountV69=async function(id){const p=(db.customerPayments||[]).find(x=>String(x.id||'')===String(id||''));if(!p)return alert('Không tìm thấy giao dịch.');const amt=Math.max(0,Number(q('v69CustAmount')?.value)||0);if(amt<=0)return alert('Số tiền phải lớn hơn 0.');const old=p.amount,cid=p.customerId;p.amount=amt;p.editedAt=typeof paymentNowText==='function'?paymentNowText():new Date().toLocaleString('vi-VN');p.editedBy=isManager?'Quản lý':'Nhân viên';try{const ok=await saveDB();if(ok===false)throw new Error('Không lưu được dữ liệu.');closeModal();selectedPayCustomerId=cid;try{renderDebts()}catch(_){}try{renderDashboard()}catch(_){}try{syncSelectedPaymentCustomerV14()}catch(_){}renderCustomerPaymentHistoryOnly();if(typeof toast==='function')toast('Đã sửa số tiền thanh toán.')}catch(e){p.amount=old;alert('Không lưu được: '+(e?.message||e))}};
 
-  function supplierState69(sid){const d=typeof supplierDebtBreakdownV258==='function'?supplierDebtBreakdownV258(sid):null,map=new Map();if(!d?.supplier)return map;let running=Math.max(0,Number(d.oldDebt)||0);const ev=[];(d.invoices||[]).forEach((o,i)=>{const total=Math.max(0,Number(typeof reportStockinInvoiceValueV245==='function'?reportStockinInvoiceValueV245(o):0)||0),paid=Math.max(0,Number(typeof supplierInvoicePaidForDebtV259==='function'?supplierInvoicePaidForDebtV259(o,d.supplier):0)||0);let t=0;try{t=Number(stockoutDateTimeValue(o.dateText||''))||0}catch(_){}ev.push({t,ord:i,k:'i',delta:Math.max(0,total-paid)})});(d.payments||[]).forEach((p,i)=>{let t=Number(p.ts||0);if(!t){try{t=Number(stockoutDateTimeValue(p.dateText||''))||0}catch(_){}}ev.push({t,ord:1000000+i,k:'p',id:String(p.id||''),amount:Math.max(0,Number(p.amount)||0)})});(d.adjustments||[]).filter(x=>String(x.date||'')<=currentISODate()).forEach((x,i)=>ev.push({t:supplierDebtAdjustmentTimeV96(x),ord:(x.kind==='opening'?-1000000:2000000)+i,k:'i',delta:Number(x.amount)||0}));ev.sort((a,b)=>a.t-b.t||a.ord-b.ord);ev.forEach(e=>{if(e.k==='i'){running=Math.max(0,running+e.delta)}else{const before=Math.max(0,running),after=Math.max(0,before-e.amount);map.set(e.id,{before,after});running=after}});return map}
+  function supplierState69(sid){const d=typeof supplierDebtBreakdownV258==='function'?supplierDebtBreakdownV258(sid):null,map=new Map();if(!d?.supplier)return map;let running=Math.max(0,Number(d.oldDebt)||0);const ev=[];(d.invoices||[]).forEach((o,i)=>{const total=Math.max(0,Number(typeof reportStockinInvoiceValueV245==='function'?reportStockinInvoiceValueV245(o):0)||0),paid=Math.max(0,Number(typeof supplierInvoicePaidForDebtV259==='function'?supplierInvoicePaidForDebtV259(o,d.supplier):0)||0);let t=0;try{t=Number(stockoutDateTimeValue(o.dateText||''))||0}catch(_){}ev.push({t,ord:i,k:'i',delta:Math.max(0,total-paid)})});(d.payments||[]).forEach((p,i)=>{let t=Number(p.ts||0);if(!t){try{t=Number(stockoutDateTimeValue(p.dateText||''))||0}catch(_){}}ev.push({t,ord:1000000+i,k:'p',id:String(p.id||''),amount:Math.max(0,Number(p.amount)||0)})});ev.sort((a,b)=>a.t-b.t||a.ord-b.ord);ev.forEach(e=>{if(e.k==='i'){running=Math.max(0,running+e.delta)}else{const before=Math.max(0,running),after=Math.max(0,before-e.amount);map.set(e.id,{before,after});running=after}});return map}
   function mountSupplier69(){const panel=q('paymentSupplierPanel');if(!panel)return;let host=q('v69SupplierHistory');if(!host){host=document.createElement('div');host.id='v69SupplierHistory';panel.appendChild(host)}renderSupplierHistoryV69()}
-  window.renderSupplierHistoryV69=function(){const host=q('v69SupplierHistory');if(!host)return;const s=currentSupplier69(),sid=String(s?.id||'');if(sid!==lastSupplier69){supplierLimit69=10;lastSupplier69=sid}if(!s){host.innerHTML='<div class="v69-history-head"><b>Lịch sử thanh toán NCC</b><small>Chọn Nhà cung cấp phía trên để xem lịch sử.</small></div><div class="v69-empty">Chưa chọn Nhà cung cấp.</div>';return}const all=(db.supplierPayments||[]).filter(p=>{try{return typeof supplierPaymentBelongsV257==='function'?supplierPaymentBelongsV257(p,s):String(p.supplierId||'')===sid}catch(_){return String(p.supplierId||'')===sid}}).sort((a,b)=>(Number(b.ts)||0)-(Number(a.ts)||0)),state=supplierState69(sid),rows=all.slice(0,supplierLimit69).map(p=>{const st=state.get(String(p.id||''))||{before:Math.max(0,Number(supplierDebt(sid))||0)+Math.max(0,Number(p.amount)||0),after:Math.max(0,Number(supplierDebt(sid))||0)},can=typeof canEditSupplierPaymentV8==='function'?canEditSupplierPaymentV8(p):!!isManager;return `<tr><td>${esc69(p.dateText||'')}</td><td class="right"><span class="v69-before">${money69(st.before)}</span></td><td class="right"><span class="v69-pay">${money69(p.amount)}</span></td><td>${esc69(paymentMethodTextV94(p))}</td><td class="right"><span class="v69-after">${money69(st.after)}</span></td><td class="center">${can?`<button class="btn v69-edit" onclick="editSupplierAmountV69('${esc69(p.id)}')">Sửa</button>`:'<span class="small">Khóa</span>'}</td></tr>`});host.innerHTML=`<div class="v69-history-head"><b>Lịch sử thanh toán NCC • ${esc69(s.name||'Nhà cung cấp')}</b><small>10 giao dịch gần nhất • Công nợ hiện tại: <b style="display:inline;font-size:inherit">${money69(supplierDebt(sid))}</b></small></div>`+(rows.length?table(['Ngày thanh toán','Nợ trước','Số tiền đã trả','Trạng thái','Nợ còn lại','Sửa'],rows):'<div class="v69-empty">Nhà cung cấp này chưa có lần thanh toán nào.</div>')+(all.length>supplierLimit69?`<div class="v69-history-more"><button class="btn" onclick="supplierMoreV69()">Xem thêm 10 giao dịch (${all.length-supplierLimit69} còn lại)</button></div>`:'')};
+  window.renderSupplierHistoryV69=function(){const host=q('v69SupplierHistory');if(!host)return;const s=currentSupplier69(),sid=String(s?.id||'');if(sid!==lastSupplier69){supplierLimit69=10;lastSupplier69=sid}if(!s){host.innerHTML='<div class="v69-history-head"><b>Lịch sử thanh toán NCC</b><small>Chọn Nhà cung cấp phía trên để xem lịch sử.</small></div><div class="v69-empty">Chưa chọn Nhà cung cấp.</div>';return}const all=(db.supplierPayments||[]).filter(p=>{try{return typeof supplierPaymentBelongsV257==='function'?supplierPaymentBelongsV257(p,s):String(p.supplierId||'')===sid}catch(_){return String(p.supplierId||'')===sid}}).sort((a,b)=>(Number(b.ts)||0)-(Number(a.ts)||0)),state=supplierState69(sid),rows=all.slice(0,supplierLimit69).map(p=>{const st=state.get(String(p.id||''))||{before:Math.max(0,Number(supplierDebt(sid))||0)+Math.max(0,Number(p.amount)||0),after:Math.max(0,Number(supplierDebt(sid))||0)},can=typeof canEditSupplierPaymentV8==='function'?canEditSupplierPaymentV8(p):!!isManager;return `<tr><td>${esc69(p.dateText||'')}</td><td class="right"><span class="v69-before">${money69(st.before)}</span></td><td class="right"><span class="v69-pay">${money69(p.amount)}</span></td><td class="right"><span class="v69-after">${money69(st.after)}</span></td><td class="center">${can?`<button class="btn v69-edit" onclick="editSupplierAmountV69('${esc69(p.id)}')">Sửa</button>`:'<span class="small">Khóa</span>'}</td></tr>`});host.innerHTML=`<div class="v69-history-head"><b>Lịch sử thanh toán NCC • ${esc69(s.name||'Nhà cung cấp')}</b><small>10 giao dịch gần nhất • Công nợ hiện tại: <b style="display:inline;font-size:inherit">${money69(supplierDebt(sid))}</b></small></div>`+(rows.length?table(['Ngày thanh toán','Nợ trước','Số tiền đã trả','Nợ còn lại','Sửa'],rows):'<div class="v69-empty">Nhà cung cấp này chưa có lần thanh toán nào.</div>')+(all.length>supplierLimit69?`<div class="v69-history-more"><button class="btn" onclick="supplierMoreV69()">Xem thêm 10 giao dịch (${all.length-supplierLimit69} còn lại)</button></div>`:'')};
   window.supplierMoreV69=function(){supplierLimit69+=10;renderSupplierHistoryV69()};
-  window.editSupplierAmountV69=function(id){const p=(db.supplierPayments||[]).find(x=>String(x.id||'')===String(id||''));if(!p)return alert('Không tìm thấy giao dịch NCC.');if(typeof canEditSupplierPaymentV8==='function'&&!canEditSupplierPaymentV8(p))return alert(typeof supplierPaymentEditDeniedMessageV8==='function'?supplierPaymentEditDeniedMessageV8(p):'Bạn không có quyền sửa.');const s=(db.suppliers||[]).find(x=>String(x.id||'')===String(p.supplierId||''))||currentSupplier69()||{},st=supplierState69(s.id).get(String(p.id||''))||{before:Math.max(0,Number(supplierDebt(s.id))||0)+Math.max(0,Number(p.amount)||0)},amt=Math.max(0,Number(p.amount)||0);showModal(`<h3>Sửa số tiền thanh toán NCC</h3><div class="small">${esc69(s.name||'Nhà cung cấp')} • Ngày ${esc69(p.dateText||'')}</div><div class="payment-edit-summary-v10"><div><span>Nợ trước</span><b>${money69(st.before)}</b></div><div><span>Đã trả</span><b id="v69SuppPreview">${money69(amt)}</b></div><div><span>Nợ còn lại</span><b id="v69SuppAfter">${money69(Math.max(0,st.before-amt))}</b></div></div><div><label>Số tiền đã trả NCC</label><input id="v69SuppAmount" type="number" min="1" value="${amt}" oninput="updateSuppV69('${esc69(p.id)}')" style="width:100%"></div><div><label>Trạng thái</label><select id="v69SuppMethod" style="width:100%">${paymentMethodOptionsV94(p.method,true)}</select></div><div class="modal-actions"><button class="btn" onclick="closeModal()">Hủy</button><button class="btn primary" onclick="saveSuppV69('${esc69(p.id)}')">Lưu sửa</button></div>`)};
+  window.editSupplierAmountV69=function(id){const p=(db.supplierPayments||[]).find(x=>String(x.id||'')===String(id||''));if(!p)return alert('Không tìm thấy giao dịch NCC.');if(typeof canEditSupplierPaymentV8==='function'&&!canEditSupplierPaymentV8(p))return alert(typeof supplierPaymentEditDeniedMessageV8==='function'?supplierPaymentEditDeniedMessageV8(p):'Bạn không có quyền sửa.');const s=(db.suppliers||[]).find(x=>String(x.id||'')===String(p.supplierId||''))||currentSupplier69()||{},st=supplierState69(s.id).get(String(p.id||''))||{before:Math.max(0,Number(supplierDebt(s.id))||0)+Math.max(0,Number(p.amount)||0)},amt=Math.max(0,Number(p.amount)||0);showModal(`<h3>Sửa số tiền thanh toán NCC</h3><div class="small">${esc69(s.name||'Nhà cung cấp')} • Ngày ${esc69(p.dateText||'')}</div><div class="payment-edit-summary-v10"><div><span>Nợ trước</span><b>${money69(st.before)}</b></div><div><span>Đã trả</span><b id="v69SuppPreview">${money69(amt)}</b></div><div><span>Nợ còn lại</span><b id="v69SuppAfter">${money69(Math.max(0,st.before-amt))}</b></div></div><div><label>Số tiền đã trả NCC</label><input id="v69SuppAmount" type="number" min="1" value="${amt}" oninput="updateSuppV69('${esc69(p.id)}')" style="width:100%"></div><div class="modal-actions"><button class="btn" onclick="closeModal()">Hủy</button><button class="btn primary" onclick="saveSuppV69('${esc69(p.id)}')">Lưu sửa</button></div>`)};
   window.updateSuppV69=function(id){const p=(db.supplierPayments||[]).find(x=>String(x.id||'')===String(id||''));if(!p)return;const s=(db.suppliers||[]).find(x=>String(x.id||'')===String(p.supplierId||''))||{},st=supplierState69(s.id).get(String(p.id||''))||{before:0},amt=Math.max(0,Number(q('v69SuppAmount')?.value)||0);if(q('v69SuppPreview'))q('v69SuppPreview').textContent=money69(amt);if(q('v69SuppAfter'))q('v69SuppAfter').textContent=money69(Math.max(0,st.before-amt))};
-  window.saveSuppV69=async function(id){const p=(db.supplierPayments||[]).find(x=>String(x.id||'')===String(id||''));if(!p)return alert('Không tìm thấy giao dịch.');const amt=Math.max(0,Number(q('v69SuppAmount')?.value)||0);if(amt<=0)return alert('Số tiền phải lớn hơn 0.');const old=p.amount,oldMethod=p.method;p.amount=amt;p.method=paymentMethodValueV94(q('v69SuppMethod')?.value);p.editedAt=typeof paymentNowText==='function'?paymentNowText():new Date().toLocaleString('vi-VN');p.editedBy=isManager?'Quản lý':'Nhân viên';try{const ok=await saveDB();if(ok===false)throw new Error('Không lưu được dữ liệu.');closeModal();try{renderSupplierDebtsV258?.()}catch(_){}try{syncSelectedPaymentSupplierV17?.()}catch(_){}try{renderDashboard?.()}catch(_){}setTimeout(mountSupplier69,80);if(typeof toast==='function')toast('Đã sửa số tiền trả NCC.')}catch(e){p.amount=old;p.method=oldMethod;alert('Không lưu được: '+(e?.message||e))}};
+  window.saveSuppV69=async function(id){const p=(db.supplierPayments||[]).find(x=>String(x.id||'')===String(id||''));if(!p)return alert('Không tìm thấy giao dịch.');const amt=Math.max(0,Number(q('v69SuppAmount')?.value)||0);if(amt<=0)return alert('Số tiền phải lớn hơn 0.');const old=p.amount;p.amount=amt;p.editedAt=typeof paymentNowText==='function'?paymentNowText():new Date().toLocaleString('vi-VN');p.editedBy=isManager?'Quản lý':'Nhân viên';try{const ok=await saveDB();if(ok===false)throw new Error('Không lưu được dữ liệu.');closeModal();try{renderSupplierDebtsV258?.()}catch(_){}try{syncSelectedPaymentSupplierV17?.()}catch(_){}try{renderDashboard?.()}catch(_){}setTimeout(mountSupplier69,80);if(typeof toast==='function')toast('Đã sửa số tiền trả NCC.')}catch(e){p.amount=old;alert('Không lưu được: '+(e?.message||e))}};
 
   /* one wrapper layer for payment lifecycle */
   const baseRenderPayments69=window.renderPayments;if(typeof baseRenderPayments69==='function')window.renderPayments=function(){const r=baseRenderPayments69.apply(this,arguments);setTimeout(()=>{try{renderCustomerPaymentHistoryOnly()}catch(_){};mountSupplier69()},100);return r};
@@ -41230,9 +41023,10 @@ body.warehouse-page-active .main>.topbar>.actions{
     const el=ev.target;
     if(!isEditableV83(el) || !isVisibleV83(el))return;
 
-    /* V93: Phiếu Nhập/Xuất có luồng Enter riêng bằng fieldKey/productKey.
-       Không để Enter toàn app V83 cướp focus sang vùng Thanh toán. */
-    if(el.closest('#siBody,#soBody'))return;
+    /* V259 FIX: các ô trong bảng Phiếu nhập/Phiếu xuất đã có fieldKey/productKey
+       riêng để Enter đi đúng thứ tự và tự tạo dòng hàng mới. Không để bộ Enter
+       toàn app giành sự kiện rồi nhảy xuống ô Thanh toán bên dưới phiếu. */
+    if(el.matches('#stockin [data-mode="si"],#stockout [data-mode="so"]'))return;
 
     /* Cho phép xuống dòng thật sự bằng Shift+Enter trong textarea/contenteditable */
     if((el.matches('textarea') || el.isContentEditable) && ev.shiftKey)return;
@@ -42655,11 +42449,7 @@ window.confirmWarrantyNccReceiveB6=async function(){const b=batchByIdB6(pendingR
 
 function renderWarrantyNccBatchesB6(){const host=q('warrantyNccBatchesB6');if(!host)return;const rows=[...ensureBatchesB6()].reverse();if(!rows.length){host.innerHTML='<h3>Phiếu gửi BH NCC</h3><div class="small muted">Chưa có phiếu gửi NCC.</div>';return}host.innerHTML='<h3>Phiếu gửi BH NCC / đối chiếu</h3><div class="table-wrap"><table><thead><tr><th>Phiếu</th><th>NCC</th><th>Ngày gửi</th><th>Đã gửi</th><th>Đã nhận</th><th>Còn tại NCC</th><th>Trạng thái</th><th>Đối chiếu</th></tr></thead><tbody>'+rows.map(b=>{const total=(b.itemIds||[]).length,ret=(b.returnedIds||[]).length,left=Math.max(0,total-ret);return `<tr><td><b>${h(b.id)}</b></td><td>${h(b.supplierName||'')}</td><td>${h(b.dateSent||'')}</td><td class="center">${total}</td><td class="center">${ret}</td><td class="center"><b>${left}</b></td><td>${h(b.status||'Đã gửi')}</td><td><button class="btn mini-btn" onclick="printWarrantyNccBatchB6('${h(b.id)}')">🖨 In đối chiếu</button>${left?` <button class="btn mini-btn" onclick="openWarrantyNccReceiveBatchB6('${h(b.id)}')">Nhận hàng</button>`:''}</td></tr>`}).join('')+'</tbody></table></div>';}
 
-window.printWarrantyNccBatchB6=function(id){const b=batchByIdB6(id);if(!b)return;const rows=(b.itemIds||[]).map(wid=>(db.warranty||[]).find(x=>String(x.id)===String(wid))).filter(Boolean);const total=rows.length,ret=rows.filter(w=>nccStatusB6(w)==='NCC đã trả').length;const html=`<!doctype html><html><head><meta charset="utf-8"><title>${h(b.id)}</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h2{text-align:center;margin:0 0 6px}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px}th,td{border:1px solid #555;padding:6px}th{background:#f1f1f1}.summary{margin:10px 0;font-size:13px}.sign{display:grid;grid-template-columns:1fr 1fr;text-align:center;margin-top:35px}</style></head><body><h2>PHIẾU ĐỐI CHIẾU BẢO HÀNH NCC</h2><div style="text-align:center"><b>${h(b.id)}</b></div><div class="summary">NCC: <b>${h(b.supplierName||'')}</b> • Ngày gửi: ${h(b.dateSent||'')}<br>Đã gửi: <b>${total}</b> • Đã nhận: <b>${ret}</b> • Còn tại NCC: <b>${Math.max(0,total-ret)}</b></div><table><thead><tr><th>STT</th><th>Mã BH</th><th>Khách</th><th>Hàng BH</th><th>SL</th><th>Kết quả NCC</th><th>Ngày nhận</th><th>Trạng thái</th></tr></thead><tbody>${rows.map((w,i)=>{const c=(db.customers||[]).find(x=>x.id===w.customerId),p=(db.products||[]).find(x=>x.id===w.productId);return `<tr><td>${i+1}</td><td>${h(w.batchId||w.id)}</td><td>${h(c?.name||'')}</td><td>${h(p?.name||w.item||'')}</td><td>${Number(w.qty||1)}</td><td>${h(w.nccResultB6||'')}</td><td>${h(w.nccReturnedDateB6||'')}</td><td>${h(nccStatusB6(w))}</td></tr>`}).join('')}</tbody></table><div class="sign"><div><b>NPP giao/nhận</b><br><br><br>Ký tên</div><div><b>Nhà cung cấp</b><br><br><br>Ký tên</div></div><script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script>
-
-
-
-</body></html>`;const w=window.open('','_blank');if(!w)return alert('Trình duyệt đang chặn cửa sổ in.');w.document.open();w.document.write(html);w.document.close();};
+window.printWarrantyNccBatchB6=function(id){const b=batchByIdB6(id);if(!b)return;const rows=(b.itemIds||[]).map(wid=>(db.warranty||[]).find(x=>String(x.id)===String(wid))).filter(Boolean);const total=rows.length,ret=rows.filter(w=>nccStatusB6(w)==='NCC đã trả').length;const html=`<!doctype html><html><head><meta charset="utf-8"><title>${h(b.id)}</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h2{text-align:center;margin:0 0 6px}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px}th,td{border:1px solid #555;padding:6px}th{background:#f1f1f1}.summary{margin:10px 0;font-size:13px}.sign{display:grid;grid-template-columns:1fr 1fr;text-align:center;margin-top:35px}</style></head><body><h2>PHIẾU ĐỐI CHIẾU BẢO HÀNH NCC</h2><div style="text-align:center"><b>${h(b.id)}</b></div><div class="summary">NCC: <b>${h(b.supplierName||'')}</b> • Ngày gửi: ${h(b.dateSent||'')}<br>Đã gửi: <b>${total}</b> • Đã nhận: <b>${ret}</b> • Còn tại NCC: <b>${Math.max(0,total-ret)}</b></div><table><thead><tr><th>STT</th><th>Mã BH</th><th>Khách</th><th>Hàng BH</th><th>SL</th><th>Kết quả NCC</th><th>Ngày nhận</th><th>Trạng thái</th></tr></thead><tbody>${rows.map((w,i)=>{const c=(db.customers||[]).find(x=>x.id===w.customerId),p=(db.products||[]).find(x=>x.id===w.productId);return `<tr><td>${i+1}</td><td>${h(w.batchId||w.id)}</td><td>${h(c?.name||'')}</td><td>${h(p?.name||w.item||'')}</td><td>${Number(w.qty||1)}</td><td>${h(w.nccResultB6||'')}</td><td>${h(w.nccReturnedDateB6||'')}</td><td>${h(nccStatusB6(w))}</td></tr>`}).join('')}</tbody></table><div class="sign"><div><b>NPP giao/nhận</b><br><br><br>Ký tên</div><div><b>Nhà cung cấp</b><br><br><br>Ký tên</div></div><script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`;const w=window.open('','_blank');if(!w)return alert('Trình duyệt đang chặn cửa sổ in.');w.document.open();w.document.write(html);w.document.close();};
 
 window.openWarrantyReturnCustomerB6=function(){const list=(db.warranty||[]).filter(w=>!warrantyClosedB6(w));if(!list.length)return alert('Không có phiếu bảo hành nào đang chờ trả khách.');showModal(`<h3>Trả bảo hành cho khách</h3><div class="small">Chọn phiếu BH. Hệ thống sẽ mở Phiếu xuất và dùng đúng luồng trả BH theo phiếu hiện có.</div><div class="warranty-send-list-b6">${list.map(w=>{const c=(db.customers||[]).find(x=>x.id===w.customerId),p=(db.products||[]).find(x=>x.id===w.productId);return `<div class="warranty-send-row-b6"><div>↩</div><div><b>${h(w.batchId||w.id)}</b><div class="small">${h(p?.name||w.item||'')}</div></div><div>${h(c?.name||'')}</div><div><button class="btn" onclick="prepareWarrantyReturnInvoiceB6('${h(w.id)}')">Lập phiếu trả</button></div></div>`}).join('')}</div><div class="modal-actions"><button class="btn" onclick="closeModal()">Đóng</button></div>`);};
 window.prepareWarrantyReturnInvoiceB6=async function(id){const w=(db.warranty||[]).find(x=>String(x.id)===String(id));if(!w)return;const c=(db.customers||[]).find(x=>x.id===w.customerId);if(!c)return alert('Không tìm thấy khách hàng của phiếu BH.');closeModal();try{go('stockout');}catch(_){ }if(typeof newStockout==='function')newStockout();if(typeof applyStockoutCustomer==='function')applyStockoutCustomer(c);if(typeof setWarrantyProcessed==='function')await setWarrantyProcessed(w.id);if(Array.isArray(selectedWarrantyIds)&&!selectedWarrantyIds.includes(w.id))selectedWarrantyIds.push(w.id);if(typeof renderCustomerWarranty==='function')renderCustomerWarranty();if(q('soContent'))q('soContent').value='Trả bảo hành theo phiếu '+(w.batchId||w.id);toast('Đã đưa phiếu BH sang Phiếu xuất • kiểm tra rồi bấm Lưu');};
@@ -42776,127 +42566,4 @@ body.voucher-stockin-active #stockinFunctionRowV90Clean #siEditBtn[style*="displ
 /* Sửa hàng chỉ thuộc Danh mục hàng hóa; hai phiếu dùng nút Sửa phiếu. */
 body.voucher-stockout-active #warehouseInlineEditBtn,
 body.voucher-stockin-active #warehouseInlineEditBtn{display:none!important}
-</style>
-
-<!-- V91 TEST: XOA NCC RIENG + PIN ENTER; KHONG DOI CAC TINH NANG KHAC -->
-<style id="v91-supplier-delete-menu-css">
-#v91SupplierDeleteMenu{position:fixed;z-index:2147483647;display:none;min-width:220px;padding:6px;background:#fff;border:1px solid #d8dee5;border-radius:9px;box-shadow:0 14px 38px rgba(15,23,42,.28);font-family:Segoe UI,Arial,sans-serif}
-#v91SupplierDeleteMenu.show{display:block}
-#v91SupplierDeleteMenu .v91-note{padding:5px 8px 7px;font-size:11px;color:#607080;border-bottom:1px solid #edf1f3;margin-bottom:4px}
-#v91SupplierDeleteMenu button{width:100%;border:0;background:#fff;color:#a12626;text-align:left;padding:9px 10px;border-radius:6px;cursor:pointer;font-weight:800}
-#v91SupplierDeleteMenu button:hover{background:#fff1f1}
-#suppliersTable tbody td:first-child{cursor:context-menu}
-</style>
-<script id="v91-supplier-delete-menu-js">
-(function(){
-  'use strict';
-  let menu=null,currentSupplierId='';
-  function supplierIdFromCell(cell){
-    const tr=cell?.closest?.('tr');
-    if(!tr)return '';
-    return String(tr.dataset?.supplierId||tr.children?.[0]?.textContent||'').trim();
-  }
-  function ensureMenu(){
-    if(menu&&document.body.contains(menu))return menu;
-    menu=document.createElement('div');
-    menu.id='v91SupplierDeleteMenu';
-    menu.innerHTML='<div class="v91-note">Nhà cung cấp</div><button type="button">🗑 Xóa nhà cung cấp</button>';
-    menu.querySelector('button').onclick=async function(){
-      const id=currentSupplierId; hide();
-      if(!id)return;
-      if(typeof unifiedDeleteV193==='function')return unifiedDeleteV193('supplier',id,null);
-      if(typeof deleteSupplierSafe==='function')return deleteSupplierSafe(id);
-    };
-    document.body.appendChild(menu);
-    return menu;
-  }
-  function hide(){if(menu)menu.classList.remove('show');currentSupplierId='';}
-  function show(id,x,y){
-    currentSupplierId=String(id||'');
-    const m=ensureMenu();
-    m.style.left='0px';m.style.top='0px';m.classList.add('show');
-    const r=m.getBoundingClientRect(),gap=8;
-    m.style.left=Math.max(gap,Math.min(Number(x)||gap,window.innerWidth-r.width-gap))+'px';
-    m.style.top=Math.max(gap,Math.min(Number(y)||gap,window.innerHeight-r.height-gap))+'px';
-  }
-  window.addEventListener('contextmenu',function(e){
-    const cell=e.target?.closest?.('#suppliersTable tbody td:first-child');
-    if(!cell)return;
-    if(!isManager)return;
-    const id=supplierIdFromCell(cell);
-    if(!id || !(db.suppliers||[]).some(s=>String(s.id||'')===id))return;
-    e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
-    show(id,e.clientX,e.clientY);
-  },true);
-  document.addEventListener('mousedown',function(e){if(menu&&menu.classList.contains('show')&&!menu.contains(e.target))hide();},true);
-  document.addEventListener('keydown',function(e){if(e.key==='Escape')hide();},true);
-  window.addEventListener('resize',hide);window.addEventListener('scroll',hide,true);
-
-  /* PIN mở app: Enter luôn tương đương nút Mở app. */
-  document.addEventListener('keydown',function(e){
-    if(e.key!=='Enter' || e.repeat)return;
-    const input=document.getElementById('startupOpenPin');
-    const gate=document.getElementById('startupSafetyGate');
-    if(!input||!gate?.classList.contains('show')||document.activeElement!==input)return;
-    e.preventDefault();e.stopPropagation();
-    if(!input.disabled && typeof startupUnlockApp==='function')startupUnlockApp();
-  },true);
-})();
-</script>
-<!-- /V91 TEST -->
-
-<style id="v92-stockin-date-css">
-#stockin .si-date-line{display:flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap}
-#stockin #siDateText.si-date-editable-v92{cursor:pointer}
-#stockin #siDateText.si-date-editable-v92:focus-visible{outline:1px solid #d2a02b;outline-offset:2px}
-#stockin #siEditDateV92{width:144px!important;min-width:144px!important;height:26px!important;padding:1px 3px!important;border:1px solid #d2a02b!important;border-radius:4px!important;background:transparent!important;font:inherit!important;color:inherit!important}
-@media print{#stockin #siEditDateV92{display:none!important}#stockin #siDateText{display:inline!important}}
-</style>
-
-<style id="v94-payment-method-css">
-#payments #paymentCustomerPanel .v206-payment-grid,
-#payments #paymentSupplierPanel .v206-payment-grid{grid-template-columns:minmax(210px,1.25fr) 155px 160px 145px 145px 105px!important}
-#payments #paymentCustomerPanel .v208-method-cell,
-#payments #paymentSupplierPanel .v208-method-cell{display:block!important;grid-column:4!important;min-width:0!important}
-#payments #paymentCustomerPanel .v208-date-cell,
-#payments #paymentSupplierPanel .v208-date-cell{grid-column:5!important}
-#payments #paymentCustomerPanel .v208-save-cell,
-#payments #paymentSupplierPanel .v208-save-cell{grid-column:6!important}
-#payments #payCustomerMethod,#payments #paySupplierMethod{width:100%!important;min-width:0!important;height:36px!important;min-height:36px!important;padding:4px 7px!important;border:1px solid #cbd9df!important;border-radius:7px!important;background:#fff!important;color:#17324d!important;font-size:12px!important;box-sizing:border-box!important}
-#customerDebtTable table,#supplierDebtTableV258 table{min-width:1100px!important}
-@media(max-width:1100px){
- #payments #paymentCustomerPanel .v206-payment-grid,#payments #paymentSupplierPanel .v206-payment-grid{grid-template-columns:1fr 1fr!important}
- #payments #paymentCustomerPanel .v206-payment-grid>div,#payments #paymentSupplierPanel .v206-payment-grid>div{grid-column:auto!important}
- #payments #paymentCustomerPanel .v14-selected-customer-cell,#payments #paymentSupplierPanel .v14-selected-customer-cell{grid-column:1/-1!important}
-}
-@media(max-width:620px){
- #payments #paymentCustomerPanel .v206-payment-grid,#payments #paymentSupplierPanel .v206-payment-grid{grid-template-columns:1fr!important}
- #payments #paymentCustomerPanel .v206-payment-grid>div,#payments #paymentSupplierPanel .v206-payment-grid>div{grid-column:1!important}
-}
-</style>
-
-<style id="v95-debt-tabs-css">
-#debts .debt-tabs-v95{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-#debts .debt-tabs-v95 .btn{min-height:40px;white-space:normal}
-#debts .debt-tabs-v95 .btn.active{background:#176847!important;border-color:#176847!important;color:#fff!important}
-#debts #supplierDebtCardV258{margin-top:0!important}
-#supplierDebtTableV258 .table-wrap{max-height:calc(100vh - 285px);overflow:auto}
-#supplierDebtTableV258 thead th{position:sticky;top:0;z-index:2;background:#f4f7f9}
-@media(max-width:620px){#debts .debt-tabs-v95 .btn{flex:1 1 150px}}
-@media print{#debts .debt-tabs-v95{display:none!important}}
-</style>
-
-<style id="v96-supplier-debt-css">
-#debts .supplier-debt-toolbar-v96{display:grid;grid-template-columns:minmax(220px,1fr) 160px 145px 145px auto auto;align-items:end;gap:10px;padding:12px;border:1px solid #dbe5e9;border-radius:10px;background:#f7fafb;margin:10px 0}
-#debts .supplier-debt-toolbar-v96 label{display:flex;flex-direction:column;gap:5px;min-width:0;color:#70808c}
-#debts .supplier-debt-toolbar-v96 input{width:100%;min-width:0;height:40px}
-#debts .supplier-debt-toolbar-v96 .btn{min-height:40px}
-#supplierDebtTableV258 .table-wrap{max-height:calc(100vh - 285px);border:1px solid #dbe4e8;border-radius:9px}
-#supplierDebtTableV258 th,#supplierDebtTableV258 td{padding:9px}
-#supplierDebtTableV258 th:nth-child(1),#supplierDebtTableV258 td:nth-child(1){min-width:180px}
-#supplierDebtTableV258 th:nth-child(2),#supplierDebtTableV258 td:nth-child(2){min-width:180px;white-space:normal}
-#supplierDebtTableV258 .customer-debt-inline-input-v22{min-width:105px;width:100%;text-align:right}
-@media(max-width:1100px){#debts .supplier-debt-toolbar-v96{grid-template-columns:1fr 1fr}#debts .supplier-debt-toolbar-v96>label:first-child{grid-column:1/-1}}
-@media(max-width:620px){#debts .supplier-debt-toolbar-v96{gap:8px;padding:10px}#supplierDebtTableV258 .table-wrap{max-height:55vh}}
-@media print{#debts .supplier-debt-toolbar-v96 .btn{display:none!important}}
 </style>
