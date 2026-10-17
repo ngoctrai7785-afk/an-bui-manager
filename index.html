@@ -8533,6 +8533,8 @@ body.voucher-stockout-active .topbar>.actions #autoBackupBtn,body.voucher-stocki
 <style id="v185-stt-delete-date-style">
 #stockout .so-date-line{display:flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap}
 #stockout #soEditDateV185{width:132px!important;min-width:132px!important;height:28px!important;padding:2px 5px!important;border:1px solid #d2a02b!important;border-radius:5px!important;background:#fffbe8!important;font-size:12px!important;font-weight:800!important;color:#7a4b00!important}
+#stockin .si-date-line{display:flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap}
+#stockin #siEditDateV261{width:132px!important;min-width:132px!important;height:28px!important;padding:2px 5px!important;border:1px solid #d2a02b!important;border-radius:5px!important;background:#fffbe8!important;font-size:12px!important;font-weight:800!important;color:#7a4b00!important}
 #voucherSttHeaderMenuV185{position:fixed;z-index:50000;display:none;min-width:210px;background:#fff;border:1px solid #d8dee5;border-radius:9px;box-shadow:0 12px 32px rgba(15,23,42,.22);padding:6px}
 #voucherSttHeaderMenuV185.show{display:block}
 #voucherSttHeaderMenuV185 .note{padding:5px 8px 7px;font-size:11px;color:#607080;border-bottom:1px solid #eef1f4;margin-bottom:4px}
@@ -11146,7 +11148,7 @@ window.AN_BUI_BUILD='an-bui-v259-v90-audit-safe';
     <div class="paper">
       <div class="invoice-header">
         <div class="npp"><b id="siNpp"></b><br><span id="siAddress"></span><br>ĐT: <span id="siPhone"></span></div>
-        <div class="invoice-title"><h1>PHIẾU NHẬP HÀNG</h1><div>Ngày: <span id="siDateText"></span></div></div>
+        <div class="invoice-title"><h1>PHIẾU NHẬP HÀNG</h1><div class="si-date-line">Ngày: <span id="siDateText"></span><input id="siEditDateV261" type="date" aria-label="Ngày phiếu nhập" style="display:none"></div></div>
         <div class="meta">Số phiếu: <b id="siNo"></b><br>Kho: Kho chính</div>
       </div>
       <div class="rule"></div>
@@ -11321,6 +11323,7 @@ window.AN_BUI_BUILD='an-bui-v259-v90-audit-safe';
         <div class="sum-row"><div>Nợ cũ đến ngày <b id="soOldDebtDate"></b></div><div id="soOldDebt">0 đ</div></div>
         <div class="sum-row"><div><b>Tổng công nợ phải thu</b></div><div id="soReceivable">0 đ</div></div>
         <div class="sum-row"><div><b>Khách thanh toán</b></div><div><input id="soPaid" type="number" min="0" oninput="recalcSO()" placeholder="Nhập số tiền khách trả"></div></div>
+        <div class="sum-row"><div><b>Diễn giải</b></div><div><input id="soPaymentNote" type="text" maxlength="120" placeholder="VD: Chuyển khoản, tiền mặt..."></div></div>
         <div class="sum-row"><div><b>Khách hàng còn nợ</b></div><div id="soDebt">0 đ</div></div>
       </div>
       <div id="soPrintStatus" class="print-status"></div>
@@ -11478,6 +11481,10 @@ window.AN_BUI_BUILD='an-bui-v259-v90-audit-safe';
               <label class="payment-filter-label">Số tiền khách trả</label>
               <input id="payCustomerAmount" type="number" min="0" placeholder="0" oninput="updateCustomerPaymentPreviewV206()">
             </div>
+            <div class="v208-note-cell">
+              <label class="payment-filter-label">Diễn giải</label>
+              <input id="payCustomerNote" type="text" maxlength="120" placeholder="VD: Chuyển khoản, tiền mặt...">
+            </div>
             <div class="v208-date-cell">
               <label class="payment-filter-label">Ngày trả</label>
               <input id="payCustomerDate" type="date" onchange="updateCustomerPaymentPreviewV206()">
@@ -11496,10 +11503,6 @@ window.AN_BUI_BUILD='an-bui-v259-v90-audit-safe';
               <button id="payCustomerConfirmBtn" type="button" class="btn primary" onclick="saveCustomerPayment()">Lưu</button>
             </div>
           </div>
-          <details class="payment-note-v11">
-            <summary>＋ Thêm ghi chú (không bắt buộc)</summary>
-            <input id="payCustomerNote" placeholder="Ví dụ: Thu công nợ tháng 8">
-          </details>
         </div>
 
         <div class="payment-history-toolbar">
@@ -11522,6 +11525,10 @@ window.AN_BUI_BUILD='an-bui-v259-v90-audit-safe';
           <div class="payment-pay-cell">
             <label class="payment-filter-label">Số tiền trả NCC</label>
             <input id="paySupplierAmount" type="number" min="0" placeholder="0">
+          </div>
+          <div class="v208-note-cell">
+            <label class="payment-filter-label">Diễn giải</label>
+            <input id="paySupplierNote" type="text" maxlength="120" placeholder="VD: Chuyển khoản, tiền mặt...">
           </div>
           <div class="payment-transaction-date">
             <label class="payment-filter-label">Ngày thanh toán</label>
@@ -13881,6 +13888,7 @@ function loadStockinIntoForm(invoice){
 
   $('siNo').textContent=invoice.id||'';
   $('siDateText').textContent=invoice.dateText||'';
+  if(typeof setStockinDateEditV261==='function')setStockinDateEditV261(false,invoice.dateText||'');
   $('siSupplier').value=s?supplierDisplay(s):(invoice.supplierName||'');
   $('siSupplierAddress').value=s?.address||invoice.supplierAddress||'';
   $('siSupplierPhone').value=s?.phone||invoice.supplierPhone||'';
@@ -14071,6 +14079,7 @@ async function editCurrentStockin(){
   loadStockinIntoForm(invoice);
   stockinEditingHistory=true;
   stockinEditingInvoiceId=String(invoice.id);
+  if(typeof setStockinDateEditV261==='function')setStockinDateEditV261(true,invoice.dateText||'');
   setStockinLocked(false);
   renderSIRows();
 
@@ -14113,7 +14122,7 @@ async function saveEditedStockin(doPrint=false){
   const probe={...original,supplierId:selectedSupplierId,supplierName:supplier.name||''};
   let baseDebt=supplierDebtBeforeInvoiceV260(probe,supplier);
   const totalPayable=Math.max(baseDebt+total,0);const paid=Math.min(Math.max(Number($('siPaid')?.value)||0,0),totalPayable);const debt=total-paid;
-  const saved={...original,supplierId:selectedSupplierId,supplierName:supplier.name||'',supplierPhone:supplier.phone||'',supplierAddress:supplier.address||'',oldDebtAtPurchase:baseDebt,totalPayable,remainingSupplierDebt:Math.max(baseDebt+debt,0),items:stockinSavedItems(rows),total,saleTotalAtReceive,paid,debt,content:$('siContent')?.value||'',note:$('siNote')?.value||'',invoiceRef:$('siInvoiceRef')?.value||'',...stockinVatSnapshot(total)};
+  const saved={...original,dateText:(typeof stockinEditedDateTextV261==='function'?stockinEditedDateTextV261(original.dateText):original.dateText),supplierId:selectedSupplierId,supplierName:supplier.name||'',supplierPhone:supplier.phone||'',supplierAddress:supplier.address||'',oldDebtAtPurchase:baseDebt,totalPayable,remainingSupplierDebt:Math.max(baseDebt+debt,0),items:stockinSavedItems(rows),total,saleTotalAtReceive,paid,debt,content:$('siContent')?.value||'',note:$('siNote')?.value||'',invoiceRef:$('siInvoiceRef')?.value||'',...stockinVatSnapshot(total)};
   const before=JSON.stringify(db),expected=Number(syncRevision||0);
   const reactivatedProductsV257=reactivateProductsFromStockinV257(rows);
   ids.forEach(pid=>{const p=(db.products||[]).find(x=>x.id===pid);if(p)p.stock=Number(p.stock||0)-Number(oldMap[pid]||0)+Number(newMap[pid]||0)});
@@ -14349,6 +14358,7 @@ function loadStockoutIntoForm(invoice){
   renderStockoutSaleOptions(invoice.saleEmployeeId||'',invoice.saleEmployeeName||'');
   setHistoricalStockoutVatSource(invoice);
   $('soPaid').value=invoice.paid||'';
+  if($('soPaymentNote'))$('soPaymentNote').value=invoice.paymentNote||invoice.paidNote||'';
 
   soRows=(invoice.items||[]).map(r=>({
     productId:r.productId||'',
@@ -14536,6 +14546,7 @@ function stockoutSummaryHtml(data,labels={}){
     <div class="pv-sum"><div>${esc(L.old)}${oldDebtDate?` <b>${esc(oldDebtDate)}</b>`:''}</div><div>${money(oldDebt)}</div></div>
     <div class="pv-sum"><div><b>${esc(L.total)}</b></div><div>${money(totalReceivable)}</div></div>
     <div class="pv-sum"><div><b>${esc(L.paid)}</b></div><div>${money(paid)}</div></div>
+    ${data.paymentNote?`<div class="pv-sum"><div><b>Diễn giải</b></div><div>${esc(data.paymentNote)}</div></div>`:''}
     <div class="pv-sum"><div><b>${esc(L.remain)}</b></div><div>${money(customerDebtAfter)}</div></div>`;
 }
 
@@ -25705,6 +25716,7 @@ function newStockin(){
   stockinEditingInvoiceId='';
   $('siNo').textContent=code('PN');
   $('siDateText').textContent=nowText();
+  if(typeof setStockinDateEditV261==='function')setStockinDateEditV261(true,$('siDateText').textContent||'');
   $('siSupplier').value='';
   $('siSupplierAddress').value='';
   $('siSupplierPhone').value='';
@@ -25757,6 +25769,7 @@ function newStockout(){
   renderStockoutSaleOptions('');
   setNewStockoutDefaultVatSource();
   $('soPaid').value='';
+  if($('soPaymentNote'))$('soPaymentNote').value='';
   if($('soReceivable'))$('soReceivable').textContent='0 đ';
   if($('soOldDebtDate'))$('soOldDebtDate').textContent='';
 
@@ -26459,7 +26472,9 @@ async function saveStockin(doPrint=false){
   const remainingSupplierDebt=Math.max(oldDebtAtPurchase+debt,0);
 
   const stockinId=$('siNo').textContent || code('PN');
-  const savedTime=nowText();
+  const savedTime=typeof stockinEditedDateTextV261==='function'
+    ? stockinEditedDateTextV261(nowText())
+    : nowText();
 
   if(db.stockin.some(x=>x.id===stockinId)){
     alert('Số phiếu nhập đã tồn tại. Bấm Phiếu mới rồi lưu lại.');
@@ -27314,6 +27329,7 @@ async function saveStockout(doPrint=false){
     total,
     paid,
     debt,
+    paymentNote:String($('soPaymentNote')?.value||'').trim(),
     content:$('soContent').value,
     saleEmployeeId:saleEmployee ? String(saleEmployee.id||'') : '',
     saleEmployeeName:saleEmployee ? String(saleEmployee.name||'') : '',
@@ -28678,6 +28694,7 @@ function stockoutCurrentDataForBill(){
     total,
     paid,
     debt,
+    paymentNote:String($('soPaymentNote')?.value||'').trim(),
     content:$('soContent')?.value||'',
     warrantyIds:(selectedWarrantyIds||[]).slice(),
     warrantyItems:warrantySnapshotForIds(selectedWarrantyIds||[]),
@@ -28753,6 +28770,7 @@ function buildBillPreview(data){
     <div class="bill-total"><span>Nợ cũ${oldDebtDate?` (${esc(oldDebtDate)})`:''}</span><span>${money(oldDebt)}</span></div>
     <div class="bill-total grand"><span>TỔNG PHẢI THU</span><span>${money(totalReceivable)}</span></div>
     <div class="bill-total"><span>Khách thanh toán</span><span>${money(paid)}</span></div>
+    ${data.paymentNote?`<div class="bill-info"><b>Diễn giải:</b> ${esc(data.paymentNote)}</div>`:''}
     <div class="bill-total grand"><span>CÒN NỢ</span><span>${money(customerDebtAfter)}</span></div>
     ${data.content?`<div class="bill-info"><b>Nội dung:</b> ${esc(data.content)}</div>`:''}
     ${warrantyStatusTextForInvoice(data)?`<div class="bill-warranty-status"><b>Bảo hành:</b><br>${warrantyStatusTextForInvoice(data)}</div>`:''}
@@ -29874,7 +29892,7 @@ async function saveSupplierPayment(){
   if(amount>debt && debt>0 && !confirm('Số tiền lớn hơn công nợ hiện tại '+money(debt)+'. Vẫn ghi nhận thanh toán?'))return;
 
   const payDate=paymentDateRecordV193('paySupplierDate');
-  const p={id:'TTNCC'+Date.now(),supplierId:s.id,supplierName:s.name||'',amount,dateText:payDate.dateText,ts:payDate.ts,operator:'Quản lý'};
+  const p={id:'TTNCC'+Date.now(),supplierId:s.id,supplierName:s.name||'',amount,dateText:payDate.dateText,ts:payDate.ts,operator:'Quản lý',note:String($('paySupplierNote')?.value||'').trim()};
   supplierPaymentSaving=true;
   db.supplierPayments.push(p);
   try{
@@ -29884,6 +29902,7 @@ async function saveSupplierPayment(){
       return;
     }
     if($('paySupplierAmount'))$('paySupplierAmount').value='';
+    if($('paySupplierNote'))$('paySupplierNote').value='';
     refreshPaymentRelatedViews();
     renderSupplierDebtsV258();
     selectedPaySupplierId=s.id;
@@ -32863,6 +32882,35 @@ setTimeout(()=>{try{ensurePrintDesignerSettings();applyStockoutRowHeightSetting(
     const tm=String(originalText||'').match(/\s+(\d{2}:\d{2})/);
     return m[3]+'/'+m[2]+'/'+m[1]+(tm?' '+tm[1]:'');
   }
+
+  /* V261: Phiếu nhập được chọn ngày cho cả phiếu mới và phiếu cũ đang sửa.
+     Chỉ thay ngày/tháng/năm; phần giờ hiện có của phiếu vẫn được giữ nguyên. */
+  window.setStockinDateEditV261=function(editing,dateText){
+    const span=$('siDateText'),input=$('siEditDateV261');
+    if(!span||!input)return;
+    const source=String(dateText||span.textContent||nowText());
+    input.value=ymdFromDateText(source)||todayYMD();
+    input.style.display=editing?'inline-block':'none';
+    span.style.display=editing?'none':'inline';
+    input.disabled=!editing;
+  };
+
+  window.stockinEditedDateTextV261=function(originalText){
+    const input=$('siEditDateV261');
+    if(!input||!input.value)return String(originalText||'');
+    return ymdToDisplayV185(input.value,originalText);
+  };
+
+  const stockinDateInputV261=()=>document.getElementById('siEditDateV261');
+  document.addEventListener('change',function(e){
+    if(e.target!==stockinDateInputV261())return;
+    const span=$('siDateText');
+    if(span)span.textContent=stockinEditedDateTextV261(span.textContent||nowText());
+    if($('siDebtAsOfDate'))$('siDebtAsOfDate').textContent=String(e.target.value||'').split('-').reverse().join('/');
+  },true);
+  window.addEventListener('load',function(){
+    if(!stockinViewingHistory)setStockinDateEditV261(true,$('siDateText')?.textContent||nowText());
+  });
 
   window.setStockoutDateEditV185=function(editing,dateText){
     const span=$('soDateText'), input=$('soEditDateV185');
@@ -36697,6 +36745,7 @@ async function saveCustomerDebtEditUnifiedV193(id){
         <div class="v17-selected-supplier-cell"><label class="payment-filter-label">Nhà cung cấp</label><div class="v17-selected-supplier-value"><b id="paymentSelectedSupplierNameV17">—</b><button type="button" onclick="clearPaymentSupplierV17()">Đổi</button></div></div>
         <div class="v17-current-debt-cell"><label class="payment-filter-label">Công nợ hiện tại</label><b id="paymentSupplierCurrentDebtV17">0 đ</b></div>
         <div class="v17-supplier-amount-cell"><label class="payment-filter-label">Số tiền trả NCC</label><input id="paySupplierAmount" type="number" min="0" placeholder="0"></div>
+        <div class="v208-note-cell"><label class="payment-filter-label">Diễn giải</label><input id="paySupplierNote" type="text" maxlength="120" placeholder="VD: Chuyển khoản, tiền mặt..."></div>
         <div class="v17-supplier-date-cell"><label class="payment-filter-label">Ngày trả</label><input id="paySupplierDate" type="date"></div>
         <div class="v17-supplier-save-cell"><label class="payment-filter-label">&nbsp;</label><button id="paySupplierConfirmBtn" type="button" class="btn primary" onclick="saveSupplierPayment()">Lưu</button></div>
         <input id="paySupplierSearch" type="hidden"><datalist id="paySupplierList"></datalist><b id="paySupplierDebt" style="display:none">0 đ</b>`;
@@ -36740,6 +36789,7 @@ async function saveCustomerDebtEditUnifiedV193(id){
     selectedPaySupplierId='';
     if(q('paySupplierSearch'))q('paySupplierSearch').value='';
     if(q('paySupplierAmount'))q('paySupplierAmount').value='';
+    if(q('paySupplierNote'))q('paySupplierNote').value='';
     if(q('paymentSupplierPickerSearchV17'))q('paymentSupplierPickerSearchV17').value='';
     const d=q('paySupplierDate');if(d&&typeof todayYMD==='function')d.value=todayYMD();
     syncSelectedPaymentSupplierV17();renderPaymentSupplierPickerV17();
@@ -38455,7 +38505,7 @@ async function saveCustomerDebtEditUnifiedV193(id){
   }
   function snapshot(mode){
     if(mode==='si')return {at:Date.now(),rows:JSON.parse(JSON.stringify(siRows||[])),supplierId:selectedSupplierId||'',supplier:$v('siSupplier')?.value||'',content:$v('siContent')?.value||'',note:$v('siNote')?.value||'',invoiceRef:$v('siInvoiceRef')?.value||'',vatType:$v('siVatType')?.value||'nonvat',vatDate:$v('siVatDate')?.value||'',vatRate:$v('siVatRate')?.value||'10'};
-    return {at:Date.now(),rows:JSON.parse(JSON.stringify(soRows||[])),customerId:selectedCustomerId||'',customer:$v('soCustomer')?.value||'',address:$v('soCustomerAddress')?.value||'',phone:$v('soCustomerPhone')?.value||'',content:$v('soContent')?.value||'',paid:$v('soPaid')?.value||'',sale:$v('soSaleEmployee')?.value||'',source:source('so')};
+    return {at:Date.now(),rows:JSON.parse(JSON.stringify(soRows||[])),customerId:selectedCustomerId||'',customer:$v('soCustomer')?.value||'',address:$v('soCustomerAddress')?.value||'',phone:$v('soCustomerPhone')?.value||'',content:$v('soContent')?.value||'',paid:$v('soPaid')?.value||'',paymentNote:$v('soPaymentNote')?.value||'',sale:$v('soSaleEmployee')?.value||'',source:source('so')};
   }
   function saveDraft(mode,label='Đã tự lưu nháp • chưa ảnh hưởng kho'){
     if(locked(mode))return;try{localStorage.setItem(draftKeys[mode],JSON.stringify(snapshot(mode)))}catch(_){}
@@ -38467,7 +38517,7 @@ async function saveCustomerDebtEditUnifiedV193(id){
     if(mode==='si'){
       siRows=d.rows;selectedSupplierId=String(d.supplierId||'');if($v('siSupplier'))$v('siSupplier').value=d.supplier||'';if($v('siContent'))$v('siContent').value=d.content||'Nhập hàng từ nhà cung cấp.';if($v('siNote'))$v('siNote').value=d.note||'';if($v('siInvoiceRef'))$v('siInvoiceRef').value=d.invoiceRef||'';if($v('siVatType'))$v('siVatType').value=d.vatType||'nonvat';if($v('siVatDate'))$v('siVatDate').value=d.vatDate||'';if($v('siVatRate'))$v('siVatRate').value=d.vatRate||'10';try{toggleStockinVatFields();renderSIRows();recalcSI()}catch(_){}
     }else{
-      soRows=d.rows;selectedCustomerId=String(d.customerId||'');if($v('soCustomer'))$v('soCustomer').value=d.customer||'';if($v('soCustomerAddress'))$v('soCustomerAddress').value=d.address||'';if($v('soCustomerPhone'))$v('soCustomerPhone').value=d.phone||'';if($v('soContent'))$v('soContent').value=d.content||'Xuất hàng theo đơn đặt hàng.';if($v('soPaid'))$v('soPaid').value=d.paid||'';if(d.source&&typeof setStockoutVatSource==='function')setStockoutVatSource(d.source);try{renderStockoutSaleOptions(d.sale||'');renderSORows();recalcSO()}catch(_){}
+      soRows=d.rows;selectedCustomerId=String(d.customerId||'');if($v('soCustomer'))$v('soCustomer').value=d.customer||'';if($v('soCustomerAddress'))$v('soCustomerAddress').value=d.address||'';if($v('soCustomerPhone'))$v('soCustomerPhone').value=d.phone||'';if($v('soContent'))$v('soContent').value=d.content||'Xuất hàng theo đơn đặt hàng.';if($v('soPaid'))$v('soPaid').value=d.paid||'';if($v('soPaymentNote'))$v('soPaymentNote').value=d.paymentNote||'';if(d.source&&typeof setStockoutVatSource==='function')setStockoutVatSource(d.source);try{renderStockoutSaleOptions(d.sale||'');renderSORows();recalcSO()}catch(_){}
     }
     setStatus(mode,'Đã khôi phục nháp • chưa ảnh hưởng kho','draft');syncCorner(mode);
   }
@@ -38763,8 +38813,14 @@ async function saveCustomerDebtEditUnifiedV193(id){
   #payments .v209-payment-main .v207-debt-pair{display:none!important}
   #payments .v209-payment-main .v207-title-line{display:flex!important;align-items:center!important;gap:7px!important;min-width:0!important}
   #payments .v209-payment-main .v12-build-mark{display:none!important}
-  #payments .v206-payment-grid{grid-template-columns:minmax(210px,1.25fr) 155px 160px 145px 105px!important;gap:6px!important;padding:7px 10px!important}
+  #payments .v206-payment-grid{grid-template-columns:minmax(210px,1.25fr) 155px 160px minmax(180px,1fr) 145px 105px!important;gap:6px!important;padding:7px 10px!important}
   #payments .v208-customer-cell,#payments .v208-method-cell{display:none!important}
+  #paymentCustomerPanel .v14-selected-customer-cell{grid-column:1!important}
+  #paymentCustomerPanel .v14-current-debt-cell{grid-column:2!important}
+  #paymentCustomerPanel .v208-amount-cell{grid-column:3!important}
+  #paymentCustomerPanel .v208-note-cell{grid-column:4!important}
+  #paymentCustomerPanel .v208-date-cell{grid-column:5!important}
+  #paymentCustomerPanel .v208-save-cell{grid-column:6!important}
   #payments .v14-selected-customer-cell,#payments .v14-current-debt-cell{min-width:0}
   #payments .v14-selected-customer-value{display:flex;align-items:center;gap:5px;height:32px;padding:4px 7px;border:1px solid #cbd9df;border-radius:7px;background:#fff}
   #payments .v14-selected-customer-value b{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12.5px}
@@ -40131,14 +40187,15 @@ body.warehouse-page-active .topbar>.actions{
 #paymentSupplierPanel.v17-has-supplier .v209-payment-main{display:block!important}
 
 #paymentSupplierPanel .v206-payment-grid{
-  display:grid!important;grid-template-columns:minmax(210px,1.25fr) 155px 160px 145px 105px!important;
+  display:grid!important;grid-template-columns:minmax(210px,1.25fr) 155px 160px minmax(180px,1fr) 145px 105px!important;
   gap:6px!important;align-items:end!important;padding:7px 10px!important;border:1px solid #dce7eb!important;border-radius:9px!important;background:#fff!important;
 }
 #paymentSupplierPanel .v14-selected-customer-cell{grid-column:1!important;min-width:0!important}
 #paymentSupplierPanel .v14-current-debt-cell{grid-column:2!important;min-width:0!important}
 #paymentSupplierPanel .v208-amount-cell{grid-column:3!important}
-#paymentSupplierPanel .v208-date-cell{grid-column:4!important}
-#paymentSupplierPanel .v208-save-cell{grid-column:5!important}
+#paymentSupplierPanel .v208-note-cell{grid-column:4!important}
+#paymentSupplierPanel .v208-date-cell{grid-column:5!important}
+#paymentSupplierPanel .v208-save-cell{grid-column:6!important}
 #paymentSupplierPanel .v14-selected-customer-value{
   display:flex!important;align-items:center!important;gap:5px!important;height:36px!important;padding:4px 7px!important;border:1px solid #cbd9df!important;border-radius:7px!important;background:#fff!important;box-sizing:border-box!important;
 }
@@ -40147,7 +40204,7 @@ body.warehouse-page-active .topbar>.actions{
 #paymentSupplierPanel #paymentSupplierCurrentDebtV17{
   display:flex!important;align-items:center!important;justify-content:flex-end!important;height:36px!important;min-height:36px!important;padding:4px 8px!important;border:1px solid #edc8c8!important;border-radius:7px!important;background:#fff7f7!important;color:#b43c3c!important;font-size:14px!important;font-weight:900!important;box-sizing:border-box!important;
 }
-#paymentSupplierPanel #paySupplierAmount,#paymentSupplierPanel #paySupplierDate,#paymentSupplierPanel #paySupplierConfirmBtn{height:36px!important;min-height:36px!important;box-sizing:border-box!important}
+#paymentSupplierPanel #paySupplierAmount,#paymentSupplierPanel #paySupplierNote,#paymentSupplierPanel #paySupplierDate,#paymentSupplierPanel #paySupplierConfirmBtn{height:36px!important;min-height:36px!important;box-sizing:border-box!important}
 #paymentSupplierPanel #paySupplierConfirmBtn{width:100%!important;padding:6px 10px!important;white-space:nowrap!important}
 #paymentSupplierPanel .payment-filter-label{font-size:10.5px!important;margin-bottom:2px!important}
 #paymentSupplierPanel .supplier-history-toolbar,#paymentSupplierPanel #supplierPaymentHistory{display:none!important}
@@ -40155,7 +40212,7 @@ body.warehouse-page-active .topbar>.actions{
 @media(max-width:1000px){
   #paymentSupplierPanel .v206-payment-grid{grid-template-columns:1fr 1fr!important}
   #paymentSupplierPanel .v14-selected-customer-cell{grid-column:1/-1!important}
-  #paymentSupplierPanel .v14-current-debt-cell,#paymentSupplierPanel .v208-amount-cell,#paymentSupplierPanel .v208-date-cell,#paymentSupplierPanel .v208-save-cell{grid-column:auto!important}
+  #paymentSupplierPanel .v14-current-debt-cell,#paymentSupplierPanel .v208-amount-cell,#paymentSupplierPanel .v208-note-cell,#paymentSupplierPanel .v208-date-cell,#paymentSupplierPanel .v208-save-cell{grid-column:auto!important}
 }
 @media(max-width:620px){
   #paymentSupplierPanel .v206-payment-grid{grid-template-columns:1fr!important}
@@ -40194,6 +40251,10 @@ body.warehouse-page-active .topbar>.actions{
           <div class="v17-supplier-amount-cell v208-amount-cell">
             <label class="payment-filter-label">Số tiền trả NCC</label>
             <input id="paySupplierAmount" type="number" min="0" placeholder="0">
+          </div>
+          <div class="v208-note-cell">
+            <label class="payment-filter-label">Diễn giải</label>
+            <input id="paySupplierNote" type="text" maxlength="120" placeholder="VD: Chuyển khoản, tiền mặt...">
           </div>
           <div class="v17-supplier-date-cell v208-date-cell">
             <label class="payment-filter-label">Ngày trả</label>
@@ -40448,8 +40509,8 @@ body.warehouse-page-active .topbar>.actions{
     const box=q('customerPaymentHistory');if(!box)return;const c=currentCustomer69();const cid=String(c?.id||'');if(cid!==lastCustomer69){customerLimit69=10;lastCustomer69=cid}
     if(!c){box.innerHTML='<div class="v69-history-head"><b>Lịch sử thanh toán khách hàng</b><small>Chọn khách hàng phía trên để xem lịch sử.</small></div><div class="v69-empty">Chưa chọn khách hàng.</div>';return}
     const all=(db.customerPayments||[]).filter(p=>String(p.customerId||'')===cid&&p?.transactionType!=='warranty_return').sort((a,b)=>(Number(b.ts)||0)-(Number(a.ts)||0));
-    const rows=all.slice(0,customerLimit69).map(p=>{const before=customerBefore69(p),amt=Math.max(0,Number(p.amount)||0),after=Math.max(0,before-amt),can=typeof canEditCustomerPayment==='function'?canEditCustomerPayment(p):!!isManager;return `<tr><td>${esc69(p.dateText||'')}</td><td class="right"><span class="v69-before">${money69(before)}</span></td><td class="right"><span class="v69-pay">${money69(amt)}</span></td><td class="right"><span class="v69-after">${money69(after)}</span></td><td class="center">${can?`<button class="btn v69-edit" onclick="editCustomerPaymentAmountV69('${esc69(p.id)}')">Sửa</button>`:'<span class="small">Khóa</span>'}</td></tr>`});
-    box.innerHTML=`<div class="v69-history-head"><b>Lịch sử thanh toán • ${esc69(c.name||'Khách hàng')}</b><small>10 giao dịch gần nhất • Công nợ hiện tại: <b style="display:inline;font-size:inherit">${money69(customerDebt(c.id))}</b></small></div>`+(rows.length?table(['Ngày thanh toán','Nợ trước','Số tiền thanh toán','Nợ còn lại','Sửa'],rows):'<div class="v69-empty">Khách hàng này chưa có lần thanh toán nào.</div>')+(all.length>customerLimit69?`<div class="v69-history-more"><button class="btn" onclick="customerLimit69MoreV69()">Xem thêm 10 giao dịch (${all.length-customerLimit69} còn lại)</button></div>`:'')
+    const rows=all.slice(0,customerLimit69).map(p=>{const before=customerBefore69(p),amt=Math.max(0,Number(p.amount)||0),after=Math.max(0,before-amt),can=typeof canEditCustomerPayment==='function'?canEditCustomerPayment(p):!!isManager;return `<tr><td>${esc69(p.dateText||'')}${p.note?`<small style="display:block;margin-top:3px;color:#64748b">${esc69(p.note)}</small>`:''}</td><td class="right"><span class="v69-before">${money69(before)}</span></td><td class="right"><span class="v69-pay">${money69(amt)}</span></td><td class="right"><span class="v69-after">${money69(after)}</span></td><td class="center">${can?`<button class="btn v69-edit" onclick="editCustomerPaymentAmountV69('${esc69(p.id)}')">Sửa</button>`:'<span class="small">Khóa</span>'}</td></tr>`});
+    box.innerHTML=`<div class="v69-history-head"><b>Lịch sử thanh toán • ${esc69(c.name||'Khách hàng')}</b><small>10 giao dịch gần nhất • Công nợ hiện tại: <b style="display:inline;font-size:inherit">${money69(customerDebt(c.id))}</b></small></div>`+(rows.length?table(['Ngày thanh toán / Diễn giải','Nợ trước','Số tiền thanh toán','Nợ còn lại','Sửa'],rows):'<div class="v69-empty">Khách hàng này chưa có lần thanh toán nào.</div>')+(all.length>customerLimit69?`<div class="v69-history-more"><button class="btn" onclick="customerLimit69MoreV69()">Xem thêm 10 giao dịch (${all.length-customerLimit69} còn lại)</button></div>`:'')
   };
   window.customerLimit69MoreV69=function(){customerLimit69+=10;renderCustomerPaymentHistoryOnly()};
   window.editCustomerPaymentAmountV69=function(id){const p=(db.customerPayments||[]).find(x=>String(x.id||'')===String(id||''));if(!p)return alert('Không tìm thấy giao dịch thanh toán.');if(typeof canEditCustomerPayment==='function'&&!canEditCustomerPayment(p))return alert(typeof customerPaymentEditDeniedMessage==='function'?customerPaymentEditDeniedMessage(p):'Bạn không có quyền sửa giao dịch này.');const c=(db.customers||[]).find(x=>String(x.id||'')===String(p.customerId||''))||{},before=customerBefore69(p),amt=Math.max(0,Number(p.amount)||0);showModal(`<h3>Sửa số tiền thanh toán</h3><div class="small">${esc69(c.name||'Khách hàng')} • Ngày ${esc69(p.dateText||'')}</div><div class="payment-edit-summary-v10"><div><span>Nợ trước</span><b>${money69(before)}</b></div><div><span>Đã thanh toán</span><b id="v69CustPreview">${money69(amt)}</b></div><div><span>Nợ còn lại</span><b id="v69CustAfter">${money69(Math.max(0,before-amt))}</b></div></div><div><label>Số tiền thanh toán</label><input id="v69CustAmount" type="number" min="1" value="${amt}" oninput="updateCustAmountV69('${esc69(p.id)}')" style="width:100%"></div><div class="modal-actions"><button class="btn" onclick="closeModal()">Hủy</button><button class="btn primary" onclick="saveCustAmountV69('${esc69(p.id)}')">Lưu sửa</button></div>`)};
@@ -40458,7 +40519,7 @@ body.warehouse-page-active .topbar>.actions{
 
   function supplierState69(sid){const d=typeof supplierDebtBreakdownV258==='function'?supplierDebtBreakdownV258(sid):null,map=new Map();if(!d?.supplier)return map;let running=Math.max(0,Number(d.oldDebt)||0);const ev=[];(d.invoices||[]).forEach((o,i)=>{const total=Math.max(0,Number(typeof reportStockinInvoiceValueV245==='function'?reportStockinInvoiceValueV245(o):0)||0),paid=Math.max(0,Number(typeof supplierInvoicePaidForDebtV259==='function'?supplierInvoicePaidForDebtV259(o,d.supplier):0)||0);let t=0;try{t=Number(stockoutDateTimeValue(o.dateText||''))||0}catch(_){}ev.push({t,ord:i,k:'i',delta:Math.max(0,total-paid)})});(d.payments||[]).forEach((p,i)=>{let t=Number(p.ts||0);if(!t){try{t=Number(stockoutDateTimeValue(p.dateText||''))||0}catch(_){}}ev.push({t,ord:1000000+i,k:'p',id:String(p.id||''),amount:Math.max(0,Number(p.amount)||0)})});ev.sort((a,b)=>a.t-b.t||a.ord-b.ord);ev.forEach(e=>{if(e.k==='i'){running=Math.max(0,running+e.delta)}else{const before=Math.max(0,running),after=Math.max(0,before-e.amount);map.set(e.id,{before,after});running=after}});return map}
   function mountSupplier69(){const panel=q('paymentSupplierPanel');if(!panel)return;let host=q('v69SupplierHistory');if(!host){host=document.createElement('div');host.id='v69SupplierHistory';panel.appendChild(host)}renderSupplierHistoryV69()}
-  window.renderSupplierHistoryV69=function(){const host=q('v69SupplierHistory');if(!host)return;const s=currentSupplier69(),sid=String(s?.id||'');if(sid!==lastSupplier69){supplierLimit69=10;lastSupplier69=sid}if(!s){host.innerHTML='<div class="v69-history-head"><b>Lịch sử thanh toán NCC</b><small>Chọn Nhà cung cấp phía trên để xem lịch sử.</small></div><div class="v69-empty">Chưa chọn Nhà cung cấp.</div>';return}const all=(db.supplierPayments||[]).filter(p=>{try{return typeof supplierPaymentBelongsV257==='function'?supplierPaymentBelongsV257(p,s):String(p.supplierId||'')===sid}catch(_){return String(p.supplierId||'')===sid}}).sort((a,b)=>(Number(b.ts)||0)-(Number(a.ts)||0)),state=supplierState69(sid),rows=all.slice(0,supplierLimit69).map(p=>{const st=state.get(String(p.id||''))||{before:Math.max(0,Number(supplierDebt(sid))||0)+Math.max(0,Number(p.amount)||0),after:Math.max(0,Number(supplierDebt(sid))||0)},can=typeof canEditSupplierPaymentV8==='function'?canEditSupplierPaymentV8(p):!!isManager;return `<tr><td>${esc69(p.dateText||'')}</td><td class="right"><span class="v69-before">${money69(st.before)}</span></td><td class="right"><span class="v69-pay">${money69(p.amount)}</span></td><td class="right"><span class="v69-after">${money69(st.after)}</span></td><td class="center">${can?`<button class="btn v69-edit" onclick="editSupplierAmountV69('${esc69(p.id)}')">Sửa</button>`:'<span class="small">Khóa</span>'}</td></tr>`});host.innerHTML=`<div class="v69-history-head"><b>Lịch sử thanh toán NCC • ${esc69(s.name||'Nhà cung cấp')}</b><small>10 giao dịch gần nhất • Công nợ hiện tại: <b style="display:inline;font-size:inherit">${money69(supplierDebt(sid))}</b></small></div>`+(rows.length?table(['Ngày thanh toán','Nợ trước','Số tiền đã trả','Nợ còn lại','Sửa'],rows):'<div class="v69-empty">Nhà cung cấp này chưa có lần thanh toán nào.</div>')+(all.length>supplierLimit69?`<div class="v69-history-more"><button class="btn" onclick="supplierMoreV69()">Xem thêm 10 giao dịch (${all.length-supplierLimit69} còn lại)</button></div>`:'')};
+  window.renderSupplierHistoryV69=function(){const host=q('v69SupplierHistory');if(!host)return;const s=currentSupplier69(),sid=String(s?.id||'');if(sid!==lastSupplier69){supplierLimit69=10;lastSupplier69=sid}if(!s){host.innerHTML='<div class="v69-history-head"><b>Lịch sử thanh toán NCC</b><small>Chọn Nhà cung cấp phía trên để xem lịch sử.</small></div><div class="v69-empty">Chưa chọn Nhà cung cấp.</div>';return}const all=(db.supplierPayments||[]).filter(p=>{try{return typeof supplierPaymentBelongsV257==='function'?supplierPaymentBelongsV257(p,s):String(p.supplierId||'')===sid}catch(_){return String(p.supplierId||'')===sid}}).sort((a,b)=>(Number(b.ts)||0)-(Number(a.ts)||0)),state=supplierState69(sid),rows=all.slice(0,supplierLimit69).map(p=>{const st=state.get(String(p.id||''))||{before:Math.max(0,Number(supplierDebt(sid))||0)+Math.max(0,Number(p.amount)||0),after:Math.max(0,Number(supplierDebt(sid))||0)},can=typeof canEditSupplierPaymentV8==='function'?canEditSupplierPaymentV8(p):!!isManager;return `<tr><td>${esc69(p.dateText||'')}${p.note?`<small style="display:block;margin-top:3px;color:#64748b">${esc69(p.note)}</small>`:''}</td><td class="right"><span class="v69-before">${money69(st.before)}</span></td><td class="right"><span class="v69-pay">${money69(p.amount)}</span></td><td class="right"><span class="v69-after">${money69(st.after)}</span></td><td class="center">${can?`<button class="btn v69-edit" onclick="editSupplierAmountV69('${esc69(p.id)}')">Sửa</button>`:'<span class="small">Khóa</span>'}</td></tr>`});host.innerHTML=`<div class="v69-history-head"><b>Lịch sử thanh toán NCC • ${esc69(s.name||'Nhà cung cấp')}</b><small>10 giao dịch gần nhất • Công nợ hiện tại: <b style="display:inline;font-size:inherit">${money69(supplierDebt(sid))}</b></small></div>`+(rows.length?table(['Ngày thanh toán / Diễn giải','Nợ trước','Số tiền đã trả','Nợ còn lại','Sửa'],rows):'<div class="v69-empty">Nhà cung cấp này chưa có lần thanh toán nào.</div>')+(all.length>supplierLimit69?`<div class="v69-history-more"><button class="btn" onclick="supplierMoreV69()">Xem thêm 10 giao dịch (${all.length-supplierLimit69} còn lại)</button></div>`:'')};
   window.supplierMoreV69=function(){supplierLimit69+=10;renderSupplierHistoryV69()};
   window.editSupplierAmountV69=function(id){const p=(db.supplierPayments||[]).find(x=>String(x.id||'')===String(id||''));if(!p)return alert('Không tìm thấy giao dịch NCC.');if(typeof canEditSupplierPaymentV8==='function'&&!canEditSupplierPaymentV8(p))return alert(typeof supplierPaymentEditDeniedMessageV8==='function'?supplierPaymentEditDeniedMessageV8(p):'Bạn không có quyền sửa.');const s=(db.suppliers||[]).find(x=>String(x.id||'')===String(p.supplierId||''))||currentSupplier69()||{},st=supplierState69(s.id).get(String(p.id||''))||{before:Math.max(0,Number(supplierDebt(s.id))||0)+Math.max(0,Number(p.amount)||0)},amt=Math.max(0,Number(p.amount)||0);showModal(`<h3>Sửa số tiền thanh toán NCC</h3><div class="small">${esc69(s.name||'Nhà cung cấp')} • Ngày ${esc69(p.dateText||'')}</div><div class="payment-edit-summary-v10"><div><span>Nợ trước</span><b>${money69(st.before)}</b></div><div><span>Đã trả</span><b id="v69SuppPreview">${money69(amt)}</b></div><div><span>Nợ còn lại</span><b id="v69SuppAfter">${money69(Math.max(0,st.before-amt))}</b></div></div><div><label>Số tiền đã trả NCC</label><input id="v69SuppAmount" type="number" min="1" value="${amt}" oninput="updateSuppV69('${esc69(p.id)}')" style="width:100%"></div><div class="modal-actions"><button class="btn" onclick="closeModal()">Hủy</button><button class="btn primary" onclick="saveSuppV69('${esc69(p.id)}')">Lưu sửa</button></div>`)};
   window.updateSuppV69=function(id){const p=(db.supplierPayments||[]).find(x=>String(x.id||'')===String(id||''));if(!p)return;const s=(db.suppliers||[]).find(x=>String(x.id||'')===String(p.supplierId||''))||{},st=supplierState69(s.id).get(String(p.id||''))||{before:0},amt=Math.max(0,Number(q('v69SuppAmount')?.value)||0);if(q('v69SuppPreview'))q('v69SuppPreview').textContent=money69(amt);if(q('v69SuppAfter'))q('v69SuppAfter').textContent=money69(Math.max(0,st.before-amt))};
