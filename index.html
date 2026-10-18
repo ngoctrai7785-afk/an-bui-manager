@@ -10922,6 +10922,81 @@ window.AN_BUI_PATCH_VERSION=90;
 window.AN_BUI_BUILD='an-bui-v259-v90-audit-safe';
 </script>
 
+<script id="anbui-v98-stockout-live-invoice-filter-js">
+(function(){
+  let stockoutLiveHistoryQueryV98='';
+  function invoiceCustomerTextV98(invoice){
+    const c=(db.customers||[]).find(x=>String(x.id||'')===String(invoice?.customerId||''));
+    return [invoice?.customerName,invoice?.customerPhone,invoice?.customerAddress,c?.name,c?.phone,c?.address]
+      .filter(Boolean).join(' ');
+  }
+  function invoiceMatchesLiveV98(invoice,query){
+    const q=norm(String(query||'').trim());
+    if(!q)return true;
+    const customerMatch=norm(invoiceCustomerTextV98(invoice)).includes(q);
+    const productMatch=typeof window.stockoutInvoiceMatchesProductV251==='function'
+      ? window.stockoutInvoiceMatchesProductV251(invoice,q)
+      : false;
+    return customerMatch||productMatch;
+  }
+
+  function liveFilterV98(){
+    const input=document.getElementById('stockoutSearch');
+    const raw=String(input?.value||'').trim();
+    /* Đang gõ là lọc trực tiếp toàn bộ phiếu; bấm một tên trong danh sách vẫn dùng bộ lọc ID cũ. */
+    stockoutCustomerHistoryFilterId='';
+    stockoutProductHistoryQueryV251='';
+    stockoutLiveHistoryQueryV98=raw;
+    stockoutHistoryList=window.getStockoutHistoryForDate('');
+
+    if(raw){
+      stockoutHistoryIndex=stockoutHistoryList.length?stockoutHistoryList.length-1:0;
+      updateStockoutHistoryControls();
+      if(stockoutHistoryList.length){
+        const invoice=stockoutHistoryList[stockoutHistoryIndex];
+        requestAnimationFrame(()=>{
+          loadStockoutIntoForm(invoice);
+          const d=ymdFromDateText(invoice.dateText);
+          const date=document.getElementById('stockoutHistoryDate');
+          if(date&&d)date.value=d;
+        });
+      }
+    }else{
+      stockoutHistoryIndex=stockoutHistoryList.length;
+      updateStockoutHistoryControls();
+    }
+    if(typeof window.showStockoutCustomerHistoryPicker==='function')window.showStockoutCustomerHistoryPicker();
+  }
+  function installV98(){
+    const oldGetHistoryV98=window.getStockoutHistoryForDate;
+    if(typeof oldGetHistoryV98==='function')window.getStockoutHistoryForDate=function(){
+      let rows=oldGetHistoryV98.apply(this,arguments)||[];
+      if(stockoutLiveHistoryQueryV98)rows=rows.filter(o=>invoiceMatchesLiveV98(o,stockoutLiveHistoryQueryV98));
+      return rows;
+    };
+    window.filterStockoutCustomerHistoryPicker=liveFilterV98;
+    const oldSelectHistoryV98=window.selectStockoutHistoryCustomer;
+    if(typeof oldSelectHistoryV98==='function')window.selectStockoutHistoryCustomer=function(){
+      stockoutLiveHistoryQueryV98='';
+      return oldSelectHistoryV98.apply(this,arguments);
+    };
+    const oldClearHistoryV98=window.clearStockoutSearch;
+    if(typeof oldClearHistoryV98==='function')window.clearStockoutSearch=function(){
+      stockoutLiveHistoryQueryV98='';
+      stockoutCustomerHistoryFilterId='';
+      stockoutProductHistoryQueryV251='';
+      const r=oldClearHistoryV98.apply(this,arguments);
+      stockoutHistoryList=window.getStockoutHistoryForDate('');
+      stockoutHistoryIndex=stockoutHistoryList.length;
+      updateStockoutHistoryControls();
+      return r;
+    };
+    setTimeout(()=>{window.AN_BUI_PATCH_VERSION=98;window.AN_BUI_BUILD='an-bui-v259-v98-stockout-live-invoice-filter'},80);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(installV98,0),{once:true});else setTimeout(installV98,0);
+})();
+</script>
+
 <style id="anbui-v96-stockout-customer-filter-css">
 /* V96: danh sách khách Phiếu xuất luôn nổi trên phiếu và nhận thao tác chạm. */
 #stockout .info-grid,
