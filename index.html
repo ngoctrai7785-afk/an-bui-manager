@@ -10921,6 +10921,166 @@ body:has(#payments.page.active) .topbar #paymentTopbarFilterHost{
 window.AN_BUI_PATCH_VERSION=90;
 window.AN_BUI_BUILD='an-bui-v259-v90-audit-safe';
 </script>
+
+<style id="anbui-v96-stockout-customer-filter-css">
+/* V96: danh sách khách Phiếu xuất luôn nổi trên phiếu và nhận thao tác chạm. */
+#stockout .info-grid,
+#stockout .info-box,
+#stockout .stockout-customer-picker-wrap,
+.topbar,
+.topbar-title-wrap,
+#stockoutHistoryNav,
+.voucher-history-search-wrap{overflow:visible!important}
+#stockoutCustomerPickerList{
+  z-index:25000!important;
+  pointer-events:auto!important;
+  touch-action:manipulation;
+}
+#stockoutCustomerHistoryPicker{
+  z-index:26000!important;
+  pointer-events:auto!important;
+  touch-action:manipulation;
+}
+#stockoutCustomerPickerList .stockout-customer-picker-item,
+#stockoutCustomerHistoryPicker .voucher-history-picker-item{
+  -webkit-tap-highlight-color:rgba(18,111,211,.10);
+  user-select:none;
+}
+</style>
+<script id="anbui-v96-stockout-customer-filter-js">
+(function(){
+  function id(v){return document.getElementById(v)}
+  function enc(v){return encodeURIComponent(String(v==null?'':v))}
+  function dec(v){try{return decodeURIComponent(String(v||''))}catch(_){return String(v||'')}}
+  function stockoutPageIsOpenV96(){
+    return document.body.classList.contains('voucher-stockout-active') ||
+      id('stockout')?.classList.contains('active');
+  }
+
+  window.chooseStockoutCustomerPickerV96=function(encodedId){
+    const customerId=dec(encodedId);
+    if(typeof window.chooseStockoutCustomerPicker==='function'){
+      window.chooseStockoutCustomerPicker(customerId);
+      return;
+    }
+    const c=(db.customers||[]).find(x=>String(x.id)===String(customerId));
+    if(c && typeof window.applyStockoutCustomer==='function')window.applyStockoutCustomer(c);
+  };
+
+  window.renderStockoutCustomerPicker=function(open=true,forceAll=false){
+    const box=id('stockoutCustomerPickerList');
+    if(!box)return;
+    const input=id('soCustomer');
+    const q=norm(String(input?.value||'').trim());
+    const list=[...(db.customers||[])]
+      .filter(c=>forceAll || !q || norm(`${c.name||''} ${c.phone||''} ${c.address||''}`).includes(q))
+      .sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'vi'))
+      .slice(0,100);
+    window.__stockoutCustomerMatchesV96=list;
+    box.innerHTML=list.length?list.map(c=>`
+      <div class="stockout-customer-picker-item" role="option" tabindex="-1"
+           onpointerdown="event.preventDefault();event.stopPropagation();chooseStockoutCustomerPickerV96('${enc(c.id)}')">
+        <div><b>${esc(c.name||'')}</b><small>${esc(c.address||'')}</small></div>
+        <div class="stockout-customer-picker-phone">${esc(c.phone||'')}</div>
+      </div>`).join(''):
+      '<div class="stockout-customer-picker-empty">Không tìm thấy khách hàng phù hợp.</div>';
+    if(open)box.classList.add('show');
+  };
+
+  window.showStockoutCustomerPickerAll=function(){
+    const input=id('soCustomer');
+    if(input?.disabled)return;
+    window.renderStockoutCustomerPicker(true,true);
+  };
+
+  function historyRowsV96(){
+    const input=id('stockoutSearch');
+    const q=norm(String(input?.value||'').trim());
+    return stockoutCustomersWithInvoices().map(x=>{
+      const customerMatch=!q || norm(`${x.c.name||''} ${x.c.phone||''} ${x.c.address||''}`).includes(q);
+      const matchedInvoices=(db.stockout||[]).filter(o=>
+        String(o.customerId||'')===String(x.c.id||'') && stockoutInvoiceMatchesProductV251(o,q));
+      const productMatch=!!q && matchedInvoices.length>0;
+      const matchedItems=productMatch?[...new Set(matchedInvoices.flatMap(o=>(o.items||[])
+        .filter(r=>norm([r?.productId,r?.productText].filter(Boolean).join(' ')).includes(q))
+        .map(r=>[r?.productId,r?.productText].filter(Boolean).join(' – '))))].slice(0,2):[];
+      return {...x,customerMatch,productMatch,matchedInvoices,matchedItems};
+    }).filter(x=>x.customerMatch||x.productMatch).slice(0,40);
+  }
+
+  window.selectStockoutHistoryCustomerV96=function(encodedId,matchedByProduct){
+    if(typeof window.selectStockoutHistoryCustomer==='function'){
+      window.selectStockoutHistoryCustomer(dec(encodedId),!!matchedByProduct);
+    }
+  };
+
+  window.renderStockoutCustomerHistoryPicker=function(){
+    const box=id('stockoutCustomerHistoryPicker');
+    if(!box||!id('stockoutSearch'))return;
+    const rows=historyRowsV96();
+    window.__stockoutHistoryMatchesV96=rows;
+    box.innerHTML=rows.length?rows.map(x=>{
+      const productOnly=x.productMatch&&!x.customerMatch;
+      return `<div class="voucher-history-picker-item" role="option" tabindex="-1"
+        onpointerdown="event.preventDefault();event.stopPropagation();selectStockoutHistoryCustomerV96('${enc(x.c.id)}',${productOnly?'true':'false'})">
+        <div><b>${esc(x.c.name||'')}</b><small>${esc(x.c.phone||'')}${x.c.address?' • '+esc(x.c.address):''}${x.matchedItems.length?' • '+esc(x.matchedItems.join(', ')):''}</small></div>
+        <span class="voucher-history-picker-count">${productOnly?x.matchedInvoices.length:x.count}</span>
+      </div>`;
+    }).join(''):'<div class="voucher-history-picker-empty">Không tìm thấy khách, SĐT, mã hàng hoặc tên hàng.</div>';
+  };
+
+  window.showStockoutCustomerHistoryPicker=function(){
+    const box=id('stockoutCustomerHistoryPicker');
+    if(!box||!stockoutPageIsOpenV96())return;
+    window.renderStockoutCustomerHistoryPicker();
+    box.classList.add('show');
+  };
+
+  /* Giữ tham chiếu bản V96 vì phần mã lõi bên dưới còn khai báo các hàm cũ. */
+  const renderCustomerPickerV96=window.renderStockoutCustomerPicker;
+  const showCustomerPickerV96=window.showStockoutCustomerPickerAll;
+  const renderHistoryPickerV96=window.renderStockoutCustomerHistoryPicker;
+  const showHistoryPickerV96=window.showStockoutCustomerHistoryPicker;
+
+  function installV96(){
+    window.renderStockoutCustomerPicker=renderCustomerPickerV96;
+    window.showStockoutCustomerPickerAll=showCustomerPickerV96;
+    window.renderStockoutCustomerHistoryPicker=renderHistoryPickerV96;
+    window.showStockoutCustomerHistoryPicker=showHistoryPickerV96;
+    const customer=id('soCustomer');
+    if(customer && !customer.dataset.v96Filter){
+      customer.dataset.v96Filter='1';
+      customer.addEventListener('keydown',function(event){
+        if(event.key!=='Enter')return;
+        const list=window.__stockoutCustomerMatchesV96||[];
+        if(!list.length)return;
+        event.preventDefault();
+        window.chooseStockoutCustomerPickerV96(enc(list[0].id));
+      });
+    }
+    const history=id('stockoutSearch');
+    if(history && !history.dataset.v96Filter){
+      history.dataset.v96Filter='1';
+      history.addEventListener('keydown',function(event){
+        if(event.key==='Escape'){
+          id('stockoutCustomerHistoryPicker')?.classList.remove('show');
+          return;
+        }
+        if(event.key!=='Enter')return;
+        const rows=window.__stockoutHistoryMatchesV96||[];
+        if(!rows.length)return;
+        event.preventDefault();
+        const first=rows[0];
+        window.selectStockoutHistoryCustomerV96(enc(first.c.id),first.productMatch&&!first.customerMatch);
+      });
+    }
+    window.AN_BUI_PATCH_VERSION=96;
+    window.AN_BUI_BUILD='an-bui-v259-v96-stockout-customer-filter';
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(installV96,0),{once:true});
+  else setTimeout(installV96,0);
+})();
+</script>
 </head>
 <body>
 <div id="startupSafetyGate" class="startup-safety-gate show" aria-modal="true" role="dialog">
@@ -42783,6 +42943,141 @@ body.voucher-stockin-active #warehouseInlineEditBtn{display:none!important}
   const oldRender=window.renderAll;if(typeof oldRender==='function')window.renderAll=function(){ensureV91();const r=oldRender.apply(this,arguments);const page=$('returnsV91');if(!isManager&&page?.dataset.returnType==='supplier'){page.dataset.mode='home';page.dataset.returnType='';supplierReturnRowsV92=[]}if(page?.dataset.mode!=='form')renderReturnHomeV91();return r};
   function bootV91(){injectV91();ensureV91();applyPermissions();window.AN_BUI_PATCH_VERSION=95;window.AN_BUI_BUILD='an-bui-v259-v95-return-close';}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(bootV91,0),{once:true});else setTimeout(bootV91,0);
+})();
+</script>
+
+<style id="anbui-v97-return-party-filter-css">
+/* V97: gõ tên/SĐT để lọc khách hàng hoặc NCC trên phiếu Hàng trả lại. */
+#returnsV91 .return-party-picker-v97{position:relative;width:100%;overflow:visible}
+#returnsV91 .return-party-search-v97{
+  width:100%;box-sizing:border-box;border:0;border-bottom:1px dotted #777;
+  border-radius:0;background:#fffdf2;padding:7px 28px 7px 3px;font:inherit;color:inherit
+}
+#returnsV91 .return-party-search-v97:focus{outline:none;border-bottom:2px solid #1876c9}
+#returnsV91 .return-party-arrow-v97{
+  position:absolute;right:4px;top:7px;color:#176bd0;font-size:15px;pointer-events:none
+}
+#returnsV91 .return-party-list-v97{
+  display:none;position:absolute;z-index:29000;left:0;right:0;top:calc(100% + 3px);
+  max-height:300px;overflow:auto;background:#fff;border:1px solid #b9cad7;border-radius:8px;
+  box-shadow:0 10px 25px rgba(20,50,70,.20);padding:4px;touch-action:manipulation
+}
+#returnsV91 .return-party-list-v97.show{display:block}
+#returnsV91 .return-party-option-v97{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;
+  padding:8px;border-radius:6px;cursor:pointer;user-select:none;-webkit-tap-highlight-color:rgba(18,111,211,.10)
+}
+#returnsV91 .return-party-option-v97:hover{background:#edf6ff}
+#returnsV91 .return-party-option-v97 b{display:block;color:#12344b}
+#returnsV91 .return-party-option-v97 small{display:block;margin-top:2px;color:#71808a;font-size:11px}
+#returnsV91 .return-party-phone-v97{color:#176bd0;font-weight:700;white-space:nowrap}
+#returnsV91 .return-party-empty-v97{padding:10px;text-align:center;color:#73818b}
+#returnsV91 .return-party-hidden-v97{display:none!important}
+#returnsV91 .return-v97-debt-name{color:#0d5da8;font-weight:900}
+#returnsV91 .info-grid,#returnsV91 .info-box,#returnsV91 .formline{overflow:visible!important}
+</style>
+<script id="anbui-v97-return-party-filter-js">
+(function(){
+  function id(v){return document.getElementById(v)}
+  function enc(v){return encodeURIComponent(String(v==null?'':v))}
+  function dec(v){try{return decodeURIComponent(String(v||''))}catch(_){return String(v||'')}}
+  function closeListsV97(except){
+    document.querySelectorAll('#returnsV91 .return-party-list-v97.show').forEach(x=>{if(x!==except)x.classList.remove('show')});
+  }
+  function partyDataV97(type){
+    return (type==='customer'?(db.customers||[]):(db.suppliers||[])).slice()
+      .sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'vi'));
+  }
+  function partyIdsV97(type){
+    return type==='customer'
+      ? {select:'returnCustomerV91',input:'returnCustomerSearchV97',list:'returnCustomerListV97'}
+      : {select:'supplierReturnSupplierV92',input:'supplierReturnSearchV97',list:'supplierReturnListV97'};
+  }
+  function selectedPartyV97(type){
+    const ids=partyIdsV97(type),value=id(ids.select)?.value||'';
+    return partyDataV97(type).find(x=>String(x.id)===String(value))||null;
+  }
+  function renderPartyListV97(type,forceAll=false){
+    const ids=partyIdsV97(type),input=id(ids.input),box=id(ids.list);
+    if(!input||!box)return;
+    const q=norm(String(input.value||'').trim());
+    const rows=partyDataV97(type).filter(x=>forceAll||!q||norm(`${x.name||''} ${x.phone||''} ${x.address||''}`).includes(q)).slice(0,100);
+    window[type==='customer'?'__returnCustomerMatchesV97':'__returnSupplierMatchesV97']=rows;
+    box.innerHTML=rows.length?rows.map(x=>`<div class="return-party-option-v97" role="option" tabindex="-1"
+      onpointerdown="event.preventDefault();event.stopPropagation();chooseReturnPartyV97('${type}','${enc(x.id)}')">
+      <div><b>${esc(x.name||x.id||'')}</b><small>${esc(x.address||'')}</small></div>
+      <div class="return-party-phone-v97">${esc(x.phone||'')}</div>
+    </div>`).join(''):`<div class="return-party-empty-v97">Không tìm thấy ${type==='customer'?'khách hàng':'Nhà cung cấp'} phù hợp.</div>`;
+    closeListsV97(box);box.classList.add('show');
+  }
+  window.filterReturnPartyV97=function(type){renderPartyListV97(type,false)};
+  window.showReturnPartyV97=function(type){renderPartyListV97(type,true)};
+  window.returnPartyKeyV97=function(event,type){
+    if(event.key==='Escape'){closeListsV97();return}
+    if(event.key!=='Enter')return;
+    const rows=window[type==='customer'?'__returnCustomerMatchesV97':'__returnSupplierMatchesV97']||[];
+    if(!rows.length)return;
+    event.preventDefault();window.chooseReturnPartyV97(type,enc(rows[0].id));
+  };
+  window.chooseReturnPartyV97=function(type,encodedId){
+    const ids=partyIdsV97(type),partyId=dec(encodedId),party=partyDataV97(type).find(x=>String(x.id)===String(partyId));
+    if(!party)return;
+    const select=id(ids.select),input=id(ids.input);
+    if(select)select.value=String(party.id);
+    if(input)input.value=party.name||party.id||'';
+    closeListsV97();
+    if(type==='customer'&&typeof window.returnCustomerChangedV91==='function')window.returnCustomerChangedV91();
+    if(type==='supplier'&&typeof window.supplierReturnSupplierChangedV92==='function')window.supplierReturnSupplierChangedV92();
+    updateReturnDebtNamesV97(type);
+  };
+  window.updateReturnDebtNamesV97=function(type){
+    if(!type||type==='customer'){
+      const c=selectedPartyV97('customer'),name=c?.name||'khách hàng';
+      const old=id('returnOldDebtNameV97');if(old)old.innerHTML=`Nợ cũ của <span class="return-v97-debt-name">${esc(name)}</span> đến ngày`;
+      const label=id('returnAfterLabelV91');if(label&&c){
+        const credit=id('returnAfterV91')?.classList.contains('return-v91-credit');
+        label.innerHTML=credit?`Tiền dư của <span class="return-v97-debt-name">${esc(name)}</span>`:`<span class="return-v97-debt-name">${esc(name)}</span> còn nợ`;
+      }
+    }
+    if(!type||type==='supplier'){
+      const s=selectedPartyV97('supplier'),name=s?.name||'Nhà cung cấp';
+      const old=id('supplierReturnOldDebtNameV97');if(old)old.innerHTML=`Còn nợ <span class="return-v97-debt-name">${esc(name)}</span> trước phiếu`;
+      const label=id('supplierReturnAfterLabelV92');if(label&&s){
+        const credit=id('supplierReturnAfterV92')?.classList.contains('return-v91-credit');
+        label.innerHTML=credit?`<span class="return-v97-debt-name">${esc(name)}</span> còn phải hoàn lại`:`Còn nợ <span class="return-v97-debt-name">${esc(name)}</span>`;
+      }
+    }
+  };
+  function enhancePartyV97(type){
+    const ids=partyIdsV97(type),select=id(ids.select);
+    if(!select||select.dataset.v97Enhanced)return;
+    select.dataset.v97Enhanced='1';select.classList.add('return-party-hidden-v97');
+    const wrap=document.createElement('div');wrap.className='return-party-picker-v97';
+    wrap.innerHTML=`<input id="${ids.input}" class="return-party-search-v97" autocomplete="off"
+      placeholder="${type==='customer'?'Gõ tên / SĐT khách hàng...':'Gõ tên / SĐT Nhà cung cấp...'}"
+      oninput="filterReturnPartyV97('${type}')" onfocus="this.select();showReturnPartyV97('${type}')"
+      onclick="event.stopPropagation();this.select();showReturnPartyV97('${type}')"
+      onkeydown="returnPartyKeyV97(event,'${type}')"><span class="return-party-arrow-v97">▼</span><div id="${ids.list}" class="return-party-list-v97"></div>`;
+    select.parentNode.insertBefore(wrap,select);
+    const current=selectedPartyV97(type);if(current)id(ids.input).value=current.name||current.id||'';
+    const summaryId=type==='customer'?'returnOldDebtV91':'supplierReturnOldDebtV92';
+    const summary=id(summaryId)?.closest('.sum-row')?.firstElementChild;
+    if(summary)summary.id=type==='customer'?'returnOldDebtNameV97':'supplierReturnOldDebtNameV97';
+    updateReturnDebtNamesV97(type);
+    setTimeout(()=>id(ids.input)?.focus(),60);
+  }
+
+  const oldOpenCustomer=window.openCustomerReturnV91;
+  if(typeof oldOpenCustomer==='function')window.openCustomerReturnV91=function(){const r=oldOpenCustomer.apply(this,arguments);enhancePartyV97('customer');return r};
+  const oldOpenSupplier=window.openSupplierReturnV92;
+  if(typeof oldOpenSupplier==='function')window.openSupplierReturnV92=function(){const r=oldOpenSupplier.apply(this,arguments);enhancePartyV97('supplier');return r};
+  const oldRecalcCustomer=window.recalcReturnV91;
+  if(typeof oldRecalcCustomer==='function')window.recalcReturnV91=function(){const r=oldRecalcCustomer.apply(this,arguments);updateReturnDebtNamesV97('customer');return r};
+  const oldRecalcSupplier=window.recalcSupplierReturnV92;
+  if(typeof oldRecalcSupplier==='function')window.recalcSupplierReturnV92=function(){const r=oldRecalcSupplier.apply(this,arguments);updateReturnDebtNamesV97('supplier');return r};
+  document.addEventListener('click',e=>{if(!e.target.closest?.('.return-party-picker-v97'))closeListsV97()});
+  function bootV97(){window.AN_BUI_PATCH_VERSION=97;window.AN_BUI_BUILD='an-bui-v259-v97-return-customer-supplier-filter-debt-name'}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(bootV97,0),{once:true});else setTimeout(bootV97,0);
 })();
 </script>
 
